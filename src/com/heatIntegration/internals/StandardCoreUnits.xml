@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<main>
+	<unit>
+	    <unitName>Unknown_Unit</unitName>
+	    <unitSystem>Unknown_System</unitSystem>
+	    <abbreviation>Unit</abbreviation>
+	    <isBaseUnit>True</isBaseUnit>
+	    <baseUnit>Unknown_Unit</baseUnit>
+	    <componentUnits>
+	        <component>
+	            <unitName>Unknown_Unit</uniNamet>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnitExponents>
+	    <conversionPolyCoeffs>
+	        <conversion>
+	            <targetUnit>BaseUnit</targetUnit>
+	        	<polynomialCoeffs>1.0f 0.0f</polynomialCoeffs> 	            
+	        </conversion>         
+	    </conversionPolyCoeffs>
+	</unit>    
+    
+<!--  -->
+		
+	<unit>
+	   	<unitName>Radian</unitName>
+	   	<unitSystem>SI</unitSystem>
+	    <abbreviation>Rad.</abbreviation>
+	    <isBaseUnit>True</isBaseUnit>
+	    <baseUnit>Radian</baseUnit>
+	    <componentUnits>
+	        <component>
+	            <unitName>Meter</uniNamet>
+	            <exponent>0.0f</exponent>
+	        </component>
+	    </componentUnitExponents>
+	    <conversionPolyCoeffs>
+	        <conversion>
+	            <targetUnit>BaseUnit</targetUnit>
+	        	<polynomialCoeffs>1.0f 0.0f</polynomialCoeffs> 	            
+	        </conversion>         
+	    </conversionPolyCoeffs>
+	</unit>    
+	
+	<unit>
+	    <unitName>Kelvin</unitName>	    
+	    <unitSystem>SI</unitSystem>
+	    <abbreviation>K</abbreviation>
+	    <isBaseUnit>True</isBaseUnit>
+	    <baseUnit>Kelvin</baseUnit>
+	    <componentUnits>
+	        <component>
+	            <unitName>Kelvin</uniNamet>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnitExponents>
+	    <conversionPolyCoeffs>
+	        <conversion>
+	            <targetUnit>BaseUnit</targetUnit>
+	           	<polynomialCoeffs>1.0f 0.0f</polynomialCoeffs>
+	        </conversion> 
+	        <conversion>
+	        	<targetUnit>Celsius</targetUnit> 
+	    		<polynomialCoeffs>1.0f 273.15f</polynomialCoeffs>  	
+	    	</conversion>        	
+	        <conversion>
+	            <targetUnit>Fahrenheit</targetUnit>
+	    		<polynomialCoeffs>1.8f 459.67f</polynomialCoeffs> 	            
+	        </conversion>
+			<conversion>
+			    <targetUnit>Rankine</targetUnit>
+	    		<polynomialCoeffs>1.8f 0.0f</polynomialCoeffs>   			    
+			</conversion> 
+	    </conversionPolyCoeffs>
+	</unit>
+	<unit>
+	   	<unitName>Celsius</unitName>
+	    <unitSystem>SI</unitSystem>
+	    <abbreviation>C</abbreviation>
+	    <isBaseUnit>False</isBaseUnit>
+	    <baseUnit>Kelvin</baseUnit>
+	    <componentUnits>
+	        <component>
+	            <unitName>Celsius</uniNamet>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnitExponents>
+	    <conversionPolyCoeffs>
+	        <conversion>
+	            <targetUnit>BaseUnit</targetUnit>
+	        	<polynomialCoeffs>1.0f 273.15f</polynomialCoeffs>  	            
+	        </conversion>
+	    </conversionPolyCoeffs>
+	</unit>
+	<unit>
+	    <unitName>Fahrenheit</unitName>	    
+	    <unitSystem>US</unitSystem>
+	    <abbreviation>F</abbreviation>
+	    <isBaseUnit>False</isBaseUnit>
+	    <baseUnit>Kelvin</baseUnit>
+	    <componentUnits>
+	        <component>
+	            <unitName>Fahrenheit</uniNamet>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnitExponents>
+	    <conversionPolyCoeffs>
+	        <conversion>
+	            <targetUnit>BaseUnit</targetUnit>
+	        	<polynomialCoeffs>0.555f 255.3722f</polynomialCoeffs>  	            
+	        </conversion>
+	    </conversionPolyCoeffs>
+	</unit>	
+	<unit>
+	    <unitName>Rankine</unitName>	    
+	    <unitSystem>SI</unitSystem>
+	    <abbreviation>R</abbreviation>
+	    <isBaseUnit>False</isBaseUnit>
+	    <baseUnit>Kelvin</baseUnit>
+	    <componentUnits>
+	        <component>
+	            <unitName>Rankine</uniNamet>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnitExponents>
+	    <conversionPolyCoeffs>
+	        <conversion>
+	            <targetUnit>BaseUnit</targetUnit>
+	        	<polynomialCoeffs>0.555f 0.0f</polynomialCoeffs>  	            
+	        </conversion>
+	    </conversionPolyCoeffs>
+	</unit>
+	
+	
+	<unit>
+	    <unitName>Second</unitName>	    
+	    <unitSystem>SI</unitSystem>
+	    <abbreviation>Sec.</abbreviation>
+	    <isBaseUnit>True</isBaseUnit>
+	    <baseUnit>Second</baseUnit>
+	    <componentUnits>
+	        <component>
+	            <unitName>Second</uniNamet>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnitExponents>
+	    <conversionPolyCoeffs>
+	        <conversion>
+	            <targetUnit>BaseUnit</targetUnit>
+	        	<polynomialCoeffs>1.0f 0.0f</polynomialCoeffs>  	            
+	        </conversion>
+	        <conversion>
+	            <targetUnit>Minute</targetUnit>
+	        	<polynomialCoeffs>0.01667f 0.0f</polynomialCoeffs>  	            
+	        </conversion>
+	        <conversion>
+	            <targetUnit>Hour</targetUnit>
+	        	<polynomialCoeffs>0.0002778f 0.0f</polynomialCoeffs>  	            
+	        </conversion>
+	        <conversion>
+	            <targetUnit>Day</targetUnit>
+	        	<polynomialCoeffs>0.000011574f 0.0f</polynomialCoeffs>  	            
+	        </conversion>
+	        <conversion>
+	            <targetUnit>Week</targetUnit>
+	        	<polynomialCoeffs>0.000001653f 0.0f</polynomialCoeffs>  	            
+	        </conversion>
+	        <conversion>
+	            <targetUnit>Year</targetUnit>
+	        	<polynomialCoeffs>0.000000032f 0.0f</polynomialCoeffs>  	            
+	        </conversion>	        		        	        
+	    </conversionPolyCoeffs>
+	</unit>
+	<unit>
+	    <unitName>Minute</unitName>	    
+	    <unitSystem>SI</unitSystem>
+	    <abbreviation>Min.</abbreviation>
+	    <isBaseUnit>False</isBaseUnit>
+	    <baseUnit>Second</baseUnit>
+	    <componentUnitExponents>
+	        <component>
+	            <unitName>Minute</uniNamet>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnitExponents>
+	    <conversionPolyCoeffs>
+	        <conversion>
+	            <targetUnit>BaseUnit</targetUnit>
+	        	<polynomialCoeffs>60.0f 0.0f</polynomialCoeffs>  	            
+	        </conversion>
+	    </conversionPolyCoeffs>	    
+	</unit>	
+	<unit>
+	    <unitName>Hour</unitName>	    
+	    <unitSystem>SI</unitSystem>
+	    <abbreviation>Hr.</abbreviation>
+	    <isBaseUnit>False</isBaseUnit>
+	    <baseUnit>Second</baseUnit>
+	    <componentUnitExponents>
+	        <component>
+	            <unitName>Hour</uniNamet>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnitExponents>
+	    <conversionPolyCoeffs>
+	        <conversion>
+	            <targetUnit>BaseUnit</targetUnit>
+	        	<polynomialCoeffs>3600.0f 0.0f</polynomialCoeffs>  	            
+	        </conversion>
+	    </conversionPolyCoeffs>	    
+	</unit>	
+	<unit>
+	    <unitName>Day</unitName>	    
+	    <unitSystem>SI</unitSystem>
+	    <abbreviation>Day</abbreviation>
+	    <isBaseUnit>False</isBaseUnit>
+	    <baseUnit>Second</baseUnit>
+	    <componentUnitExponents>
+	        <component>
+	            <unitName>Day</uniNamet>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnitExponents>
+	    <conversionPolyCoeffs>
+	        <conversion>
+	            <targetUnit>BaseUnit</targetUnit>
+	        	<polynomialCoeffs>86400.0f 0.0f</polynomialCoeffs>  	            
+	        </conversion>
+	    </conversionPolyCoeffs>	    
+	</unit>	
+	<unit>
+	    <unitName>Week</unitName>	    
+	    <unitSystem>SI</unitSystem>
+	    <abbreviation>Wk.</abbreviation>
+	    <isBaseUnit>False</isBaseUnit>
+	    <baseUnit>Second</baseUnit>
+	    <componentUnits>
+	        <component>
+	            <unitName>Week</uniNamet>
+	            <exponent>1</exponent>
+	        </component>
+	    </componentUnitExponents>
+	    <conversionPolyCoeffs>
+	        <conversion>
+	            <targetUnit>BaseUnit</targetUnit>
+	        	<polynomialCoeffs>604800.0f 0.0f</polynomialCoeffs>  	            
+	        </conversion>
+	    </conversionPolyCoeffs>	    
+	</unit>		
+	<unit>
+	    <unitName>Year</unitName>	    
+	    <unitSystem>SI</unitSystem>
+	    <abbreviation>Yr.</abbreviation>
+	    <isBaseUnit>False</isBaseUnit>
+	    <baseUnit>Second</baseUnit>
+	    <componentUnits>
+	        <component>
+	            <unitName>Year</uniNamet>
+	            <exponent>1</exponent>
+	        </component>
+	    </componentUnitExponents>
+	    <conversionPolyCoeffs>
+	        <conversion>
+	            <targetUnit>BaseUnit</targetUnit>
+	        	<polynomialCoeffs>31536000.0f 0.0f</polynomialCoeffs>  	            
+	        </conversion>
+	    </conversionPolyCoeffs>
+	</unit>	
+</main>
