@@ -418,7 +418,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 		pSharablesApplication.setUnitManagerFactory(UnitManagerFactory.combineUnitManagerFactories(pSharablesApplication.getUnitManagerFactory()
 				            		             												  ,loadedUnitManagerFactory));
 		
-  		if(pSharablesApplication.getUnitManagerFactory().areMinComponentsForCreationAvailable()){ // && ++numOfLoaderCompleted == 4){
+  		if(pSharablesApplication.getUnitManagerFactory().areMinComponentsForCreationAvailable() && ++numOfLoaderCompleted == 4){
   			postLoadSetup();
   		}
 	}
