@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<main>
+    
+<!-- Unit Types Listing Order: TRIGONOMETRIC, ELECTRICITY AND MAGNETISM, RADIATION, OPTICS, TEMPERATURE, ENERGY, POWER, FORCE, PRESSURE, FLUID MECHANICS, MASS, LENGTH, TIME, AREA, VOLUME, COMPUTER  -->
+
+<!-- TRIGONOMETRIC UNITS -->
+	
+	<unit>
+	   	<unitName>hertz</unitName>
+	   	<unitSystem>si</unitSystem>
+	    <abbreviation>hz</abbreviation>
+	   	<unitCategory>trigonometric_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>second</unitName>
+	            <exponent>-1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	    	<baseUnit>radian</baseUnit>
+	        <polynomialCoeffs>6.283f 0.0f</polynomialCoeffs> 	                  
+	    </baseConversionPolyCoeffs>
+	</unit>  
+	
+	<unit>
+	   	<unitName>degree</unitName>
+	   	<unitSystem>si</unitSystem>
+	    <abbreviation>deg</abbreviation>
+	    <unitCategory>trigonometric_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>radian</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	    	<baseUnit>radian</baseUnit>
+	        <polynomialCoeffs>0.017453f 0.0f</polynomialCoeffs> 	                
+	    </baseConversionPolyCoeffs>
+	</unit> 
+			
+	<unit>
+	   	<unitName>radian</unitName>
+	   	<unitSystem>si</unitSystem>
+	    <abbreviation>rad</abbreviation>
+	    <unitCategory>trigonometric_unit</unitCategory>	    
+	    <componentUnits>
+	        <component>
+	            <unitName>meter</unitName>
+	            <exponent>0.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	    	<baseUnit>radian</baseUnit>
+	        <polynomialCoeffs>1.0f 0.0f</polynomialCoeffs> 	                 
+	    </baseConversionPolyCoeffs>
+	</unit>    	
+
+<!-- ELECTRICITY AND MAGNETISM UNITS -->	
+
+<!-- RADIATION UNITS-->		
+		
+<!-- OPTICS UNITS -->
+
+<!-- TEMPERATURE UNITS -->
+	
+	<unit>
+	    <unitName>kelvin</unitName>	    
+	    <unitSystem>si</unitSystem>
+	    <abbreviation>K</abbreviation>
+	    <unitCategory>temperature_unit</unitCategory>	    
+	    <componentUnits>
+	        <component>
+	            <unitName>kelvin</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	    	<baseUnit>kelvin</baseUnit>
+	        <polynomialCoeffs>1.0f 0.0f</polynomialCoeffs>
+	    </baseConversionPolyCoeffs>
+	</unit>
+	
+	<unit>
+	   	<unitName>celsius</unitName>
+	    <unitSystem>si</unitSystem>
+	    <abbreviation>C</abbreviation>
+	    <unitCategory>temperature_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>celsius</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	    	<baseUnit>kelvin</baseUnit>
+	        <polynomialCoeffs>1.0f 273.15f</polynomialCoeffs>  	            
+	    </baseConversionPolyCoeffs>
+	</unit>
+	
+	<unit>
+	    <unitName>fahrenheit</unitName>	    
+	    <unitSystem>si</unitSystem>
+	    <abbreviation>F</abbreviation>
+	    <unitCategory>temperature_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>fahrenheit</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	    	<baseUnit>kelvin</baseUnit>
+	        <polynomialCoeffs>0.555f 255.3722f</polynomialCoeffs>  	            
+	    </baseConversionPolyCoeffs>
+	</unit>	
+	
+	<unit>
+	    <unitName>rankine</unitName>	    
+	    <unitSystem>si</unitSystem>
+	    <abbreviation>R</abbreviation>
+	    <unitCategory>temperature_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>rankine</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	    	<baseUnit>kelvin</baseUnit>
+	        <polynomialCoeffs>0.555f 0.0f</polynomialCoeffs>  	            
+	    </baseConversionPolyCoeffs>
+	</unit>
+
+<!-- ENERGY UNITS -->	
+
+	<unit>
+	   	<unitName>joule</unitName>
+	   	<unitSystem>si</unitSystem>
+	    <abbreviation>J</abbreviation>
+	    <unitCategory>energy_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>kilo-gram</unitName>
+	            <exponent>2.0f</exponent>
+	        </component>	        
+	        <component>
+	            <unitName>Meter</unitName>
+	            <exponent>2.0f</exponent>
+	        </component>
+	       	<component>
+	            <unitName>second</unitName>
+	            <exponent>-2.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	    	<baseUnit>joule</baseUnit>
+	        <polynomialCoeffs>1.0f 0.0f</polynomialCoeffs> 	                 
+	    </baseConversionPolyCoeffs>
+	</unit> 	
+		
+<!-- POWER UNITS -->		
+	
+<!-- PRESSURE UNITS -->	
+
+<!-- FORCE UNITS -->
+		
+<!-- FLUID MECHANICS -->		
+		
+<!-- MASS UNITS -->
+
+	<unit>
+	   	<unitName>gram</unitName>
+	   	<unitSystem>si</unitSystem>
+	    <abbreviation>g</abbreviation>
+	    <unitCategory>mass_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>gram</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>	        
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	        <baseUnit>gram</baseUnit>
+	       	<polynomialCoeffs>1.0f 0.0f</polynomialCoeffs> 	                   
+	    </baseConversionPolyCoeffs>
+	</unit> 
+	
+	<unit>
+	   	<unitName>kilo-gram</unitName>
+	   	<unitSystem>si</unitSystem>
+	    <abbreviation>kg</abbreviation>
+	    <unitCategory>mass_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>kilo-gram</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>	        
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	        <baseUnit>gram</baseUnit>
+	        <polynomialCoeffs>1000.0f 0.0f</polynomialCoeffs> 	                   
+	    </baseConversionPolyCoeffs>
+	</unit> 
+		
+<!-- LENGTH -->	
+
+	<unit>
+	   	<unitName>meter</unitName>
+	   	<unitSystem>si</unitSystem>
+	    <abbreviation>m</abbreviation>
+	    <unitCategory>length_unit</unitCategory>	    
+	    <componentUnits>
+	        <component>
+	            <unitName>meter</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	    	<baseUnit>meter</baseUnit>
+	        <polynomialCoeffs>1.0f 0.0f</polynomialCoeffs> 	                 
+	    </baseConversionPolyCoeffs>
+	</unit>  
+
+<!-- TIME -->	
+	
+	<unit>
+	    <unitName>second</unitName>	    
+	    <unitSystem>si</unitSystem>
+	    <abbreviation>sec</abbreviation>
+	    <unitCategory>time_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>second</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	        <baseUnit>second</baseUnit>
+	        <polynomialCoeffs>1.0f 0.0f</polynomialCoeffs>  	                   		        	        
+	    </baseConversionPolyCoeffs>
+	</unit>
+	
+	<unit>
+	    <unitName>minute</unitName>	    
+	    <unitSystem>si</unitSystem>
+	    <abbreviation>min</abbreviation>
+	    <unitCategory>time_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>minute</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	        <baseUnit>second</baseUnit>
+	        <polynomialCoeffs>60.0f 0.0f</polynomialCoeffs>  	            
+	    </baseConversionPolyCoeffs>	    
+	</unit>	
+	
+	<unit>
+	    <unitName>hour</unitName>	    
+	    <unitSystem>si</unitSystem>
+	    <abbreviation>hr</abbreviation>
+	    <unitCategory>time_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>hour</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	        <baseUnit>second</baseUnit>
+	        <polynomialCoeffs>3600.0f 0.0f</polynomialCoeffs>  	            
+	    </baseConversionPolyCoeffs>	    
+	</unit>	
+	
+	<unit>
+	    <unitName>day</unitName>	    
+	    <unitSystem>si</unitSystem>
+	    <abbreviation>day</abbreviation>
+	    <unitCategory>time_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>day</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	        <baseUnit>second</baseUnit>
+	        <polynomialCoeffs>86400.0f 0.0f</polynomialCoeffs>  	            
+	    </baseConversionPolyCoeffs>	    
+	</unit>	
+	
+	<unit>
+	    <unitName>week</unitName>	    
+	    <unitSystem>si</unitSystem>
+	    <abbreviation>wk</abbreviation>
+	    <unitCategory>time_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>week</unitName>
+	            <exponent>1</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	        <baseUnit>second</baseUnit>
+	        <polynomialCoeffs>604800.0f 0.0f</polynomialCoeffs>  	            
+	    </baseConversionPolyCoeffs>	    
+	</unit>	
+		
+	<unit>
+	    <unitName>year</unitName>	    
+	    <unitSystem>si</unitSystem>
+	    <abbreviation>yr</abbreviation>
+	    <unitCategory>time_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>year</unitName>
+	            <exponent>1</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	       	<baseUnit>second</baseUnit>
+	        <polynomialCoeffs>31536000.0f 0.0f</polynomialCoeffs>  	            
+	    </baseConversionPolyCoeffs>
+	</unit>
+	
+<!-- AREA -->
+
+<!-- VOLUME -->
+		
+<!-- COMPUTER -->		
+		
+</main>

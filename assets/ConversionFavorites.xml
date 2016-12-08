@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<main>
+    <conversion>
+        <unitCategory>time_unit</unitCategory>
+        <fromUnit>minute</fromUnit>
+        <toUnit>second</toUnit>
+    </conversion>
+</main>

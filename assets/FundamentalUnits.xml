@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<main>
+    <unitSystem>
+        <name>SI</name>
+        <dimensions>
+	        <dimension>
+	            <type>LENGTH</type>
+	            <unit>meter</unit>
+	        </dimension>
+	        <dimension>
+	            <type>TEMPERATURE</type>
+	            <unit>kelvin</unit>
+	        </dimension>
+	        <dimension>
+	            <type>MASS</type>
+	            <unit>gram</unit>
+	        </dimension>	
+	        <dimension>
+	            <type>TIME</type>
+	            <unit>second</unit>
+	        </dimension>	
+	        <dimension>
+	            <type>AMT_OF_SUBSTANCE</type>
+	            <unit>mole</unit>
+	        </dimension>	    
+	        <dimension>
+	            <type>LUMINOUS_INTENSITY</type>
+	            <unit>candela</unit>
+	        </dimension>	          
+	        <dimension>
+	            <type>CURRENT</type>
+	            <unit>ampere</unit>
+	        </dimension>	
+	        <dimension>
+	            <type>CURRENCY</type>
+	            <unit>euro</unit>
+	        </dimension>                                 
+        </dimensions>
+    </unitSystem>
+    <unitSystem>
+    	<name>British Imperial</name>
+    	<dimensions>
+    	    
+    	</dimensions>
+    </unitSystem>
+</main>

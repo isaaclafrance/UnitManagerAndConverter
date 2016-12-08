@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/favoriteConversionsLinearLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/unit_browse_activity_background"
+    android:gravity="center|top"
+    android:padding="5dp"
+    android:orientation="vertical"
+    tools:context=".ConversionFavoritesActivity" >
+    
+    <LinearLayout
+        android:id="@+id/conversionListLinearLayout"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="5"
+        android:background="@drawable/unit_selection_linear_layout_border"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="10dp" >
+
+        <TextView
+            android:id="@+id/favoriteConversionViewLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="Favorite Conversions"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textSize="30sp"
+            android:textStyle="bold" />
+
+        <ListView
+            android:id="@+id/conversionListView"
+            android:layout_width="401dp"
+            android:layout_height="371dp"
+            android:layout_weight="0.23"
+            android:choiceMode="singleChoice"
+            android:clickable="true"
+            android:longClickable="true"
+            android:scrollbarStyle="outsideOverlay"
+            android:textAlignment="center"
+            tools:listitem="@android:layout/simple_list_item_checked" >
+
+        </ListView>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/buttonsLinearLayout"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:padding="10dp" >
+
+        <Button
+            android:id="@+id/selectButton"
+            android:layout_width="0dp"
+            android:layout_height="fill_parent"
+            android:layout_weight="1"
+            android:padding="10dp"
+            android:text="SELECT"
+            android:textSize="25sp" />
+
+        <Button
+            android:id="@+id/removeButton"
+            android:layout_width="0dp"
+            android:layout_height="fill_parent"
+            android:layout_weight="1"
+            android:padding="10dp"
+            android:text="REMOVE"
+            android:textSize="25sp" />
+
+        <Button
+            android:id="@+id/cancelButton"
+            android:layout_width="0dp"
+            android:layout_height="fill_parent"
+            android:layout_weight="1"
+            android:padding="10dp"
+            android:text="CANCEL"
+            android:textSize="25sp" />
+
+    </LinearLayout>
+
+</LinearLayout>
