@@ -1,4 +1,4 @@
-package com.example.unitconverter;
+package com.example.unitconverter.app;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,7 +22,18 @@ import android.widget.MultiAutoCompleteTextView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.example.unitconverter.Quantity;
+import com.example.unitconverter.R;
+import com.example.unitconverter.Unit;
+import com.example.unitconverter.UnitManagerFactory;
+import com.example.unitconverter.R.id;
+import com.example.unitconverter.R.layout;
+import com.example.unitconverter.R.menu;
 import com.example.unitconverter.UnitManager.UNIT_TYPE;
+import com.example.unitconverter.dao.CurrencyUnitsMapXMLReader;
+import com.example.unitconverter.dao.FundUnitsMapXmlReader;
+import com.example.unitconverter.dao.PrefixesMapXmlReader;
+import com.example.unitconverter.dao.UnitsMapXmlReader;
 
 public class MainActivity extends FragmentActivity implements LoaderManager.LoaderCallbacks<UnitManagerFactory>{
 	PersistentSharablesApplication pSharablesApplication;
@@ -319,7 +330,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 	
 	private void setFromValue(){
 		if(!fromValueText.getText().toString().equalsIgnoreCase("")){
-			float quantValue = Float.parseFloat(fromValueText.getText().toString());
+			double quantValue = Double.parseDouble(fromValueText.getText().toString());
 			fromQuantity.setValue(quantValue);			
 		}
 	}

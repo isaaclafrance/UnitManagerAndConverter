@@ -1,4 +1,4 @@
-package com.example.unitconverter;
+package com.example.unitconverter.dao;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -11,6 +11,8 @@ import java.util.Map;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
+
+import com.example.unitconverter.UnitManagerFactory;
 
 import android.support.v4.content.AsyncTaskLoader;
 import android.content.Context;
@@ -38,7 +40,7 @@ public class PrefixesMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 	}
 		
 	//// Process Prefix XML's elements
-	public Map<String, Float> loadPrefixesNAbbreviationsFromXML(InputStream in) throws XmlPullParserException, IOException{
+	public Map<String, Double> loadPrefixesNAbbreviationsFromXML(InputStream in) throws XmlPullParserException, IOException{
 		try{
 			parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
 			parser.setInput(in, null);
@@ -50,14 +52,14 @@ public class PrefixesMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 		}
 	}
 	
-	private Map<String, Float> readPrefixXML(XmlPullParser parser) throws XmlPullParserException, IOException{
+	private Map<String, Double> readPrefixXML(XmlPullParser parser) throws XmlPullParserException, IOException{
 		String tagName = "";
 		////
 		String prefixName = "";
 		String abbrev = "";
-		Float prefixValue = 0.0f;
+		double prefixValue = 0.0f;
 		////
-		Map<String, Float> prefixMap = new HashMap<String, Float>();
+		Map<String, Double> prefixMap = new HashMap<String, Double>();
 		////
 		tagName = parser.getName();
 		if(tagName.equalsIgnoreCase("main")){
@@ -78,7 +80,7 @@ public class PrefixesMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 						}else if(tagName.equalsIgnoreCase("abbreviation")){
 							abbrev = readText(parser);
 						}else if(tagName.equalsIgnoreCase("value")){
-							prefixValue = readFloat(parser);
+							prefixValue = readdouble(parser);
 						}else{
 							skip(parser);
 						}	
@@ -118,15 +120,15 @@ public class PrefixesMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 		}
 		return text;
 	}
-	private Float readFloat(XmlPullParser parser) throws IOException, XmlPullParserException{
-		return Float.valueOf(readText(parser));
+	private double readdouble(XmlPullParser parser) throws IOException, XmlPullParserException{
+		return Double.valueOf(readText(parser));
 	}
 	
 	//// Loader Methods
 	@Override
 	public UnitManagerFactory loadInBackground() {
-		Map<String, Float> map_CorePrefixesNAbbreviations = new HashMap<String, Float>();
-		Map<String, Float> map_DynamicPrefixesNAbbreviations = new HashMap<String, Float>();
+		Map<String, Double> map_CorePrefixesNAbbreviations = new HashMap<String, Double>();
+		Map<String, Double> map_DynamicPrefixesNAbbreviations = new HashMap<String, Double>();
 		
 		try{
 			if(isSourceOnline){

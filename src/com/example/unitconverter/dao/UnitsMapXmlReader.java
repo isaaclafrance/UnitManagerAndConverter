@@ -1,4 +1,4 @@
-package com.example.unitconverter;
+package com.example.unitconverter.dao;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -12,6 +12,9 @@ import java.util.Map.Entry;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
+
+import com.example.unitconverter.Unit;
+import com.example.unitconverter.UnitManagerFactory;
 
 import android.content.Context;
 import android.support.v4.content.AsyncTaskLoader;
@@ -51,10 +54,10 @@ public class UnitsMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 		}
 	}
 	private ArrayList<ArrayList<Unit>> readUnitsXML(XmlPullParser parser) throws XmlPullParserException, IOException{
-		Map<String, Float[]> baseConversionPolyCoeffs = new HashMap<String, Float[]>();
+		Map<String, double[]> baseConversionPolyCoeffs = new HashMap<String, double[]>();
 	
 		ArrayList<Unit> partiallyConstructedUnitsArray = new ArrayList<Unit>();
-		ArrayList<Map<String, Float>> componentUnitsExponentsMap_Array = new ArrayList<Map<String,Float>>(); 
+		ArrayList<Map<String, Double>> componentUnitsExponentsMap_Array = new ArrayList<Map<String,Double>>(); 
 		ArrayList<String> baseUnitNameArray = new ArrayList<String>();
 		
 		Map<String, Unit> baseUnitsMap = new HashMap<String, Unit>();
@@ -91,7 +94,7 @@ public class UnitsMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 						}else if(tagName.equalsIgnoreCase("baseConversionPolyCoeffs")){
 							//Read base unit name and associated conversion polynomials
 							baseConversionPolyCoeffs = readBaseUnitNConversionPolyCoeffs(parser);
-							for(Entry<String, Float[]> entry:baseConversionPolyCoeffs.entrySet()){
+							for(Entry<String, double[]> entry:baseConversionPolyCoeffs.entrySet()){
 								baseUnitNameArray.add(entry.getKey());
 							}							
 						}
@@ -102,7 +105,7 @@ public class UnitsMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 				}
 						
 				//Use stored information from XML file to partially construct a new unit. The created units are missing base unit info, component unit info, and conversion polynomial info. Then places the unit in the unit map.
-				Unit constructedUnit = new Unit(unitNameString, unitCategoryString, unitCategoryString, unitSystemString, abbreviationString, new HashMap<String, Float>(), new Unit(baseUnitNameArray.get(baseUnitNameArray.size()-1), new HashMap<String, Float>(), true ), baseConversionPolyCoeffs.get(baseUnitNameArray.get(baseUnitNameArray.size()-1)));
+				Unit constructedUnit = new Unit(unitNameString, unitCategoryString, unitCategoryString, unitSystemString, abbreviationString, new HashMap<String, Double>(), new Unit(baseUnitNameArray.get(baseUnitNameArray.size()-1), new HashMap<String, Double>(), true ), baseConversionPolyCoeffs.get(baseUnitNameArray.get(baseUnitNameArray.size()-1)));
 				
 				//Adds newly constructed unit to base units map if base unit otherwise adds unit to dynamic units map.
 				if(constructedUnit.isBaseUnit()){
@@ -121,8 +124,8 @@ public class UnitsMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 		
 		//Adds component units info to each partially constructed unit. 		
 		int index = 0;	
-		for(Map<String, Float> compUnitsMap:componentUnitsExponentsMap_Array){ 
-			for(Entry<String, Float> compMapEntry:compUnitsMap.entrySet()){
+		for(Map<String, Double> compUnitsMap:componentUnitsExponentsMap_Array){ 
+			for(Entry<String, Double> compMapEntry:compUnitsMap.entrySet()){
 				partiallyConstructedUnitsArray.get(index).addComponentUnit(compMapEntry.getKey(), compMapEntry.getValue());
 			}
 			index++;
@@ -169,10 +172,10 @@ public class UnitsMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 		parser.require(XmlPullParser.END_TAG, null, "unitCategory");
 		return abbreviation;
 	}	
-	private Map<String, Float> readComponentUnits(XmlPullParser parser) throws XmlPullParserException, IOException{
-		Map<String, Float> componentUnitsExponentsMap = new HashMap<String, Float>();
+	private Map<String, Double> readComponentUnits(XmlPullParser parser) throws XmlPullParserException, IOException{
+		Map<String, Double> componentUnitsExponentsMap = new HashMap<String, Double>();
 		String componentUnitName = "";
-		Float componentExponentValue = 0.0f;
+		double componentExponentValue = 0.0f;
 		String tagName = "";
 		
 		parser.require(XmlPullParser.START_TAG, null, "componentUnits");
@@ -191,7 +194,7 @@ public class UnitsMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 					if(tagName.equalsIgnoreCase("unitName")){
 						componentUnitName = readText(parser);
 					}else if(tagName.equalsIgnoreCase("exponent")){
-						componentExponentValue = readFloat(parser);
+						componentExponentValue = readdouble(parser);
 					}
 					else{
 						skip(parser);
@@ -205,10 +208,10 @@ public class UnitsMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 		}
 		return componentUnitsExponentsMap;
 	}
-	private Map<String, Float[]> readBaseUnitNConversionPolyCoeffs(XmlPullParser parser) throws XmlPullParserException, IOException{
-		Map<String, Float[]> conversionPolyCoeffsMap = new HashMap<String, Float[]>();
+	private Map<String, double[]> readBaseUnitNConversionPolyCoeffs(XmlPullParser parser) throws XmlPullParserException, IOException{
+		Map<String, double[]> conversionPolyCoeffsMap = new HashMap<String, double[]>();
 		String baseUnitName = "";
-		Float[] polynomialCoeffs = new Float[]{0.0f, 0.0f};
+		double[] polynomialCoeffs = new double[]{0.0f, 0.0f};
 		String tagName = "";
 		
 		parser.require(XmlPullParser.START_TAG, null, "baseConversionPolyCoeffs");
@@ -220,7 +223,7 @@ public class UnitsMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 			if(tagName.equalsIgnoreCase("baseUnit")){
 				baseUnitName = readText(parser);
 			}else if(tagName.equals("polynomialCoeffs")){ //If no conversion polynomial coeffs were provided, then the default is {0.0f, 0.0f}
-				polynomialCoeffs = readFloats(parser);
+				polynomialCoeffs = readdoubles(parser);
 			}
 			else{
 				skip(parser);
@@ -257,18 +260,18 @@ public class UnitsMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 		}
 		return text;
 	}
-	private Float[] readFloats(XmlPullParser parser) throws IOException, XmlPullParserException{
-		Float[] floats = new Float[2];
-		String[] floatTexts = readText(parser).split(" ");
+	private double[] readdoubles(XmlPullParser parser) throws IOException, XmlPullParserException{
+		double[] doubles = new double[2];
+		String[] doubleTexts = readText(parser).split(" ");
 		
-		if(floatTexts.length >= 2){
-			floats[0] = Float.valueOf(floatTexts[0]);
-			floats[1] = Float.valueOf(floatTexts[1]);
+		if(doubleTexts.length >= 2){
+			doubles[0] = Double.valueOf(doubleTexts[0]);
+			doubles[1] = Double.valueOf(doubleTexts[1]);
 		}
-		return floats;
+		return doubles;
 	}
-	private Float readFloat(XmlPullParser parser) throws IOException, XmlPullParserException{
-		return Float.valueOf(readText(parser));
+	private double readdouble(XmlPullParser parser) throws IOException, XmlPullParserException{
+		return Double.valueOf(readText(parser));
 	}
 	
 	//// Loader Methods

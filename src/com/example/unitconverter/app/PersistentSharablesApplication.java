@@ -1,10 +1,16 @@
-package com.example.unitconverter;
+package com.example.unitconverter.app;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 
 import org.xmlpull.v1.XmlPullParserException;
+
+import com.example.unitconverter.Unit;
+import com.example.unitconverter.UnitManager;
+import com.example.unitconverter.UnitManagerFactory;
+import com.example.unitconverter.dao.PrefixesMapXmlWriter;
+import com.example.unitconverter.dao.UnitsMapXmlWriter;
 
 import android.app.Application;
 
@@ -95,7 +101,7 @@ public class PersistentSharablesApplication extends Application{
 		getUnitManager().addUnit(unit);		
 		unitManagerUnitsContentChanged = true;
 	}
-	public void addPrefixToUnitManager(String prefixName, String abbreviation, Float prefixValue){
+	public void addPrefixToUnitManager(String prefixName, String abbreviation, double prefixValue){
 		getUnitManager().addDynamicPrefix(prefixName, abbreviation, prefixValue);;		
 		unitManagerPrefixesContentChanged = true;
 	}

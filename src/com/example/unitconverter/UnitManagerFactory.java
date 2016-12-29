@@ -11,8 +11,8 @@ public class UnitManagerFactory {
 	boolean[] componentStates; // Indicates which component has been added. [0] -> base units maps, [1] -> non-base units map, [2] -> core prefixes map, [3] -> dynamic prefixes map, [4] -> fundamental units map
 	private ArrayList<Unit> baseUnits;
 	private ArrayList<Unit> nonBaseUnits;
-	private Map<String, Float> corePrefixesNAbbreviationsMap;
-	private Map<String, Float> dynamicPrefixesNAbbreviationsMap;
+	private Map<String, Double> corePrefixesNAbbreviationsMap;
+	private Map<String, Double> dynamicPrefixesNAbbreviationsMap;
 	private Map<String, Map<String, UNIT_TYPE>> fundUnitsMap;
 	
 	public UnitManagerFactory(){
@@ -20,8 +20,8 @@ public class UnitManagerFactory {
 		baseUnits = new ArrayList<Unit>();
 		nonBaseUnits = new ArrayList<Unit>();
 		fundUnitsMap = new HashMap<String, Map<String,UNIT_TYPE>>();
-		corePrefixesNAbbreviationsMap = new HashMap<String, Float>();
-		dynamicPrefixesNAbbreviationsMap = new HashMap<String, Float>();
+		corePrefixesNAbbreviationsMap = new HashMap<String, Double>();
+		dynamicPrefixesNAbbreviationsMap = new HashMap<String, Double>();
 	}
 	
 	//
@@ -37,13 +37,13 @@ public class UnitManagerFactory {
 			componentStates[1] = true;
 		}
 	}
-	public void setCorePrefixesNAbbreviationsMapComponent(Map<String, Float> prefixesMap){
+	public void setCorePrefixesNAbbreviationsMapComponent(Map<String, Double> prefixesMap){
 		if(!prefixesMap.isEmpty()){
 			this.corePrefixesNAbbreviationsMap = prefixesMap;
 			componentStates[2] = true;
 		}
 	}
-	public void setDynamicPrefixesNAbbreviationsMapComponent(Map<String, Float> prefixesMap){
+	public void setDynamicPrefixesNAbbreviationsMapComponent(Map<String, Double> prefixesMap){
 		if(!prefixesMap.isEmpty()){
 			this.dynamicPrefixesNAbbreviationsMap = prefixesMap;
 			componentStates[3] = true;
@@ -71,10 +71,10 @@ public class UnitManagerFactory {
 		ArrayList<Unit> combinedNonBaseUnits = factory1.nonBaseUnits; combinedNonBaseUnits.addAll(factory2.nonBaseUnits);
 		combinedFactory.setNonBaseUnitsComponent(combinedNonBaseUnits);
 		
-		Map<String, Float> combinedCorePrefixMap = factory1.corePrefixesNAbbreviationsMap; combinedCorePrefixMap.putAll(factory2.corePrefixesNAbbreviationsMap);
+		Map<String, Double> combinedCorePrefixMap = factory1.corePrefixesNAbbreviationsMap; combinedCorePrefixMap.putAll(factory2.corePrefixesNAbbreviationsMap);
 		combinedFactory.setCorePrefixesNAbbreviationsMapComponent(combinedCorePrefixMap);
 		 
-		Map<String, Float> combinedDynamicPrefixMap = factory1.dynamicPrefixesNAbbreviationsMap; combinedDynamicPrefixMap.putAll(factory2.dynamicPrefixesNAbbreviationsMap);
+		Map<String, Double> combinedDynamicPrefixMap = factory1.dynamicPrefixesNAbbreviationsMap; combinedDynamicPrefixMap.putAll(factory2.dynamicPrefixesNAbbreviationsMap);
 		combinedFactory.setDynamicPrefixesNAbbreviationsMapComponent(combinedDynamicPrefixMap); 
 		
 		Map<String, Map<String, UNIT_TYPE>> combinedFundUnitsMap = factory1.fundUnitsMap; combinedFundUnitsMap.putAll(factory2.fundUnitsMap);
@@ -119,13 +119,13 @@ public class UnitManagerFactory {
 	}
 	public void updateManager(UnitManager unitManager){
 		if(areMinComponentsForCreationAvailable()){
-			for(Entry<String, Float> prefixEntry:corePrefixesNAbbreviationsMap.entrySet()){
+			for(Entry<String, Double> prefixEntry:corePrefixesNAbbreviationsMap.entrySet()){
 				unitManager.addCorePrefix(prefixEntry.getKey().split("::")[0], 
 						                  prefixEntry.getKey().split("::")[1], prefixEntry.getValue());
 			}
 				
 			if(componentStates[3]){
-				for(Entry<String, Float> prefixEntry:dynamicPrefixesNAbbreviationsMap.entrySet()){
+				for(Entry<String, Double> prefixEntry:dynamicPrefixesNAbbreviationsMap.entrySet()){
 					unitManager.addDynamicPrefix(prefixEntry.getKey().split("::")[0], 
 												 prefixEntry.getKey().split("::")[1], prefixEntry.getValue());
 				}

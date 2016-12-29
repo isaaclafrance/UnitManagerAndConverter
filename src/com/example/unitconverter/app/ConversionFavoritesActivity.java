@@ -1,9 +1,14 @@
-package com.example.unitconverter;
+package com.example.unitconverter.app;
 
 import android.graphics.Color;
 import android.os.Bundle;
 
 import java.util.ArrayList;
+
+import com.example.unitconverter.R;
+import com.example.unitconverter.R.id;
+import com.example.unitconverter.R.layout;
+import com.example.unitconverter.R.menu;
 
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.LoaderManager;

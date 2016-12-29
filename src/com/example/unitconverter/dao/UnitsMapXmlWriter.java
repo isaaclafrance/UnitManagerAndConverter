@@ -1,4 +1,4 @@
-package com.example.unitconverter;
+package com.example.unitconverter.dao;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -10,6 +10,8 @@ import java.util.Map.Entry;
 import org.xmlpull.v1.XmlPullParserFactory;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlSerializer;
+
+import com.example.unitconverter.Unit;
 
 import android.content.Context;
 
@@ -67,14 +69,14 @@ public class UnitsMapXmlWriter {
 		serializer.endTag(namespace, "unitCategory");
 		
 		serializer.startTag(namespace, "componentUnits");
-			for(Entry<String, Float> entry:unit.getComponentUnitsExponentMap().entrySet()){
+			for(Entry<String, Double> entry:unit.getComponentUnitsExponentMap().entrySet()){
 				serializer.startTag(namespace, "component");
 					serializer.startTag(namespace, "unitName");
 						serializer.text(entry.getKey());
 					serializer.endTag(namespace, "unitName");
 					
 					serializer.startTag(namespace, "exponent");
-						serializer.text(Float.toString(entry.getValue()));
+						serializer.text(Double.toString(entry.getValue()));
 					serializer.endTag(namespace, "exponent");
 				serializer.endTag(namespace, "component");
 			}
@@ -88,7 +90,7 @@ public class UnitsMapXmlWriter {
 			serializer.startTag(namespace, "polynomialCoeffs");
 				String polyCoeffsString = "";
 				for(int i=0;i<unit.getBaseConversionPolyCoeffs().length;i++){
-					polyCoeffsString += Float.toString(unit.getBaseConversionPolyCoeffs()[i])+" ";
+					polyCoeffsString += Double.toString(unit.getBaseConversionPolyCoeffs()[i])+" ";
 				}
 				serializer.text(polyCoeffsString);
 			serializer.endTag(namespace, "polynomialCoeffs");		

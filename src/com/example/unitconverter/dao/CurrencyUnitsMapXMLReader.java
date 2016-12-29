@@ -1,4 +1,4 @@
-package com.example.unitconverter;
+package com.example.unitconverter.dao;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -13,6 +13,9 @@ import java.util.regex.Pattern;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
+
+import com.example.unitconverter.Unit;
+import com.example.unitconverter.UnitManagerFactory;
 
 import android.content.Context;
 import android.support.v4.content.AsyncTaskLoader;
@@ -50,16 +53,16 @@ public class CurrencyUnitsMapXMLReader extends AsyncTaskLoader<UnitManagerFactor
 		}
 	}
 	private ArrayList<ArrayList<Unit>> readUnitsXML(XmlPullParser parser) throws XmlPullParserException, IOException{
-		Map<String, Float[]> baseConversionPolyCoeffs = new HashMap<String, Float[]>();
+		Map<String, double[]> baseConversionPolyCoeffs = new HashMap<String, double[]>();
 	
 		Map<String, Unit> unitsMap = new HashMap<String, Unit>();
 		
-		Map<String, Float> componentUnitsExponentMap = new HashMap<String, Float>();
+		Map<String, Double> componentUnitsExponentMap = new HashMap<String, Double>();
 		
 		String unitName = "", unitSystem = "si", abbreviation = "", unitCategory = "currency_unit", tagName = "", updateTime = "";
 
 		//Create Euro unit that is the basis of all the calculations
-		Unit baseUnit = new Unit(baseUnitName, unitCategory, "", unitSystem, "eur", new HashMap<String, Float>(), new Unit(), new Float[]{1.0f, 0.0f});
+		Unit baseUnit = new Unit(baseUnitName, unitCategory, "", unitSystem, "eur", new HashMap<String, Double>(), new Unit(), new double[]{1.0f, 0.0f});
 		baseUnit.addComponentUnit(baseUnitName, 1.0f);
 		baseUnit.setBaseUnit(baseUnit);
 		
@@ -95,8 +98,8 @@ public class CurrencyUnitsMapXMLReader extends AsyncTaskLoader<UnitManagerFactor
 									abbreviation = readAbbreviation(parser);
 									
 									//Set component units
-									componentUnitsExponentMap = new HashMap<String, Float>();
-									componentUnitsExponentMap.put(unitName, 1.0f);	
+									componentUnitsExponentMap = new HashMap<String, Double>();
+									componentUnitsExponentMap.put(unitName, 1.0);	
 									
 									//Read base unit name and associated conversion polynomials
 									baseConversionPolyCoeffs = readBaseConversionPolyCoeffs(parser);
@@ -151,9 +154,9 @@ public class CurrencyUnitsMapXMLReader extends AsyncTaskLoader<UnitManagerFactor
 	private String readUpdateTime(XmlPullParser parser) throws XmlPullParserException, IOException{
 		return readAttribute(parser, "time");
 	}
-	private Map<String, Float[]> readBaseConversionPolyCoeffs(XmlPullParser parser) throws XmlPullParserException, IOException{
-		Map<String, Float[]> conversionPolyCoeffsMap = new HashMap<String, Float[]>();
-		Float[] polynomialCoeffs = new Float[]{Float.parseFloat(readAttribute(parser, "rate")), 0.0f};
+	private Map<String, double[]> readBaseConversionPolyCoeffs(XmlPullParser parser) throws XmlPullParserException, IOException{
+		Map<String, double[]> conversionPolyCoeffsMap = new HashMap<String, double[]>();
+		double[] polynomialCoeffs = new double[]{Double.parseDouble(readAttribute(parser, "rate")), 0.0};
 		conversionPolyCoeffsMap.put(baseUnitName, polynomialCoeffs);
 		
 		return conversionPolyCoeffsMap;

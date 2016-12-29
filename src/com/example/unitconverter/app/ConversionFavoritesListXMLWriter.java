@@ -1,4 +1,4 @@
-package com.example.unitconverter;
+package com.example.unitconverter.app;
 
 import java.io.IOException;
 import java.io.OutputStream;

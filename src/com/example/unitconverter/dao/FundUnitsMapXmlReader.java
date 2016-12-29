@@ -1,4 +1,4 @@
-package com.example.unitconverter;
+package com.example.unitconverter.dao;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,6 +13,8 @@ import android.content.Context;
 import android.support.v4.content.AsyncTaskLoader;
 import android.util.Xml;
 
+import com.example.unitconverter.UnitManager;
+import com.example.unitconverter.UnitManagerFactory;
 import com.example.unitconverter.UnitManager.UNIT_TYPE;
 
 //Loads and creates a map of unit systems and unit namee that are associates with fundamental units

@@ -9,7 +9,7 @@ import com.example.unitconverter.UnitManager.UNIT_TYPE;
 public class Quantity {
 	//Fields
 	private UnitManager unitManagerRef;
-	private float value;
+	private double value;
 	private Unit unit;
 	
 	//Constructors
@@ -18,12 +18,12 @@ public class Quantity {
 		this.unit = new Unit();
 		this.unitManagerRef = unit.getUnitManagerRef();
 	}
-	public Quantity(float value, Unit unit){
+	public Quantity(double value, Unit unit){
 		this.value = value;
 		this.unit = unit;
 		this.unitManagerRef = unit.getUnitManagerRef();
 	}
-	public Quantity(float value){
+	public Quantity(double value){
 		this.value = value;
 		this.unit = new Unit();
 		this.unitManagerRef = unit.getUnitManagerRef();
@@ -33,7 +33,7 @@ public class Quantity {
 		this.unit = unit;
 		this.unitManagerRef = unit.getUnitManagerRef();
 	}
-	public Quantity(float value, String unitDimensionString, UnitManager unitManager){
+	public Quantity(double value, String unitDimensionString, UnitManager unitManager){
 		this.unitManagerRef = unitManager;
 		this.value = value;
 		ArrayList<Unit> matchingUnits =  unitManager.getUnitsByComponentUnitsDimension(unitDimensionString);
@@ -48,7 +48,7 @@ public class Quantity {
 		if(valueRegExMatcher.find()){
 			unitString = valueNUnitString.substring(valueRegExMatcher.end());
 			String valueString = valueNUnitString.substring(0, valueRegExMatcher.end());
-			value = Float.valueOf(valueString);
+			value = Double.valueOf(valueString);
 			
 		}
 		else{
@@ -99,7 +99,7 @@ public class Quantity {
 		}
 	}
 	public Quantity convertToUnit(Unit targetUnit){
-		float newValue;
+		double newValue;
 		
 		if(unit.equalsDimension(targetUnit)){
 			if(unit.getComponentUnitsExponentMap().keySet().size() == 1 && this.unit.getComponentUnitsExponentMap().entrySet().iterator().next().getValue() == 1){
@@ -124,7 +124,7 @@ public class Quantity {
 					unit = correspondingUnits.get(0);
 				}
 				
-				float conversionFactor = unitManagerRef.getConversionFactorToUnitSystem(unit, targetUnitSystemString)[0];
+				double conversionFactor = unitManagerRef.getConversionFactorToUnitSystem(unit, targetUnitSystemString)[0];
 				
 				if(conversionFactor > 0){
 					value = this.value * conversionFactor; 
@@ -145,7 +145,7 @@ public class Quantity {
 	}
 	
 	///
-	public float getValue(){
+	public double getValue(){
 		return value;
 	}
 	public Unit getUnit(){
@@ -156,7 +156,7 @@ public class Quantity {
 		this.unit = unit;
 		this.unitManagerRef = unit.getUnitManagerRef();
 	}
-	public void setValue(float value){
+	public void setValue(double value){
 		this.value = value;
 	}
 	

@@ -1,4 +1,4 @@
-package com.example.unitconverter;
+package com.example.unitconverter.dao;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -22,7 +22,7 @@ public class PrefixesMapXmlWriter {
 		prefixesXmlDestination = "DynamicPrefixes.xml";
 	}
 	
-	public void savePrefixToXML(Context context, Map<String, Float> prefixDictionary) throws XmlPullParserException, IllegalArgumentException, IllegalStateException, IOException{
+	public void savePrefixToXML(Context context, Map<String, Double> prefixDictionary) throws XmlPullParserException, IllegalArgumentException, IllegalStateException, IOException{
 		OutputStream xmlFileOutputStream = context.openFileOutput(prefixesXmlDestination, 0);
 		Writer xmlStreamWriter = new OutputStreamWriter(xmlFileOutputStream);			
 		
@@ -35,13 +35,13 @@ public class PrefixesMapXmlWriter {
 			serializer.startDocument("UTF-8", true);
 			serializer.startTag(namespace, "main");
 			
-			for(Entry<String, Float> entry:prefixDictionary.entrySet()){
+			for(Entry<String, Double> entry:prefixDictionary.entrySet()){
 				serializer.startTag(namespace, "prefix");
 					serializer.startTag(namespace, "name");
 						serializer.text(entry.getKey());
 					serializer.endTag(namespace, "name");
 					serializer.startTag(namespace, "value");
-						serializer.text(Float.toString(entry.getValue()));
+						serializer.text(Double.toString(entry.getValue()));
 					serializer.endTag(namespace, "value");
 				serializer.endTag(namespace, "prefix");
 			}
