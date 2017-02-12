@@ -5,10 +5,8 @@ import android.os.Bundle;
 
 import java.util.ArrayList;
 
-import com.example.unitconverter.R;
-import com.example.unitconverter.R.id;
-import com.example.unitconverter.R.layout;
-import com.example.unitconverter.R.menu;
+import com.example.unitconverter.app.R;
+import com.example.unitconverter.dao.ConversionFavoritesListXMLReader;
 
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.LoaderManager;
@@ -86,8 +84,8 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
 				String[] categoryNconversionUnits_names = selectedConversion.split(": ");
 				String[] conversionUnitNames = categoryNconversionUnits_names[1].split(" --> ");
 				
-				pSharablesApplication.setFromUnit(pSharablesApplication.getUnitManager().getUnit(conversionUnitNames[0]));
-				pSharablesApplication.setToUnit(pSharablesApplication.getUnitManager().getUnit(conversionUnitNames[1]));
+				pSharablesApplication.getFromQuantity().setUnit(pSharablesApplication.getUnitManager().getUnit(conversionUnitNames[0]));
+				pSharablesApplication.getToQuantity().setUnit(pSharablesApplication.getUnitManager().getUnit(conversionUnitNames[1]));
 				
 				//
 				finish();
@@ -120,8 +118,7 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
 			@Override
 			public void onItemClick(AdapterView<?> arg0, View arg1, int position,
 					long arg3) {
-				arg0.getChildAt(selectedConversionPosition).setBackgroundColor(Color.TRANSPARENT);				
-				setSelection((String)arg0.getItemAtPosition(position), position);
+				setSelection((String)arg0.getItemAtPosition(position), position);							
 				arg0.getChildAt(position).setBackgroundColor(Color.WHITE);		
 			}
 			

@@ -22,24 +22,17 @@ import android.widget.MultiAutoCompleteTextView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.example.unitconverter.Quantity;
-import com.example.unitconverter.R;
+import com.example.unitconverter.app.R;
 import com.example.unitconverter.Unit;
-import com.example.unitconverter.UnitManagerFactory;
-import com.example.unitconverter.R.id;
-import com.example.unitconverter.R.layout;
-import com.example.unitconverter.R.menu;
 import com.example.unitconverter.UnitManager.UNIT_TYPE;
+import com.example.unitconverter.UnitManagerFactory;
 import com.example.unitconverter.dao.CurrencyUnitsMapXMLReader;
 import com.example.unitconverter.dao.FundUnitsMapXmlReader;
 import com.example.unitconverter.dao.PrefixesMapXmlReader;
 import com.example.unitconverter.dao.UnitsMapXmlReader;
 
 public class MainActivity extends FragmentActivity implements LoaderManager.LoaderCallbacks<UnitManagerFactory>{
-	PersistentSharablesApplication pSharablesApplication;
-	//
-	Quantity fromQuantity;
-	Quantity toQuantity;	
+	PersistentSharablesApplication pSharablesApplication;	
 	//
 	ProgressBar unitManagerLoaderProgressBar;
 	TextView progressBarTextView;
@@ -52,13 +45,6 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 	TextView fromValueText;
 	MultiAutoCompleteTextView toUnitText;
 	TextView conversionValueText;
-	//
-	String prevFromUnitText; //Stores text that had been previously stored in 'From Unit' textbox
-	String prevToUnitText; //Stores text that had been previously stored in 'To Unit' textbox
-	//
-	int GENERAL_UNITS_LOADER = 1, FUND_UNITS_LOADER = 2, CURRENCY_UNITS_LOADER = 3, PREFIXES_LOADER= 4;
-	//
-	int numOfLoaderCompleted; 
 	
 	//
 	@Override
@@ -71,45 +57,39 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 		//
 		setupUIComponents();
 		
-		//
-		prevFromUnitText = "&<>?!#";
-		prevToUnitText = "&<>?!#";
-		
 		setListenersOnMainButtons();
 		setListenersOnTextViews();
 		
 		loadUnitManager();
 		
-		//
-		fromQuantity = new Quantity();
-		toQuantity = new Quantity();	
 	}
 	@Override
 	protected void onPause(){
 		super.onPause();;
-		
-		pSharablesApplication.savePrefixesNUnits();
-		//pSharablesApplication.saveConversionFavorites();
 	}
 	@Override
 	public void onWindowFocusChanged(boolean hasFocus) {
 		super.onWindowFocusChanged(hasFocus);
 		
-		if (!pSharablesApplication.getFromUnit().getUnitName().equalsIgnoreCase(fromUnitText.toString())
-			&& !pSharablesApplication.getFromUnit().getUnitName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME)	){
-			fromUnitText.setText(pSharablesApplication.getFromUnit().getUnitName());
-			setFromUnit();
+		if(hasFocus){
+			if (!pSharablesApplication.getFromQuantity().getUnit().getUnitName().equalsIgnoreCase(fromUnitText.toString())
+				&& !pSharablesApplication.getFromQuantity().getUnit().getUnitName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME)	){
+				fromUnitText.setText(pSharablesApplication.getFromQuantity().getUnit().getUnitName());
+				setFromUnit();
+			}
+			
+			if (!pSharablesApplication.getToQuantity().getUnit().getUnitName().equalsIgnoreCase(toUnitText.toString())
+				&& !pSharablesApplication.getToQuantity().getUnit().getUnitName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME)){
+				toUnitText.setText(pSharablesApplication.getToQuantity().getUnit().getUnitName());
+				setToUnit();
+			}		
+			
+			checkUnits();
 		}
-		
-		if (!pSharablesApplication.getToUnit().getUnitName().equalsIgnoreCase(toUnitText.toString())
-			&& !pSharablesApplication.getToUnit().getUnitName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME)){
-			toUnitText.setText(pSharablesApplication.getToUnit().getUnitName());
-			setToUnit();
-		}		
-		
-		checkUnits();
-		
-		pSharablesApplication.saveConversionFavorites();
+		else{
+			pSharablesApplication.savePrefixesNUnits();
+			pSharablesApplication.saveConversionFavorites();
+		}
 	}
 	
 	@Override
@@ -122,8 +102,9 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 	public boolean onOptionsItemSelected(MenuItem item){
 		switch(item.getItemId()){
 		case R.id.addToFavoritesItem:
-			String conversion = pSharablesApplication.getFromUnit().getUnitCategory().toUpperCase()+": "+pSharablesApplication.getFromUnit().getUnitName() + " --> " + pSharablesApplication.getToUnit().getUnitName();
-			if(!pSharablesApplication.getConversionFavoritesList().contains(conversion)){
+			String conversion = pSharablesApplication.getFromQuantity().getUnit().getUnitCategory().toUpperCase()+": "+pSharablesApplication.getFromQuantity().getUnit().getUnitName() + " --> " + pSharablesApplication.getToQuantity().getUnit().getUnitName();
+			if(!pSharablesApplication.getConversionFavoritesList().contains(conversion)
+					&& pSharablesApplication.getFromQuantity().getUnit().equalsDimension(pSharablesApplication.getToQuantity().getUnit())){
 				pSharablesApplication.addConversionToConversionFavoritesList(conversion);	
 				Collections.sort(pSharablesApplication.getConversionFavoritesList());
 			}
@@ -173,25 +154,23 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 	
 	//Data Loading Methods
 	private void loadUnitManager(){
-		numOfLoaderCompleted = 0;
-		
-		getSupportLoaderManager().initLoader(GENERAL_UNITS_LOADER, null, this).forceLoad();
-		getSupportLoaderManager().initLoader(PREFIXES_LOADER, null, this).forceLoad();
-		getSupportLoaderManager().initLoader(FUND_UNITS_LOADER, null, this).forceLoad();	
-		getSupportLoaderManager().initLoader(CURRENCY_UNITS_LOADER, null, this).forceLoad();
-		
-		//
-		((LinearLayout)findViewById(R.id.progressBarLinearLayout)).setVisibility(View.VISIBLE);
-		((LinearLayout)findViewById(R.id.fromLinearLayout)).setVisibility(View.INVISIBLE);
-		((LinearLayout)findViewById(R.id.switchLinearLayout)).setVisibility(View.INVISIBLE);
-		((LinearLayout)findViewById(R.id.toLinearLayout)).setVisibility(View.INVISIBLE);
-		
+		if(!pSharablesApplication.isUnitManagerPreReqLoadingComplete()){
+			getSupportLoaderManager().initLoader(pSharablesApplication.GENERAL_UNITS_LOADER, null, this).forceLoad();
+			getSupportLoaderManager().initLoader(pSharablesApplication.PREFIXES_LOADER, null, this).forceLoad();
+			getSupportLoaderManager().initLoader(pSharablesApplication.FUND_UNITS_LOADER, null, this).forceLoad();	
+			getSupportLoaderManager().initLoader(pSharablesApplication.CURRENCY_UNITS_LOADER, null, this).forceLoad();
+			
+			//
+			((LinearLayout)findViewById(R.id.progressBarLinearLayout)).setVisibility(View.VISIBLE);
+			((LinearLayout)findViewById(R.id.fromLinearLayout)).setVisibility(View.INVISIBLE);
+			((LinearLayout)findViewById(R.id.switchLinearLayout)).setVisibility(View.INVISIBLE);
+			((LinearLayout)findViewById(R.id.toLinearLayout)).setVisibility(View.INVISIBLE);
+		}
 	}
 	
 	//Listeners Methods
 	private void setListenersOnMainButtons(){
-		MainActivity.this.fromQuantity = new Quantity() ;
-		
+
 		fromUnitBrowseButton.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View view){
@@ -216,7 +195,9 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 				setFromUnit();
 				setToUnit();
 				checkUnits();
-	
+				
+				setFromValue();
+				
 				getConversion();
 			}
 		});
@@ -226,8 +207,10 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 			
 			@Override
 			public void onFocusChange(View v, boolean hasFocus) {
-				setFromUnit();
-				checkUnits();
+				if(!hasFocus){
+					setFromUnit();
+					checkUnits();
+				}
 			}
 		});
 		
@@ -235,8 +218,10 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 			
 			@Override
 			public void onFocusChange(View v, boolean hasFocus) {
-				setToUnit();
-				checkUnits();
+				if(!hasFocus){
+					setToUnit();
+					checkUnits();
+				}
 			}
 		});
 		
@@ -244,7 +229,9 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 			
 			@Override
 			public void onFocusChange(View v, boolean hasFocus) {
-				setFromValue();
+				if(!hasFocus){
+					setFromValue();
+				}
 			}
 		});
 	}
@@ -278,6 +265,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 		
 		fromUnitText.setThreshold(1);
 		toUnitText.setThreshold(1);
+		
+		unitsNamesNPrefixes_Adapter.notifyDataSetChanged();
 	}
 	
 	//
@@ -293,55 +282,52 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 		
 		ArrayList<Unit> matchedUnits =  new ArrayList<Unit>();	
 		
-		if(!prevToUnitText.equalsIgnoreCase(unitNameOrDimension)){
-			if(unitNameOrDimension.equals("")){
+		if(!((isToUnit)?pSharablesApplication.getToQuantity().getUnit():pSharablesApplication.getFromQuantity().getUnit()).getUnitName().equalsIgnoreCase(unitNameOrDimension)){
+			if(unitNameOrDimension.equals("") ){
 				matchedUnits.add(pSharablesApplication.getUnitManager().getUnit(Unit.UNKNOWN_UNIT_NAME));
 			}
 			else if(unitNameOrDimension.contains("*") || unitNameOrDimension.contains("/") || unitNameOrDimension.contains("^")
 				   || unitNameOrDimension.contains("(") || unitNameOrDimension.contains(")")){
-				matchedUnits = pSharablesApplication.getUnitManager().getUnitsByComponentUnitsDimension(unitNameOrDimension);
-			}
+				
+				matchedUnits = pSharablesApplication.getUnitManager().getUnitsByComponentUnitsDimension(unitNameOrDimension, false);
+				
+				//If unit manager does not already contains units with similar dimension, then added a newly created version of such unit and store it in the unit manager for easy future access
+				if(matchedUnits.isEmpty()){
+					matchedUnits.add(pSharablesApplication.getUnitManager().getUnit(unitNameOrDimension));
+				}
+			}	
 			else{
 				matchedUnits.add(pSharablesApplication.getUnitManager().getUnit(unitNameOrDimension));
-			}	
-			
-			//
+			}
+		}
+		else{
+			matchedUnits.add(isToUnit?pSharablesApplication.getToQuantity().getUnit():pSharablesApplication.getFromQuantity().getUnit());
+		}
+		
+		if(!matchedUnits.isEmpty()){
 			if(isToUnit){
-				prevToUnitText = unitNameOrDimension;
+				pSharablesApplication.getToQuantity().setUnit(matchedUnits.get(0));
 			}
-			else {
-				prevFromUnitText = unitNameOrDimension;
+			else{
+				pSharablesApplication.getFromQuantity().setUnit(matchedUnits.get(0));
 			}
 		}
-		else{
-			matchedUnits.add(isToUnit?pSharablesApplication.getToUnit():pSharablesApplication.getFromUnit());
-		}
-		
-		//
-		(isToUnit?toQuantity:fromQuantity).setUnit(matchedUnits.get(0));
-		
-		if(isToUnit){
-			pSharablesApplication.setToUnit(matchedUnits.get(0));
-		}
-		else{
-			pSharablesApplication.setFromUnit(matchedUnits.get(0));
-		}	
 	}
 	
 	private void setFromValue(){
 		if(!fromValueText.getText().toString().equalsIgnoreCase("")){
 			double quantValue = Double.parseDouble(fromValueText.getText().toString());
-			fromQuantity.setValue(quantValue);			
+			pSharablesApplication.getFromQuantity().setValue(quantValue);			
 		}
 	}
 	
 	//
 	private void checkUnits(){
-		if(!fromQuantity.getUnit().getFundamentalUnitsExponentMap().keySet().contains(UNIT_TYPE.UNKNOWN) 
-		   && !toQuantity.getUnit().getFundamentalUnitsExponentMap().keySet().contains(UNIT_TYPE.UNKNOWN)){
-			if(fromQuantity.getUnit().equalsDimension(toQuantity.getUnit())){	
+		if(!pSharablesApplication.getFromQuantity().getUnit().getFundamentalUnitsExponentMap().keySet().contains(UNIT_TYPE.UNKNOWN) 
+		   && !pSharablesApplication.getToQuantity().getUnit().getFundamentalUnitsExponentMap().keySet().contains(UNIT_TYPE.UNKNOWN)){
+			if(pSharablesApplication.getFromQuantity().getUnit().equalsDimension(pSharablesApplication.getToQuantity().getUnit())){	
 				conversionValueText.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.fade_in));
-				conversionValueText.setText("##: Units Match");				
+				conversionValueText.setText("##:Units Match");				
 				
 				//
 				fromUnitText.setTextColor(Color.BLACK);
@@ -350,7 +336,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 			}
 			else{
 				conversionValueText.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.fade_in));
-				conversionValueText.setText("XX: Units Don't Match");
+				conversionValueText.setText("XX:Units Don't Match");
 				
 				//
 				fromUnitText.setTextColor(Color.rgb(180, 0, 0));
@@ -359,20 +345,21 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 			}
 		}
 		else{	
-			boolean isToUnk = toQuantity.getUnit().getFundamentalUnitsExponentMap().keySet().contains(UNIT_TYPE.UNKNOWN);
-			boolean isFromUkn = fromQuantity.getUnit().getFundamentalUnitsExponentMap().keySet().contains(UNIT_TYPE.UNKNOWN);
+			boolean isToUnk = pSharablesApplication.getToQuantity().getUnit().getFundamentalUnitsExponentMap().keySet().contains(UNIT_TYPE.UNKNOWN);
+			boolean isFromUkn = pSharablesApplication.getFromQuantity().getUnit().getFundamentalUnitsExponentMap().keySet().contains(UNIT_TYPE.UNKNOWN);
 		
 			if(isToUnk && isFromUkn){
 				conversionValueText.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.fade_in));
-				conversionValueText.setText("??: 'FROM' & 'TO' Units are Unknown");
+				conversionValueText.setText("??:'FROM'&'TO' Units Unknown");
 				
 				//
+				fromUnitText.setTextColor(Color.rgb(180, 0, 0));
 				toUnitText.setTextColor(Color.rgb(180, 0, 0));
 				conversionValueText.setTextColor(Color.rgb(200, 0, 0));				
 			}
 			else if(isToUnk){
 				conversionValueText.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.fade_in));
-				conversionValueText.setText("#?: 'TO' Unit is Unknown");
+				conversionValueText.setText("#?:'TO' Unit Unknown");
 				
 				//
 				fromUnitText.setTextColor(Color.rgb(0, 0, 0));				
@@ -382,7 +369,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 			}		
 			else if(isFromUkn){
 				conversionValueText.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.fade_in));
-				conversionValueText.setText("?#: 'FROM' Unit is Unknown");
+				conversionValueText.setText("?#:'FROM' Unit Unknown");
 				
 				//
 				fromUnitText.setTextColor(Color.rgb(180, 0, 0));
@@ -397,13 +384,16 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 		}		
 	}
 	private void getConversion(){
-		if(!fromQuantity.getUnit().getFundamentalUnitsExponentMap().keySet().contains(UNIT_TYPE.UNKNOWN) 
-		   && !toQuantity.getUnit().getFundamentalUnitsExponentMap().keySet().contains(UNIT_TYPE.UNKNOWN)){
-			if(fromQuantity.getUnit().equalsDimension(toQuantity.getUnit())){
-				toQuantity = fromQuantity.convertToUnit(toQuantity.getUnit());	
+		if(!pSharablesApplication.getFromQuantity().getUnit().getFundamentalUnitsExponentMap().keySet().contains(UNIT_TYPE.UNKNOWN) 
+		   && !pSharablesApplication.getToQuantity().getUnit().getFundamentalUnitsExponentMap().keySet().contains(UNIT_TYPE.UNKNOWN)){
+			
+			if(pSharablesApplication.getFromQuantity().getUnit().equalsDimension(pSharablesApplication.getToQuantity().getUnit())){
+				
+				pSharablesApplication.getToQuantity().setValue(pSharablesApplication.getFromQuantity()
+													          .convertToUnit(pSharablesApplication.getToQuantity().getUnit()).getValue());	
 				
 				conversionValueText.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.slide_in_left));
-				conversionValueText.setText(String.valueOf(toQuantity.getValue()));
+				conversionValueText.setText(String.valueOf(pSharablesApplication.getToQuantity().getValue()));
 			}
 		}
 	}
@@ -411,13 +401,13 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 	//Loader Manager methods
 	@Override
 	public Loader<UnitManagerFactory> onCreateLoader(int id, Bundle arg1) {
-		if(id == GENERAL_UNITS_LOADER){
+		if(id == pSharablesApplication.GENERAL_UNITS_LOADER){
 			 return new UnitsMapXmlReader(this);
-		}else if(id == PREFIXES_LOADER){
+		}else if(id == pSharablesApplication.PREFIXES_LOADER){
 			return new PrefixesMapXmlReader(this);	
-		}else if(id == FUND_UNITS_LOADER){
+		}else if(id == pSharablesApplication.FUND_UNITS_LOADER){
 			return new FundUnitsMapXmlReader(this);
-		}else if(id == CURRENCY_UNITS_LOADER){
+		}else if(id == pSharablesApplication.CURRENCY_UNITS_LOADER){
 			return new CurrencyUnitsMapXMLReader(this);
 		}else{
 			return null;
@@ -427,9 +417,9 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 	@Override
 	public void onLoadFinished(Loader<UnitManagerFactory> loader, UnitManagerFactory loadedUnitManagerFactory) {
 		pSharablesApplication.setUnitManagerFactory(UnitManagerFactory.combineUnitManagerFactories(pSharablesApplication.getUnitManagerFactory()
-				            		             												  ,loadedUnitManagerFactory));
-		
-  		if(pSharablesApplication.getUnitManagerFactory().areMinComponentsForCreationAvailable() && ++numOfLoaderCompleted == 4){
+				            		             												  ,loadedUnitManagerFactory));	
+		pSharablesApplication.numOfLoaderCompleted++;
+  		if(pSharablesApplication.isUnitManagerPreReqLoadingComplete()){
   			postLoadSetup();
   		}
 	}

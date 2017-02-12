@@ -6,46 +6,50 @@ import java.util.ArrayList;
 
 import org.xmlpull.v1.XmlPullParserException;
 
+import com.example.unitconverter.Quantity;
 import com.example.unitconverter.Unit;
 import com.example.unitconverter.UnitManager;
 import com.example.unitconverter.UnitManagerFactory;
+import com.example.unitconverter.dao.ConversionFavoritesListXMLWriter;
 import com.example.unitconverter.dao.PrefixesMapXmlWriter;
 import com.example.unitconverter.dao.UnitsMapXmlWriter;
 
 import android.app.Application;
 
 public class PersistentSharablesApplication extends Application{
-	private boolean unitManagerUnitsContentChanged; //Indicates if units and/or prefixed have been added to unit manager instance since first load
-	private boolean unitManagerPrefixesContentChanged; //Indicates if units and/or prefixed have been added to unit manager instance since first load
 	private boolean conversionFavoriteListChanged;
 	private UnitManagerFactory unitManagerFactory;
 	private UnitManager unitManager;
 	private ArrayList<String> conversionFavoritesList;
-	private Unit fromUnit;
-	private Unit toUnit;	
+	private Quantity fromQuantity;
+	private Quantity toQuantity;	
+	public int numOfLoaderCompleted; 
+	public int initialUnitNum, initialPrefixNum;
+	
+	
+	public final int GENERAL_UNITS_LOADER = 1, FUND_UNITS_LOADER = 2, CURRENCY_UNITS_LOADER = 3, PREFIXES_LOADER= 4;
 	
 	public PersistentSharablesApplication(){
 		unitManager = null;
-		unitManagerUnitsContentChanged = false;
-		unitManagerPrefixesContentChanged = false;
 		conversionFavoriteListChanged = false;
 		conversionFavoritesList = new ArrayList<String>();
 		setUnitManagerFactory(new UnitManagerFactory());
-		setFromUnit(getUnitManager().getUnit(Unit.UNKNOWN_UNIT_NAME));
-		setToUnit(getUnitManager().getUnit(Unit.UNKNOWN_UNIT_NAME));
+		fromQuantity = new Quantity();
+		toQuantity = new Quantity();
+		numOfLoaderCompleted = 0;
+		initialUnitNum = initialPrefixNum = 0;
 	}
 		
 	public void savePrefixesNUnits(){
 		try {
-			if(unitManagerUnitsContentChanged){
+			if(unitManager.getDynamicUnits().size() > initialUnitNum){
 				ArrayList<Unit> allUnits = new ArrayList<Unit>();
-				allUnits.addAll(getUnitManager().getCoreUnits());
-				//allUnits.addAll(getUnitManager().getDynamicUnits());
+				allUnits.addAll(getUnitManager().getDynamicUnits());
 				
-				new UnitsMapXmlWriter().saveUnitsToXML(getApplicationContext(), allUnits);
+				UnitsMapXmlWriter.saveUnitsToXML(getApplicationContext(), allUnits);
 			}
-			if(unitManagerPrefixesContentChanged){
-				new PrefixesMapXmlWriter().savePrefixToXML(getApplicationContext(), getUnitManager().getAllPrefixValues());
+			if(unitManager.getAllPrefixValues().size() > initialUnitNum){
+				PrefixesMapXmlWriter.savePrefixToXML(getApplicationContext(), getUnitManager().getAllPrefixValues());
 			}
 		} catch (IllegalArgumentException e) {
 			e.printStackTrace();
@@ -62,7 +66,7 @@ public class PersistentSharablesApplication extends Application{
 	public void saveConversionFavorites(){
 		try {
 			if(conversionFavoriteListChanged){
-				new ConversionFavoritesListXMLWriter().saveToXML(this, conversionFavoritesList);
+				ConversionFavoritesListXMLWriter.saveToXML(this, conversionFavoritesList);
 			}
 		} catch (IllegalArgumentException e) {
 			e.printStackTrace();
@@ -78,10 +82,10 @@ public class PersistentSharablesApplication extends Application{
 	}
 	
 	//	
-	UnitManagerFactory getUnitManagerFactory(){
+	public UnitManagerFactory getUnitManagerFactory(){
 		return unitManagerFactory;
 	}
-	void setUnitManagerFactory(UnitManagerFactory unitManagerFactory){
+	public void setUnitManagerFactory(UnitManagerFactory unitManagerFactory){
 		this.unitManagerFactory = unitManagerFactory;
 	}	
 	
@@ -91,34 +95,25 @@ public class PersistentSharablesApplication extends Application{
 		}
 		return unitManager;
 	}	
-	void recreateUnitManager(){
+	public void recreateUnitManager(){
 		if(unitManagerFactory != null){
 			unitManager = unitManagerFactory.createUnitManager();
+			if(isUnitManagerPreReqLoadingComplete()){
+				initialUnitNum = unitManager.getDynamicUnits().size();
+				initialPrefixNum = unitManager.getAllPrefixValues().size();
+			}
 		}
 	}
-	//Wrapper for modifying Unit Manager
-	public void addUnitToUnitManager(Unit unit){
-		getUnitManager().addUnit(unit);		
-		unitManagerUnitsContentChanged = true;
-	}
-	public void addPrefixToUnitManager(String prefixName, String abbreviation, double prefixValue){
-		getUnitManager().addDynamicPrefix(prefixName, abbreviation, prefixValue);;		
-		unitManagerPrefixesContentChanged = true;
+	public boolean isUnitManagerPreReqLoadingComplete(){
+		return unitManagerFactory.areMinComponentsForCreationAvailable() && numOfLoaderCompleted == 4;
 	}
 	
 	//
-	public Unit getFromUnit(){
-		return fromUnit;
+	public Quantity getFromQuantity(){
+		return fromQuantity;
 	}
-	public void setFromUnit(Unit fromUnit){
-		this.fromUnit = fromUnit;
-	}	
-	
-	public Unit getToUnit(){
-		return toUnit;
-	}
-	public void setToUnit(Unit toUnit){
-		this.toUnit = toUnit;
+	public Quantity getToQuantity(){
+		return toQuantity;
 	}
 		
 	//

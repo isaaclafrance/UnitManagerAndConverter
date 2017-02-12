@@ -2,11 +2,8 @@ package com.example.unitconverter.app;
 
 import java.util.ArrayList;
 
-import com.example.unitconverter.R;
+import com.example.unitconverter.app.R;
 import com.example.unitconverter.Unit;
-import com.example.unitconverter.R.id;
-import com.example.unitconverter.R.layout;
-import com.example.unitconverter.R.menu;
 
 import android.os.Bundle;
 import android.app.Activity;
@@ -30,7 +27,8 @@ public class UnitBrowserActivity extends Activity {
 	Button selectButton;
 	Button cancelButton;
 	//
-	String callerButtonName;
+	String oppositeUnitType;
+	String callerButtonUnitType;
 	String categoryName;
 
 	//
@@ -44,20 +42,21 @@ public class UnitBrowserActivity extends Activity {
 		setupUIComponents();
 
 		//
-		callerButtonName = "";
+		oppositeUnitType = "";
 		categoryName = "";
 		
 		//Receive unit category based on the category of the unit type for which activity was invoked
 		Bundle extras = getIntent().getExtras();
-		if(extras != null){
-			callerButtonName = extras.getString("buttonName");
+		if(extras != null){			
+			callerButtonUnitType = extras.getString("buttonName");
+			oppositeUnitType = callerButtonUnitType.equalsIgnoreCase("to") ? "from":"to";
 		}
 		
-		if(callerButtonName.equalsIgnoreCase("to")){
-			categoryName = pSharablesApplication.getToUnit().getUnitCategory();
+		if(oppositeUnitType.equalsIgnoreCase("to")){
+			categoryName = pSharablesApplication.getToQuantity().getUnit().getUnitCategory();
 		}
-		else if(callerButtonName.equalsIgnoreCase("from")){
-			categoryName = pSharablesApplication.getFromUnit().getUnitCategory();
+		else if(oppositeUnitType.equalsIgnoreCase("from")){
+			categoryName = pSharablesApplication.getFromQuantity().getUnit().getUnitCategory();
 		}
 			
 		//
@@ -92,13 +91,13 @@ public class UnitBrowserActivity extends Activity {
 			public void onClick(View view){
 				Unit selectedUnit = pSharablesApplication.getUnitManager().getUnit((String)unitSpinner.getSelectedItem());
 				
-				if(callerButtonName.equalsIgnoreCase("from")){
-					pSharablesApplication.setFromUnit(selectedUnit);				
+				if(callerButtonUnitType.equalsIgnoreCase("from")){
+					pSharablesApplication.getFromQuantity().setUnit(selectedUnit);				
 				}
-				else if(callerButtonName.equalsIgnoreCase("to")){
-					pSharablesApplication.setToUnit(selectedUnit);
+				else if(callerButtonUnitType.equalsIgnoreCase("to")){
+					pSharablesApplication.getToQuantity().setUnit(selectedUnit);
 				}
-
+				
 				finish();
 			}
 		});
@@ -179,7 +178,7 @@ public class UnitBrowserActivity extends Activity {
 		populateUnitSpinner();
 	}
 	private void populateDimensionFilterSpinner(){
-		String[] filterList = new String[]{"| All | Unit Types", "| "+callerButtonName+" | "+"Unit Type"};
+		String[] filterList = new String[]{"| All | Unit Types", "| "+oppositeUnitType+" | "+"Unit Type"};
 		
 		ArrayAdapter<String> filterAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, filterList);
 		dimFilterSpinner.setAdapter(filterAdapter);
@@ -194,8 +193,8 @@ public class UnitBrowserActivity extends Activity {
 			unitSystemNamesList.remove(pSharablesApplication.getUnitManager().getUnit(Unit.UNKNOWN_UNIT_NAME).getUnitSystem());
 		}
 		else{
-			if(pSharablesApplication.getFromUnit().getUnitName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) && callerButtonName.equalsIgnoreCase("to") ||
-			   pSharablesApplication.getToUnit().getUnitName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) && callerButtonName.equalsIgnoreCase("from") ){ 
+			if(pSharablesApplication.getToQuantity().getUnit().getUnitName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) && oppositeUnitType.equalsIgnoreCase("to") ||
+			   pSharablesApplication.getFromQuantity().getUnit().getUnitName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) && oppositeUnitType.equalsIgnoreCase("from") ){ 
 				
 			   unitSystemNamesList.add("No Compatible Unit Systems");	
 			}
@@ -229,8 +228,9 @@ public class UnitBrowserActivity extends Activity {
 	private void populateUnitSpinner(){
 		ArrayList<String> unitsList = new ArrayList<String>(); 
 		
-		if(pSharablesApplication.getFromUnit().getUnitName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) && callerButtonName.equalsIgnoreCase("to") ||
-			pSharablesApplication.getToUnit().getUnitName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) && callerButtonName.equalsIgnoreCase("from") ){ 
+		if((pSharablesApplication.getToQuantity().getUnit().getUnitName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) && oppositeUnitType.equalsIgnoreCase("to") ||
+			pSharablesApplication.getFromQuantity().getUnit().getUnitName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) && oppositeUnitType.equalsIgnoreCase("from")) 
+				&& !((String)dimFilterSpinner.getSelectedItem()).equals("| All | Unit Types")){ 
 					
 				   unitsList.add("No Compatible Units");	
 		}
