@@ -75,6 +75,7 @@
             android:ems="10"
             android:fadingEdge="horizontal"
             android:fadingEdgeLength="10dp"
+            android:hint="Format: a, a^#, (prefix-a)^#, a^# / b^#,  a^# * b^#, etc"
             android:textSize="@dimen/from_unit_text_size"
             android:textStyle="bold" />
 
@@ -178,6 +179,7 @@
             android:ems="10"
             android:fadingEdge="horizontal"
             android:fadingEdgeLength="10dp"
+            android:hint="Format: a, a^#, (prefix-a)^#, a^# / b^#,  a^# * b^#, etc"
             android:textSize="@dimen/to_unit_text_size"
             android:textStyle="bold" />
 
@@ -239,7 +241,7 @@
                 android:paddingBottom="@dimen/conversion_value_bottom_padding"
                 android:text="@string/preConversionValue_text"
                 android:textAppearance="?android:attr/textAppearanceLarge"
-                android:textSize="35sp" />
+                android:textSize="25sp" />
 
         </LinearLayout>
 

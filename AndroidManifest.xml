@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.unitconverter"
+    package="com.example.unitconverter.app"
     android:versionCode="1"
     android:versionName="1.0" >
 
@@ -11,6 +11,7 @@
      <uses-permission android:name="android.permission.INTERNET"></uses-permission>
      <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"></uses-permission>
      <uses-permission android:name="android.permission.READ_PHONE_STATE"></uses-permission>
+	<uses-permission  android:name="android.permission.WRITE_EXTERNAL_STORAGE"></uses-permission>>
 
     <application
         android:allowBackup="true"
@@ -20,7 +21,7 @@
         android:theme="@style/AppTheme">
         
         <activity
-            android:name="com.example.unitconverter.MainActivity"
+            android:name="com.example.unitconverter.app.MainActivity"
             android:screenOrientation="portrait"
             android:label="@string/app_name" 
             android:launchMode="singleInstance">
@@ -32,14 +33,14 @@
         </activity>
         
         <activity 
-            android:name="com.example.unitconverter.UnitBrowserActivity"
+            android:name="com.example.unitconverter.app.UnitBrowserActivity"         
             android:label="@string/activity_unit_browse_name"
             android:screenOrientation="portrait"
             android:configChanges="keyboardHidden|orientation|screenSize">
         </activity>
         
         <activity 
-            android:name="com.example.unitconverter.ConversionFavoritesActivity" 
+            android:name="com.example.unitconverter.app.ConversionFavoritesActivity" 
             android:label="@string/activity_conversion_favorites_name"
             android:screenOrientation="portrait"
             android:configChanges="keyboardHidden|orientation|screenSize"
