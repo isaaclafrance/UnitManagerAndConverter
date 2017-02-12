@@ -4,24 +4,7 @@
 <!-- Unit Types Listing Order: TRIGONOMETRIC, ELECTRICITY AND MAGNETISM, RADIATION, OPTICS, TEMPERATURE, ENERGY, POWER, FORCE, PRESSURE, FLUID MECHANICS, MASS, LENGTH, TIME, AREA, VOLUME, COMPUTER  -->
 
 <!-- TRIGONOMETRIC UNITS -->
-	
-	<unit>
-	   	<unitName>hertz</unitName>
-	   	<unitSystem>si</unitSystem>
-	    <abbreviation>hz</abbreviation>
-	   	<unitCategory>trigonometric_unit</unitCategory>
-	    <componentUnits>
-	        <component>
-	            <unitName>second</unitName>
-	            <exponent>-1.0f</exponent>
-	        </component>
-	    </componentUnits>
-	    <baseConversionPolyCoeffs>
-	    	<baseUnit>radian</baseUnit>
-	        <polynomialCoeffs>6.283f 0.0f</polynomialCoeffs> 	                  
-	    </baseConversionPolyCoeffs>
-	</unit>  
-	
+		
 	<unit>
 	   	<unitName>degree</unitName>
 	   	<unitSystem>si</unitSystem>
@@ -100,7 +83,7 @@
 	
 	<unit>
 	    <unitName>fahrenheit</unitName>	    
-	    <unitSystem>si</unitSystem>
+	    <unitSystem>us customary system</unitSystem>
 	    <abbreviation>F</abbreviation>
 	    <unitCategory>temperature_unit</unitCategory>
 	    <componentUnits>
@@ -117,7 +100,7 @@
 	
 	<unit>
 	    <unitName>rankine</unitName>	    
-	    <unitSystem>si</unitSystem>
+	    <unitSystem>us customary system</unitSystem>
 	    <abbreviation>R</abbreviation>
 	    <unitCategory>temperature_unit</unitCategory>
 	    <componentUnits>
@@ -163,7 +146,91 @@
 	
 <!-- PRESSURE UNITS -->	
 
+	<unit>
+	   	<unitName>pascal</unitName>
+	   	<unitSystem>si</unitSystem>
+	    <abbreviation>pa</abbreviation>
+	    <unitCategory>pressure_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>newton</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	       	<component>
+	            <unitName>meter</unitName>
+	            <exponent>-2.0f</exponent>
+	        </component>	        
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	        <baseUnit>pascal</baseUnit>
+	       	<polynomialCoeffs>1.0f 0.0f</polynomialCoeffs> 	                   
+	    </baseConversionPolyCoeffs>
+	</unit> 
+	
+	<unit>
+	   	<unitName>pound_per_square_inch</unitName>
+	   	<unitSystem>us customary system</unitSystem>
+	    <abbreviation>psi</abbreviation>
+	    <unitCategory>pressure_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>pound_force</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	       	<component>
+	            <unitName>inch</unitName>
+	            <exponent>-2.0f</exponent>
+	        </component>	        
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	        <baseUnit>pascal</baseUnit>
+	       	<polynomialCoeffs>6894.76 0.0</polynomialCoeffs> 	                   
+	    </baseConversionPolyCoeffs>
+	</unit> 
+
 <!-- FORCE UNITS -->
+		
+	<unit>
+	   	<unitName>newton</unitName>
+	   	<unitSystem>si</unitSystem>
+	    <abbreviation>N</abbreviation>
+	    <unitCategory>force_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>kilo-gram</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>	        
+	        <component>
+	            <unitName>Meter</unitName>
+	            <exponent>2.0f</exponent>
+	        </component>
+	       	<component>
+	            <unitName>second</unitName>
+	            <exponent>-2.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	    	<baseUnit>newton</baseUnit>
+	        <polynomialCoeffs>1.0f 0.0f</polynomialCoeffs> 	                 
+	    </baseConversionPolyCoeffs>
+	</unit> 
+	
+	<unit>
+	   	<unitName>pound_force</unitName>
+	   	<unitSystem>us customary system</unitSystem>
+	    <abbreviation>lbf</abbreviation>
+	    <unitCategory>force_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>pound_force</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>	        
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	    	<baseUnit>newton</baseUnit>
+	        <polynomialCoeffs>4.44822 0.0</polynomialCoeffs> 	                 
+	    </baseConversionPolyCoeffs>
+	</unit> 	
 		
 <!-- FLUID MECHANICS -->		
 		
@@ -202,6 +269,40 @@
 	        <polynomialCoeffs>1000.0f 0.0f</polynomialCoeffs> 	                   
 	    </baseConversionPolyCoeffs>
 	</unit> 
+	
+	<unit>
+	   	<unitName>pound</unitName>
+	   	<unitSystem>us customary system</unitSystem>
+	    <abbreviation>lb</abbreviation>
+	    <unitCategory>mass_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>pound</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>	        
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	        <baseUnit>gram</baseUnit>
+	       	<polynomialCoeffs>0.00220462f 0.0f</polynomialCoeffs> 	                   
+	    </baseConversionPolyCoeffs>
+	</unit>
+	
+	<unit>
+	   	<unitName>ton</unitName>
+	   	<unitSystem>us customary system</unitSystem>
+	    <abbreviation>ton</abbreviation>
+	    <unitCategory>mass_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>ton</unitName>
+	            <exponent>1.0</exponent>
+	        </component>	        
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	        <baseUnit>gram</baseUnit>
+	       	<polynomialCoeffs>1.10231e-6 0.0</polynomialCoeffs> 	                   
+	    </baseConversionPolyCoeffs>
+	</unit> 
 		
 <!-- LENGTH -->	
 
@@ -221,7 +322,75 @@
 	        <polynomialCoeffs>1.0f 0.0f</polynomialCoeffs> 	                 
 	    </baseConversionPolyCoeffs>
 	</unit>  
+	
+	<unit>
+	   	<unitName>inch</unitName>
+	   	<unitSystem>us customary system</unitSystem>
+	    <abbreviation>in</abbreviation>
+	    <unitCategory>length_unit</unitCategory>	    
+	    <componentUnits>
+	        <component>
+	            <unitName>inch</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	    	<baseUnit>meter</baseUnit>
+	        <polynomialCoeffs>0.0254 0.0</polynomialCoeffs> 	                 
+	    </baseConversionPolyCoeffs>
+	</unit>  
 
+	<unit>
+	   	<unitName>feet</unitName>
+	   	<unitSystem>us customary system</unitSystem>
+	    <abbreviation>ft</abbreviation>
+	    <unitCategory>length_unit</unitCategory>	    
+	    <componentUnits>
+	        <component>
+	            <unitName>feet</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	    	<baseUnit>meter</baseUnit>
+	        <polynomialCoeffs>0.3048 0.0</polynomialCoeffs> 	                 
+	    </baseConversionPolyCoeffs>
+	</unit> 
+	
+	<unit>
+	   	<unitName>yard</unitName>
+	   	<unitSystem>us customary system</unitSystem>
+	    <abbreviation>yd</abbreviation>
+	    <unitCategory>length_unit</unitCategory>	    
+	    <componentUnits>
+	        <component>
+	            <unitName>yard</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	    	<baseUnit>meter</baseUnit>
+	        <polynomialCoeffs>0.9144 0.0</polynomialCoeffs> 	                 
+	    </baseConversionPolyCoeffs>
+	</unit> 
+	
+	<unit>
+	   	<unitName>mile</unitName>
+	   	<unitSystem>us customary system</unitSystem>
+	    <abbreviation>mi</abbreviation>
+	    <unitCategory>length_unit</unitCategory>	    
+	    <componentUnits>
+	        <component>
+	            <unitName>mile</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	    	<baseUnit>meter</baseUnit>
+	        <polynomialCoeffs>1609.34 0.0</polynomialCoeffs> 	                 
+	    </baseConversionPolyCoeffs>
+	</unit> 
+	
 <!-- TIME -->	
 	
 	<unit>
@@ -329,7 +498,57 @@
 <!-- AREA -->
 
 <!-- VOLUME -->
-		
+	<unit>
+	    <unitName>cubic_meter</unitName>	    
+	    <unitSystem>si</unitSystem>
+	    <abbreviation>m3</abbreviation>
+	    <unitCategory>volume_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>meter</unitName>
+	            <exponent>3.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	       	<baseUnit>cubic_meter</baseUnit>
+	        <polynomialCoeffs>1.0f 0.0f</polynomialCoeffs>  	            
+	    </baseConversionPolyCoeffs>
+	</unit>
+	
+	<unit>
+	    <unitName>cup</unitName>	    
+	    <unitSystem>us customary system</unitSystem>
+	    <abbreviation>cup</abbreviation>
+	    <unitCategory>volume_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>cup</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	       	<baseUnit>cubic_meter</baseUnit>
+	        <polynomialCoeffs>0.000236588 0.0</polynomialCoeffs>  	            
+	    </baseConversionPolyCoeffs>
+	</unit>
+	
+	<unit>
+	    <unitName>pint</unitName>	    
+	    <unitSystem>us customary system</unitSystem>
+	    <abbreviation>pt</abbreviation>
+	    <unitCategory>volume_unit</unitCategory>
+	    <componentUnits>
+	        <component>
+	            <unitName>pint</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	       	<baseUnit>cup</baseUnit>
+	        <polynomialCoeffs>2.0 0.0</polynomialCoeffs>  	            
+	    </baseConversionPolyCoeffs>
+	</unit>
+	
 <!-- COMPUTER -->		
 		
 </main>
