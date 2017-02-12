@@ -36,7 +36,7 @@ public class Quantity {
 	public Quantity(double value, String unitDimensionString, UnitManager unitManager){
 		this.unitManagerRef = unitManager;
 		this.value = value;
-		ArrayList<Unit> matchingUnits =  unitManager.getUnitsByComponentUnitsDimension(unitDimensionString);
+		ArrayList<Unit> matchingUnits =  unitManager.getUnitsByComponentUnitsDimension(unitDimensionString, false);
 		this.unit = matchingUnits.get(0);	
 	}	
 	public Quantity(String valueNUnitString, UnitManager unitManager){
@@ -56,7 +56,7 @@ public class Quantity {
 			value = 0.0f;
 		}
 
-		ArrayList<Unit> matchingUnits =  unitManager.getUnitsByComponentUnitsDimension(unitString);
+		ArrayList<Unit> matchingUnits =  unitManager.getUnitsByComponentUnitsDimension(unitString, false);
 		this.unit = matchingUnits.get(0);		
 	}
 	
@@ -92,36 +92,21 @@ public class Quantity {
 	}
 	
 	///
-	public void convertToUnit_Self(Unit targetUnit){
-		if(this.unit.equalsDimension(targetUnit)){
-			this.value = this.value * unitManagerRef.getConversionFactorToTargetUnit(unit,targetUnit)[0];
-			this.unit = targetUnit;
-		}
-	}
 	public Quantity convertToUnit(Unit targetUnit){
-		double newValue;
-		
-		if(unit.equalsDimension(targetUnit)){
-			if(unit.getComponentUnitsExponentMap().keySet().size() == 1 && this.unit.getComponentUnitsExponentMap().entrySet().iterator().next().getValue() == 1){
-				newValue = value * unitManagerRef.getConversionFactorToTargetUnit(unit, targetUnit)[0];
-			}
-			else{
-				newValue = (value * unit.getBaseConversionPolyCoeffs()[0] + unit.getBaseConversionPolyCoeffs()[1] - targetUnit.getBaseConversionPolyCoeffs()[1])/targetUnit.getBaseConversionPolyCoeffs()[0];
-			}
-			return new Quantity(newValue, targetUnit);
-		}
-		else{
-			return new Quantity(0.0f, targetUnit);
-		}
+		double[] conversionFactor = unitManagerRef.getConversionFactorToTargetUnit(unit,targetUnit);
+		return new Quantity( this.value * conversionFactor[0] + conversionFactor[1],  targetUnit);
 	}
-	public void toUnitSystem_Self(String targetUnitSystemString){
+
+	public Quantity toUnitSystem(String targetUnitSystemString){
 		//Convert every component unit to one unit system. Makes sure to appropriately scale the value when returning new quantity.	Only uses current unit manager to perform conversion.	
+		double value = 0.0;
+		Unit targetUnit = new Unit();
 		if(unitManagerRef != null){
 			if(unit.getUnitType() != UNIT_TYPE.UNKNOWN){
 				ArrayList<Unit> correspondingUnits = unitManagerRef.getCorrespondingUnitsWithUnitSystem(unit, targetUnitSystemString);
 				
 				if(correspondingUnits.size()>0){
-					unit = correspondingUnits.get(0);
+					targetUnit = correspondingUnits.get(0);
 				}
 				
 				double conversionFactor = unitManagerRef.getConversionFactorToUnitSystem(unit, targetUnitSystemString)[0];
@@ -131,6 +116,7 @@ public class Quantity {
 				}	
 			}
 		}
+		return new Quantity(value, targetUnit);
 	}
 	
 	///
