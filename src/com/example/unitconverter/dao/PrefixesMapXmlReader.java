@@ -1,6 +1,7 @@
 package com.example.unitconverter.dao;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,13 +25,14 @@ public class PrefixesMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 	private XmlPullParser parser;
 	private boolean isSourceOnline; //Determines if XML loaded from an online server or from local source.
 	private String corePrefixesXmlSource;
-	private String dynamicPrefixesXmlSource = "DynamicPrefixes.xml";
+	private String dynamicPrefixesXmlSource;
 	
 	//Constructor
 	public PrefixesMapXmlReader(Context context){
 		super(context);
 		this.isSourceOnline = false;
 		corePrefixesXmlSource = "StandardCorePrefixes.xml";
+		dynamicPrefixesXmlSource = context.getFilesDir().getPath().toString() + "DynamicPrefixes.xml"; 
 		parser = Xml.newPullParser();
 	}
 	public PrefixesMapXmlReader(Context context, boolean isSourceOnline, String corePrefixesXmlSource){
@@ -144,7 +146,7 @@ public class PrefixesMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 				fileDPrefixes.createNewFile();
 			}
 		
-			map_DynamicPrefixesNAbbreviations = loadPrefixesNAbbreviationsFromXML(getContext().openFileInput(dynamicPrefixesXmlSource));
+			map_DynamicPrefixesNAbbreviations = loadPrefixesNAbbreviationsFromXML(new FileInputStream(dynamicPrefixesXmlSource));
 			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();

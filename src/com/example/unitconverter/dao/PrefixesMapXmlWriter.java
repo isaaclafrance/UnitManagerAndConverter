@@ -1,5 +1,6 @@
 package com.example.unitconverter.dao;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -15,15 +16,14 @@ import android.content.Context;
 
 public class PrefixesMapXmlWriter {
 	//Fields
-	private String prefixesXmlDestination = "DynamicPrefixes.xml";
+	private static String prefixesXmlDestination = "DynamicPrefixes.xml";
 	
 	//Constructors
 	public PrefixesMapXmlWriter(){	
-		prefixesXmlDestination = "DynamicPrefixes.xml";
 	}
 	
-	public void savePrefixToXML(Context context, Map<String, Double> prefixDictionary) throws XmlPullParserException, IllegalArgumentException, IllegalStateException, IOException{
-		OutputStream xmlFileOutputStream = context.openFileOutput(prefixesXmlDestination, 0);
+	public static void savePrefixToXML(Context context, Map<String, Double> prefixDictionary) throws XmlPullParserException, IllegalArgumentException, IllegalStateException, IOException{
+		OutputStream xmlFileOutputStream = new FileOutputStream(context.getFilesDir().getPath().toString() + prefixesXmlDestination, false);
 		Writer xmlStreamWriter = new OutputStreamWriter(xmlFileOutputStream);			
 		
 		try{

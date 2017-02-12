@@ -1,5 +1,6 @@
 package com.example.unitconverter.dao;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -17,16 +18,15 @@ import android.content.Context;
 
 public class UnitsMapXmlWriter {
 	//Fields
-	private String unitsXmlDestination;
+	private static String unitsXmlDestination = "DynamicUnits.xml";;
 	
 	//Constructor
 	public UnitsMapXmlWriter(){
-		unitsXmlDestination = "DynamicUnits.xml";
 	}
 	
 	//TODO: Write unit to XML file 
-	public void saveUnitsToXML(Context context, ArrayList<Unit> unitsDictionary) throws XmlPullParserException, IllegalArgumentException, IllegalStateException, IOException{
-		OutputStream xmlFileOutputStream = context.openFileOutput(unitsXmlDestination, 0);
+	public static void saveUnitsToXML(Context context, ArrayList<Unit> unitsDictionary) throws XmlPullParserException, IllegalArgumentException, IllegalStateException, IOException{
+		OutputStream xmlFileOutputStream = new FileOutputStream(context.getFilesDir().getPath().toString() + unitsXmlDestination, false);
 		Writer xmlStreamWriter = new OutputStreamWriter(xmlFileOutputStream);
 		
 		try{
@@ -51,7 +51,7 @@ public class UnitsMapXmlWriter {
 			
 		}
 	}
-	private void writeUnitXML(XmlSerializer serializer, String namespace, Unit unit) throws IllegalArgumentException, IllegalStateException, IOException{
+	private static void writeUnitXML(XmlSerializer serializer, String namespace, Unit unit) throws IllegalArgumentException, IllegalStateException, IOException{
 		serializer.startTag(namespace, "unitName");
 			serializer.text(unit.getUnitName());
 		serializer.endTag(namespace, "unitName");

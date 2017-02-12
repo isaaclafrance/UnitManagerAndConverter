@@ -210,8 +210,8 @@ public class CurrencyUnitsMapXMLReader extends AsyncTaskLoader<UnitManagerFactor
 		}
 		
 		UnitManagerFactory umcBundle = new UnitManagerFactory();
-		umcBundle.setNonBaseUnitsComponent(currencyUnitsGroup.get(0));
-		umcBundle.setBaseUnitsComponent(currencyUnitsGroup.get(1));
+		umcBundle.setNonBaseUnitsComponent(currencyUnitsGroup.get(1));
+		umcBundle.setBaseUnitsComponent(currencyUnitsGroup.get(0));
 		
 		return umcBundle;
 	}

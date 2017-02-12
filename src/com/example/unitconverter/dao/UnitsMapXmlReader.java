@@ -1,7 +1,9 @@
 package com.example.unitconverter.dao;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -26,13 +28,14 @@ public class UnitsMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 	private XmlPullParser parser;
 	private boolean isSourceOnline; //Determines if XML loaded from an online server or from local source.
 	private String coreUnitsXmlSource;
-	private String dynamicUnitsXmlSource = "DynamicUnits.xml";
+	private String dynamicUnitsXmlSource;
 	
 	//Constructor
 	public UnitsMapXmlReader(Context context){
 		super(context);
 		this.isSourceOnline = false;
 		coreUnitsXmlSource = "StandardCoreUnits.xml";
+		dynamicUnitsXmlSource = context.getFilesDir().getPath().toString() + "DynamicUnits.xml";
 		parser = Xml.newPullParser();
 	}
 	public UnitsMapXmlReader(Context context, boolean isSourceOnline, String coreUnitsXmlSource){
@@ -133,9 +136,15 @@ public class UnitsMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 				
 		//Adds base unit and associated conversion polynomial info to each partially constructed unit
 		index = 0;
+		Unit baseUnit;
 		for(String buName:baseUnitNameArray){
-			partiallyConstructedUnitsArray.get(index).setBaseUnit(baseUnitsMap.get(buName), partiallyConstructedUnitsArray.get(index).getBaseConversionPolyCoeffs());
-			
+			baseUnit = baseUnitsMap.get(buName);
+			if(baseUnit == null){
+				baseUnit = nonBaseUnitsMap.get(buName);
+			}	
+			if(baseUnit != null){
+				partiallyConstructedUnitsArray.get(index).setBaseUnit(baseUnit, partiallyConstructedUnitsArray.get(index).getBaseConversionPolyCoeffs());	
+			}
 			index++;
 		}
 		
@@ -301,7 +310,7 @@ public class UnitsMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 			if(!fileDUnitsFile.exists()){
 				fileDUnitsFile.createNewFile();
 			}
-			dynamicUnitsGroup = loadUnitsFromXML(getContext().openFileInput(dynamicUnitsXmlSource));	
+			dynamicUnitsGroup = loadUnitsFromXML(new FileInputStream(dynamicUnitsXmlSource));	
 			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -317,7 +326,6 @@ public class UnitsMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 		combinedUnits = coreUnitsGroup.get(0);
 		combinedUnits.addAll(dynamicUnitsGroup.get(0));
 		unitManagerFactoryBundle.setBaseUnitsComponent(combinedUnits);
-		
 		
 		combinedUnits = coreUnitsGroup.get(1);
 		combinedUnits.addAll(dynamicUnitsGroup.get(1));
