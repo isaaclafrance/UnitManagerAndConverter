@@ -15,16 +15,16 @@ public class Unit{
 	
 	private boolean isCoreUnit; //If true, the unit can not be deleted
 	private String unitSystem;
-	private UnitManager.UNIT_TYPE unitType;
+	private UnitManager.UNIT_TYPE type;
 	private boolean isBaseUnit; //Is set to true if base conversion factor is set to values 1 or 0.
 	private Unit baseUnit;
-	private String unitName;
+	private String name;
 	private String abbreviation;
-	private String unitCategory;
+	private String category;
 	private String description;
 	private double[] baseConversionPolyCoeffs; //Function used to convert current unit to base unit
-	private Map<String, Double> componentUnitsExponentMap; //Map that associates derivative component unit names with the value of their exponential power	
-	Map<UnitManager.UNIT_TYPE, Double> fundamentalUnitsExponentMap; //Map that associates derivative component fundamental units with the value of their exponential power	
+	private Map<String, Double> componentUnitsDimension; //Map that associates derivative component unit names with the value of their exponential power	
+	Map<UnitManager.UNIT_TYPE, Double> fundamentalTypesDimension; //Map that associates derivative component fundamental units with the value of their exponential power	
 	Map<Unit, double[]> conversionPolyCoeffs; //Contains functions that enable base unit to convert to other units of same dimension.	
 	
 	public static final String UNKNOWN_UNIT_NAME = "unknown_unit";
@@ -33,16 +33,16 @@ public class Unit{
 	public Unit(){
 		isCoreUnit = false;
 		
-		unitName = UNKNOWN_UNIT_NAME;
+		name = UNKNOWN_UNIT_NAME;
 		unitSystem = "unknown_system";
 		abbreviation = "unit";	
-		unitCategory = "unknown_units";	
+		category = "unknown_units";	
 		description = "";
 		
 		conversionPolyCoeffs = new HashMap<Unit, double[]>();
-		componentUnitsExponentMap = new HashMap<String, Double>(); componentUnitsExponentMap.put(unitName, 1.0);
-		fundamentalUnitsExponentMap = new HashMap<UnitManager.UNIT_TYPE, Double>(); fundamentalUnitsExponentMap.put(UNIT_TYPE.UNKNOWN, 1.0);
-		unitType = UNIT_TYPE.UNKNOWN;
+		componentUnitsDimension = new HashMap<String, Double>(); componentUnitsDimension.put(name, 1.0);
+		fundamentalTypesDimension = new HashMap<UnitManager.UNIT_TYPE, Double>(); fundamentalTypesDimension.put(UNIT_TYPE.UNKNOWN, 1.0);
+		type = UNIT_TYPE.UNKNOWN;
 		
 		isBaseUnit = true;
 		baseUnit = this;
@@ -53,54 +53,49 @@ public class Unit{
 	public Unit(String componentUnitsExponentMapString, boolean isBaseUnit){
 		this(UnitManager.getComponentUnitsDimensionFromString(componentUnitsExponentMapString), isBaseUnit);
 	}	
-	public Unit(String unitName, String componentUnitsExponentMapString, boolean isBaseUnit){
-		this(unitName, UnitManager.getComponentUnitsDimensionFromString(componentUnitsExponentMapString), isBaseUnit);
+	public Unit(String name, String componentUnitsExponentMapString, boolean isBaseUnit){
+		this(name, UnitManager.getComponentUnitsDimensionFromString(componentUnitsExponentMapString), isBaseUnit);
 	}		
 	public Unit(Map<String, Double> componentUnitsExponentMap, boolean isBaseUnit){
 		this();	
-		this.componentUnitsExponentMap = componentUnitsExponentMap;
-		this.unitName = getDimension();	
+		this.componentUnitsDimension = componentUnitsExponentMap;
+		this.name = getComponentUnitsDimensionString();	
 		this.isBaseUnit = isBaseUnit;
 		if(isBaseUnit == true){
 			baseUnit = this;
 			baseConversionPolyCoeffs = new double[]{1.0f, 0.0f};
 		}
 	}
-	public Unit(String unitName, Map<String, Double> componentUnitsExponentMap, boolean isBaseUnit){
+	public Unit(String name, Map<String, Double> componentUnitsExponentMap, boolean isBaseUnit){
 		this();
-		this.unitName = unitName.toLowerCase();	
-		if(this.abbreviation.length() >= 5){
-			this.abbreviation = unitName.substring(0, 4);
-		}
-		else{
-			this.abbreviation = unitName;
-		}	
-		this.componentUnitsExponentMap = componentUnitsExponentMap;
+		this.name = name.toLowerCase();	
+		this.abbreviation = (name.length() > 3)?name.substring(0, 4):name;
+		this.componentUnitsDimension = componentUnitsExponentMap;
 		this.isBaseUnit = isBaseUnit;
 		if(isBaseUnit = true){
 			baseUnit = this;
 			baseConversionPolyCoeffs = new double[]{1.0f, 0.0f};
 		}
 	}
-	public Unit(String unitName, String unitCategory, String description, String unitSystem, String abbreviation, Map<String, Double> componentUnitsExponentMap, Unit baseUnit, double[] baseConversionPolyCoeffs){
+	public Unit(String name, String category, String description, String unitSystem, String abbreviation, Map<String, Double> componentUnitsDimension, Unit baseUnit, double[] baseConversionPolyCoeffs){
 		this();
-		this.unitName = unitName.toLowerCase();
-		this.unitCategory = unitCategory.toLowerCase();
-		this.description = description.toLowerCase();
+		this.name = name.toLowerCase();
+		this.category = category.toLowerCase();
+		this.description = description;
 		this.unitSystem = unitSystem.toLowerCase();
 		this.abbreviation = abbreviation;
-		this.componentUnitsExponentMap = componentUnitsExponentMap;
+		this.componentUnitsDimension = componentUnitsDimension;
 		setBaseUnit(baseUnit, baseConversionPolyCoeffs);
 	}
 	
 	///	
-	private void setAutomaticUnitCategory(){
-		if(!baseUnit.getUnitName().equalsIgnoreCase(UNKNOWN_UNIT_NAME) && !getFundamentalUnitsExponentMap().containsKey(UnitManager.UNIT_TYPE.UNKNOWN)){
-			if(!baseUnit.unitCategory.equalsIgnoreCase("unknown_units")){
-				setUnitCategory(baseUnit.getUnitCategory());
+	private void setAutomaticCategory(){
+		if(!baseUnit.getName().equalsIgnoreCase(UNKNOWN_UNIT_NAME) && !getFundamentalTypesDimension().containsKey(UnitManager.UNIT_TYPE.UNKNOWN)){
+			if(!baseUnit.category.equalsIgnoreCase("unknown_units")){
+				setCategory(baseUnit.getCategory());
 			}
 			else{
-				setUnitCategory(getFundamentalDimension());
+				setCategory(getFundamentalTypesDimensionString());
 			}
 		}		
 	}
@@ -110,7 +105,7 @@ public class Unit{
 			Set<String> unitSystemsOfComponentsArrayList = new HashSet<String>();
 			Unit componentUnit;
 			
-			for(String componentUnitName:componentUnitsExponentMap.keySet()){
+			for(String componentUnitName:componentUnitsDimension.keySet()){
 				componentUnit = unitManagerRef.getUnit(componentUnitName, false);
 				if(componentUnit != null){
 					String[] unitSystems = componentUnit.getUnitSystem().split(" and ");		
@@ -140,15 +135,15 @@ public class Unit{
 			setUnitSystem(unitSystem);
 		}
 	}
-	public void setAutomaticUnitTypeNFundmtUnitsExpMap(){
+	public void setAutomaticUnitTypeNFundmtTypesDim(){
 		if(unitManagerRef != null){
-			unitType = unitManagerRef.determineUnitType(this);		
-			fundamentalUnitsExponentMap = unitManagerRef.calculateFundmtUnitsFromCompUnitsExpMap(this.componentUnitsExponentMap);
+			type = unitManagerRef.determineUnitType(this);		
+			fundamentalTypesDimension = unitManagerRef.calculateFundmtUnitsFromCompUnitsExpMap(this.componentUnitsDimension);
 		}
 		else{
-			unitType = UNIT_TYPE.UNKNOWN;
-			fundamentalUnitsExponentMap = new HashMap<UnitManager.UNIT_TYPE, Double>();
-			fundamentalUnitsExponentMap.put(UNIT_TYPE.UNKNOWN, 1.0);
+			type = UNIT_TYPE.UNKNOWN;
+			fundamentalTypesDimension = new HashMap<UnitManager.UNIT_TYPE, Double>();
+			fundamentalTypesDimension.put(UNIT_TYPE.UNKNOWN, 1.0);
 		}
 	}
 	
@@ -157,7 +152,7 @@ public class Unit{
 			Unit retrievedBaseUnit = unitManagerRef.getBaseUnit(this);
 
 			if(!this.getBaseUnit().equals(retrievedBaseUnit)
-				&&!retrievedBaseUnit.getUnitName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME)){
+				&&!retrievedBaseUnit.getName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME)){
 				
 				if(this.baseUnit.getBaseUnit().equals(retrievedBaseUnit)){ //Ensures that core units loaded from xml that have a nonbase unit set as base unit are able to cascade their conversion coefficients
 					setBaseUnit(this.baseUnit, setAutomaticBaseCoversionPolyCoeffs);
@@ -180,7 +175,7 @@ public class Unit{
 		//Makes sure that a non-base unit with improper dimensions is not assigned as a base unit
 		boolean specifiedBaseUnitIsNotActuallyABaseUnit = !baseUnit.isBaseUnit;
 
-		if(!baseUnit.getFundamentalUnitsExponentMap().containsKey(UNIT_TYPE.UNKNOWN) && !this.getFundamentalUnitsExponentMap().containsKey(UNIT_TYPE.UNKNOWN)){
+		if(!baseUnit.getFundamentalTypesDimension().containsKey(UNIT_TYPE.UNKNOWN) && !this.getFundamentalTypesDimension().containsKey(UNIT_TYPE.UNKNOWN)){
 			if(this.equalsDimension(baseUnit)){ 
 				if(this.baseUnit != baseUnit || specifiedBaseUnitIsNotActuallyABaseUnit && this.baseUnit == baseUnit){
 					if(this.unitManagerRef == baseUnit.unitManagerRef){// For consistency sake, a valid base unit can only come from the same unit manager.
@@ -193,7 +188,7 @@ public class Unit{
 						if(this.isBaseUnit && this != baseUnit && !isCoreUnit){ 
 							this.isBaseUnit = false;
 							upPropogateBaseUnitModification();
-							setAutomaticUnitCategory();							
+							setAutomaticCategory();							
 						}
 					}else{ 
 						setAutomaticBaseConversionPolyCoeffs = false; //No need to set conversion polynomial coefficients since the current base unit is not changed
@@ -219,7 +214,7 @@ public class Unit{
 					baseUnit.addConversion(this, new double[]{1.0f/baseConversionPolyCoeffs[0], -baseConversionPolyCoeffs[1]/baseConversionPolyCoeffs[0]});			
 				}	
 			}
-			else if(this.getFundamentalUnitsExponentMap().containsKey(UNIT_TYPE.UNKNOWN)){
+			else if(this.getFundamentalTypesDimension().containsKey(UNIT_TYPE.UNKNOWN)){
 				this.baseUnit = baseUnit;
 			}
 		}else{
@@ -235,7 +230,7 @@ public class Unit{
 		}
 			
 		//
-		setAutomaticUnitTypeNFundmtUnitsExpMap();
+		setAutomaticUnitTypeNFundmtTypesDim();
 		setAutomaticUnitSystem();
 		
 		//Update the unassosciated units in this unit's unit manager.
@@ -258,8 +253,9 @@ public class Unit{
 			isBaseUnit = true;
 		}
 	}
-	//The unit and its base are converted such that all their component units are in the same unit system. 
-	//Then the conversion factor for the base unit's conversion is divided by the factor for the unit's conversion. The result of this division is the base conversion factor
+	//The primary unit and its specified base are decomposed to their component units.
+	//Then depending on primary unit's isBasUnit status and whether the specified base unit is actually a base unit, base conversion of the decomposed component units 
+	//are optionally calculated and cascaded.
 	private void setAutomaticBaseConversionPolyCoeffs(Unit baseUnit, boolean specifiedBaseUnitIsNotActuallyABaseUnit){ 
 		double baseUnitComponenetFactor = baseUnit.calculateComponentFactor(!specifiedBaseUnitIsNotActuallyABaseUnit, !isBaseUnit);
 		
@@ -271,11 +267,12 @@ public class Unit{
 		Unit componentUnit;
 		
 		if(unitManagerRef != null){
-			if(!this.fundamentalUnitsExponentMap.containsKey(UNIT_TYPE.UNKNOWN)){		
+			if(!this.fundamentalTypesDimension.containsKey(UNIT_TYPE.UNKNOWN)){		
 				double fct = 1.0f;
-				for(Entry<String, Double> entry:componentUnitsExponentMap.entrySet()){
+				for(Entry<String, Double> entry:componentUnitsDimension.entrySet()){
 					componentUnit = unitManagerRef.getUnit(entry.getKey(), false);
-					if(componentUnit.getUnitType() == UNIT_TYPE.DERIVED_MULTI_UNIT && !componentUnit.isBaseUnit){
+					if(componentUnit.getType() == UNIT_TYPE.DERIVED_MULTI_UNIT && componentUnit.getComponentUnitsDimension().keySet().size() > 1 
+						){//&& !componentUnit.isBaseUnit){
 						fct = componentUnit.calculateComponentFactor(specifiedBaseUnitIsActuallyABaseUnit, true);
 					}else if (!componentUnit.isBaseUnit){
 						fct = this!=componentUnit && calculateComponentFactor ? componentUnit.getBaseUnit().calculateComponentFactor(specifiedBaseUnitIsActuallyABaseUnit, true)
@@ -288,7 +285,7 @@ public class Unit{
 			}	
 		}
 				
- 		return factor*(!specifiedBaseUnitIsActuallyABaseUnit?baseConversionPolyCoeffs[0]:1.0);
+ 		return factor*(specifiedBaseUnitIsActuallyABaseUnit?1.0:baseConversionPolyCoeffs[0]);
 	}
 		
 	///
@@ -302,17 +299,17 @@ public class Unit{
 		Map<String, Double> newComponentUnitsExponentMap = new HashMap<String, Double>();
 		
 		//Subtracts or adds the exponents of same component units based on division or multiplication operation respectively.
-		for(String cUnitName:componentUnitsExponentMap.keySet()){
-			if(secondUnit.getComponentUnitsExponentMap().containsKey(cUnitName)){ 
-				newComponentUnitsExponentMap.put(cUnitName, componentUnitsExponentMap.get(cUnitName)+sign*secondUnit.getComponentUnitsExponentMap().get(cUnitName));
+		for(String cUnitName:componentUnitsDimension.keySet()){
+			if(secondUnit.getComponentUnitsDimension().containsKey(cUnitName)){ 
+				newComponentUnitsExponentMap.put(cUnitName, componentUnitsDimension.get(cUnitName)+sign*secondUnit.getComponentUnitsDimension().get(cUnitName));
 			}
 			else{
-				newComponentUnitsExponentMap.put(cUnitName, componentUnitsExponentMap.get(cUnitName));				
+				newComponentUnitsExponentMap.put(cUnitName, componentUnitsDimension.get(cUnitName));				
 			}
 		}
-		for(String cUnitName:secondUnit.getComponentUnitsExponentMap().keySet()){
+		for(String cUnitName:secondUnit.getComponentUnitsDimension().keySet()){
 			if(!newComponentUnitsExponentMap.containsKey(cUnitName)){ 
-				newComponentUnitsExponentMap.put(cUnitName, sign*secondUnit.getComponentUnitsExponentMap().get(cUnitName));			
+				newComponentUnitsExponentMap.put(cUnitName, sign*secondUnit.getComponentUnitsDimension().get(cUnitName));			
 			}
 		}
 		
@@ -323,7 +320,7 @@ public class Unit{
 			ArrayList<Unit> matchedUnits = unitManagerRef.getUnitsByComponentUnitsDimension(newComponentUnitsExponentMap, true);
 			
 			if(matchedUnits.size() > 0){
-				if(!matchedUnits.get(0).getBaseUnit().getUnitName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME)){
+				if(!matchedUnits.get(0).getBaseUnit().getName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME)){
 					resultUnit = matchedUnits.get(0).getBaseUnit();
 				}
 				else{
@@ -352,14 +349,14 @@ public class Unit{
 		
 	///
 	public void addComponentUnit(String componentUnitName, double exponent){
-		componentUnitsExponentMap.put(componentUnitName, exponent);
+		componentUnitsDimension.put(componentUnitName, exponent);
 		setAutomaticUnitSystem();		
-		setAutomaticUnitTypeNFundmtUnitsExpMap();
+		setAutomaticUnitTypeNFundmtTypesDim();
 	}
 	public void removeComponentUnit(Unit componentUnit){
-		componentUnitsExponentMap.remove(componentUnit);
+		componentUnitsDimension.remove(componentUnit);
 		setAutomaticUnitSystem();		
-		setAutomaticUnitTypeNFundmtUnitsExpMap();
+		setAutomaticUnitTypeNFundmtTypesDim();
 	}
 	
 	///
@@ -371,46 +368,65 @@ public class Unit{
 				state = true;
 			}
 			else{
-				state = equalsComponentUnitsDimension(unit.getComponentUnitsExponentMap(), true);
+				state = equalsComponentUnitsDimension(unit.getComponentUnitsDimension(), true);
 			}
 		}
 		
 		return state;
 	} 	
-	public boolean equalsFundamentalUnitsDimension(Map<UNIT_TYPE, Double> fundamentalUnitsDimension){
-		//Determines if the exponents of the fundamental derivative units match
+	public boolean equalsFundamentalUnitsDimension(Map<UNIT_TYPE, Double> otherFundamentalTypesDimension){
+		//Determines if the exponents of the fundamental unit types match
 		boolean state = true;
-		if(fundamentalUnitsExponentMap.size() == fundamentalUnitsDimension.size() && !fundamentalUnitsDimension.containsKey(UNIT_TYPE.UNKNOWN)
-		   && !fundamentalUnitsExponentMap.containsKey(UNIT_TYPE.UNKNOWN)){
-			for(Map.Entry<UNIT_TYPE, Double> entry:fundamentalUnitsExponentMap.entrySet()){
-				if(!fundamentalUnitsDimension.containsKey(entry.getKey())){
+		Map<UNIT_TYPE,Double> otherFundamentalTypesDimensionCopy = new HashMap<UNIT_TYPE, Double>(otherFundamentalTypesDimension); //Copy necessary since it will be modified.
+		
+		if(fundamentalTypesDimension.size() == otherFundamentalTypesDimensionCopy.size() && !otherFundamentalTypesDimensionCopy.containsKey(UNIT_TYPE.UNKNOWN)
+		   && !fundamentalTypesDimension.containsKey(UNIT_TYPE.UNKNOWN)){
+			for(Map.Entry<UNIT_TYPE, Double> entry:fundamentalTypesDimension.entrySet()){ //Use THIS units's map as the basis of comparison
+				if(!otherFundamentalTypesDimensionCopy.containsKey(entry.getKey())){
+					if(entry.getValue()>0.0){
+						state = false;
+						break; 
+					}
+				}
+				else if(!otherFundamentalTypesDimensionCopy.get(entry.getKey()).equals(entry.getValue())){
 					state = false;
 					break; 
 				}
-				else if(!fundamentalUnitsDimension.get(entry.getKey()).equals(entry.getValue())){
-					state = false;
-					break; 
-				}
+				otherFundamentalTypesDimensionCopy.remove(entry.getKey());
+			}
+			if(otherFundamentalTypesDimensionCopy.size()>0){
+				//Although the number of components are the same, there some fundamental types that are raised to zero and
+				//there are some types that were not compared in the OTHER map since THIS unit's map was the initial basis of comparsion.
+				state = false;
 			}
 		}else{
 			state = false;
 		}
 		return state;
 	}
-	public boolean equalsComponentUnitsDimension(Map<String, Double> componentUnitsDimension, boolean overrideToFundamentalUnitMap){
+	public boolean equalsComponentUnitsDimension(Map<String, Double> otherComponentUnitsDimension, boolean overrideToFundamentalUnitMap){
 		boolean state = true;	
+		Map<String,Double> otherComponentUnitsDimensionCopy = new HashMap<String, Double>(otherComponentUnitsDimension); //Copy necessary since it will be modified.
 		
 		//First determines if exponent for each component units match
-		if(componentUnitsExponentMap.size() == componentUnitsDimension.size()){
-			for(Map.Entry<String, Double> entry:componentUnitsExponentMap.entrySet()){
-				if(!componentUnitsDimension.containsKey(entry.getKey())){
+		if(this.componentUnitsDimension.size() == otherComponentUnitsDimensionCopy.size()){
+			for(Map.Entry<String, Double> entry:componentUnitsDimension.entrySet()){ //Use THIS units's map as the basis of comparison
+				if(!otherComponentUnitsDimensionCopy.containsKey(entry.getKey())){
+					if(entry.getValue()>0.0){
+						state = false;
+						break; 
+					}
+				}
+				else if(!otherComponentUnitsDimensionCopy.get(entry.getKey()).equals(entry.getValue())){
 					state = false;
 					break; 
 				}
-				else if(!componentUnitsDimension.get(entry.getKey()).equals(entry.getValue())){
-					state = false;
-					break; 
-				}
+				otherComponentUnitsDimensionCopy.remove(entry.getKey());
+			}
+			if(otherComponentUnitsDimensionCopy.size()>0){
+				//Although the number of components are the same, there some components that are raised to zero and
+				//there are some components that were not compared in the OTHER map since THIS unit's map was the initial basis of comparsion.
+				state = false;
 			}
 		}
 		else{
@@ -420,7 +436,7 @@ public class Unit{
 		if(!state && overrideToFundamentalUnitMap){
 			//If the direct comparison of component units map fails, then performs the comparison again after converting to fundamental units map using unit manager(if present). 
 			if(unitManagerRef != null){
-				state = this.equalsFundamentalUnitsDimension(unitManagerRef.calculateFundmtUnitsFromCompUnitsExpMap(componentUnitsDimension));
+				state = this.equalsFundamentalUnitsDimension(unitManagerRef.calculateFundmtUnitsFromCompUnitsExpMap(otherComponentUnitsDimension));
 			}
 		}
 		
@@ -436,17 +452,17 @@ public class Unit{
 	public void setAbbreviation(String abbreviation){
 		this.abbreviation = abbreviation;
 	}
-	public void setUnitCategory(String unitCategory){
+	public void setCategory(String unitCategory){
 		if(unitManagerRef != null)
 			unitManagerRef.removeUnitFromHierarchy(this);
 		
-		this.unitCategory = unitCategory.toLowerCase();
+		this.category = unitCategory.toLowerCase();
 		
 		if(unitManagerRef != null)
 			unitManagerRef.addUnitToHierarchy(this);	
 	}
-	public void setUnitName(String unitName){
-		this.unitName = unitName.toLowerCase();
+	public void setName(String unitName){
+		this.name = unitName.toLowerCase();
 	}
 	public void setDescription(String description){
 		this.description = description;
@@ -455,8 +471,8 @@ public class Unit{
 	public String getAbbreviation(){
 		return abbreviation;
 	}
-	public String getUnitCategory(){
-		return unitCategory;
+	public String getCategory(){
+		return category;
 	}
 	public String getDescription(){
 		return description;
@@ -473,26 +489,28 @@ public class Unit{
 	public String getUnitSystem(){
 		return unitSystem;
 	}
-	public String getUnitName(){
-		return unitName;
+	public String getName(){
+		return name;
 	}
-	public UnitManager.UNIT_TYPE getUnitType(){
-		return unitType;
+	public UnitManager.UNIT_TYPE getType(){
+		return type;
 	}
-	public String getDimension(){ //Gets dimension based on component units
+	public String getComponentUnitsDimensionString(){ //Gets dimension based on component units
 		String dimString = "";
 		
-		if(componentUnitsExponentMap.size() == 1 && componentUnitsExponentMap.values().iterator().next() == 1.0){
-			dimString = componentUnitsExponentMap.keySet().iterator().next();
+		if(componentUnitsDimension.size() == 1 && componentUnitsDimension.values().iterator().next() == 1.0){
+			dimString = componentUnitsDimension.keySet().iterator().next();
 		}
 		else{
 			
-			for(String componentUnitName:componentUnitsExponentMap.keySet()){
-				if(componentUnitsExponentMap.get(componentUnitName) == 1){
+			for(String componentUnitName:componentUnitsDimension.keySet()){
+				if(componentUnitsDimension.get(componentUnitName) == 1){
 					dimString +=  componentUnitName + " * ";
 				}
 				else{
-					dimString += "("+componentUnitName+")^"+"("+Double.toString(componentUnitsExponentMap.get(componentUnitName))+") * ";
+					if(Math.abs(componentUnitsDimension.get(componentUnitName))>0){
+						dimString += "("+componentUnitName+")^"+"("+Double.toString(componentUnitsDimension.get(componentUnitName))+") * ";
+					}
 				}
 			}
 			
@@ -504,15 +522,17 @@ public class Unit{
 		
 		return dimString;
 	}
-	public String getFundamentalDimension(){ 
+	public String getFundamentalTypesDimensionString(){ 
 		String fDimString = "";
 		
-		for(UNIT_TYPE fundUnit:fundamentalUnitsExponentMap.keySet()){
-			if(fundamentalUnitsExponentMap.get(fundUnit) == 1){
+		for(UNIT_TYPE fundUnit:fundamentalTypesDimension.keySet()){
+			if(fundamentalTypesDimension.get(fundUnit) == 1){
 				fDimString +=  fundUnit.name() + " * ";
 			}
 			else{
-				fDimString += "("+fundUnit.name()+")^"+"("+Double.toString(fundamentalUnitsExponentMap.get(fundUnit))+") * ";
+				if(Math.abs(fundamentalTypesDimension.get(fundUnit))>0){
+					fDimString += "("+fundUnit.name()+")^"+"("+Double.toString(fundamentalTypesDimension.get(fundUnit))+") * ";
+				}
 			}
 		}
 		
@@ -523,11 +543,11 @@ public class Unit{
 		
 		return fDimString;
 	}
-	public Map<String, Double> getComponentUnitsExponentMap(){
-		return componentUnitsExponentMap;
+	public Map<String, Double> getComponentUnitsDimension(){
+		return componentUnitsDimension;
 	}
-	public Map<UnitManager.UNIT_TYPE, Double> getFundamentalUnitsExponentMap(){
-		return fundamentalUnitsExponentMap;
+	public Map<UnitManager.UNIT_TYPE, Double> getFundamentalTypesDimension(){
+		return fundamentalTypesDimension;
 	}
 	
 	public boolean isBaseUnit(){
@@ -538,7 +558,7 @@ public class Unit{
 	public void setCoreUnitState(boolean state){
 		isCoreUnit = state;
 	} 
-	public boolean getCoreUnitState(){
+	public boolean isCoreUnit(){
 		return isCoreUnit;
 	}
 	
@@ -546,12 +566,12 @@ public class Unit{
 		this.unitManagerRef = unitManager;
 		
 		//Automatically update this unit's unimplemented properties based on unit manager if present		
-		setAutomaticUnitTypeNFundmtUnitsExpMap();			
+		setAutomaticUnitTypeNFundmtTypesDim();			
 		if(isBaseUnit == false && this.baseUnit == null || !baseUnit.isBaseUnit){
 			setAutomaticBaseUnit(true);
 		}
 		setAutomaticUnitSystem();
-		setAutomaticUnitCategory();			
+		setAutomaticCategory();			
 	}
 	public UnitManager getUnitManagerRef(){
 		return unitManagerRef;
