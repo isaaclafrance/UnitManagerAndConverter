@@ -11,7 +11,6 @@ import com.example.unitconverter.Unit;
 import com.example.unitconverter.UnitManager;
 import com.example.unitconverter.UnitManagerFactory;
 import com.example.unitconverter.dao.ConversionFavoritesListXMLWriter;
-import com.example.unitconverter.dao.PrefixesMapXmlWriter;
 import com.example.unitconverter.dao.UnitsMapXmlWriter;
 
 import android.app.Application;
@@ -24,7 +23,7 @@ public class PersistentSharablesApplication extends Application{
 	private Quantity fromQuantity;
 	private Quantity toQuantity;	
 	public int numOfLoaderCompleted; 
-	public int initialUnitNum, initialPrefixNum;
+	public int initialUnitNum;
 	
 	
 	public final int GENERAL_UNITS_LOADER = 1, FUND_UNITS_LOADER = 2, CURRENCY_UNITS_LOADER = 3, PREFIXES_LOADER= 4;
@@ -37,19 +36,16 @@ public class PersistentSharablesApplication extends Application{
 		fromQuantity = new Quantity();
 		toQuantity = new Quantity();
 		numOfLoaderCompleted = 0;
-		initialUnitNum = initialPrefixNum = 0;
+		initialUnitNum = 0;
 	}
 		
-	public void savePrefixesNUnits(){
+	public void saveUnits(){
 		try {
-			if(unitManager.getDynamicUnits().size() > initialUnitNum){
+			if(unitManager.getDynamicUnits().size() != initialUnitNum){
 				ArrayList<Unit> allUnits = new ArrayList<Unit>();
 				allUnits.addAll(getUnitManager().getDynamicUnits());
 				
 				UnitsMapXmlWriter.saveUnitsToXML(getApplicationContext(), allUnits);
-			}
-			if(unitManager.getAllPrefixValues().size() > initialUnitNum){
-				PrefixesMapXmlWriter.savePrefixToXML(getApplicationContext(), getUnitManager().getAllPrefixValues());
 			}
 		} catch (IllegalArgumentException e) {
 			e.printStackTrace();
@@ -100,7 +96,6 @@ public class PersistentSharablesApplication extends Application{
 			unitManager = unitManagerFactory.createUnitManager();
 			if(isUnitManagerPreReqLoadingComplete()){
 				initialUnitNum = unitManager.getDynamicUnits().size();
-				initialPrefixNum = unitManager.getAllPrefixValues().size();
 			}
 		}
 	}
