@@ -7,9 +7,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -26,17 +23,42 @@ public class CurrencyUnitsMapXMLReader extends AsyncTaskLoader<UnitManagerFactor
 	private boolean isSourceOnline; //Determines if XML loaded from an online server or from local source.
 	private String currencyUnitsXmlSource;
 	private String baseUnitName = "euro";
+	private Map<String, String> currencyAbbreviationNameMap;
 	
 	//Constructor
 	public CurrencyUnitsMapXMLReader(Context context){
 		super(context);
 		this.isSourceOnline = true;
-		currencyUnitsXmlSource = "http://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml";
+		this.currencyUnitsXmlSource = "http://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml";
+		setCurrencyAbbreviationNameMap();
+		
 	}
 	public CurrencyUnitsMapXMLReader(Context context,String coreUnitsXmlSource){
 		super(context);
 		this.isSourceOnline = false;
 		this.currencyUnitsXmlSource = coreUnitsXmlSource;
+		setCurrencyAbbreviationNameMap();
+	}
+	
+	private void setCurrencyAbbreviationNameMap(){
+		currencyAbbreviationNameMap = new HashMap<String, String>();
+		currencyAbbreviationNameMap.put("usd", "U.S Dollar");currencyAbbreviationNameMap.put("gbp", "U.K. Pound Sterling");
+		currencyAbbreviationNameMap.put("cad", "Canadian Dollar");currencyAbbreviationNameMap.put("aud", "Australian Dollar");
+		currencyAbbreviationNameMap.put("chf", "Swiss Franc");currencyAbbreviationNameMap.put("jpy", "Japanese Yen");
+		currencyAbbreviationNameMap.put("bgn", "Bulgarian Lev");currencyAbbreviationNameMap.put("czk", "Czech Koruna");
+		currencyAbbreviationNameMap.put("dkk", "Danish Krone");currencyAbbreviationNameMap.put("huf", "Hungarian Forint");
+		currencyAbbreviationNameMap.put("pln", "Polish Zloty");currencyAbbreviationNameMap.put("ron", "Romanian New Leu");
+		currencyAbbreviationNameMap.put("sek", "Swedish Krona");currencyAbbreviationNameMap.put("nok", "Norwegian Krone");
+		currencyAbbreviationNameMap.put("hrk", "Croatian Kuna");currencyAbbreviationNameMap.put("rub", "Russian Rouble");
+		currencyAbbreviationNameMap.put("try", "Turkish Lira");currencyAbbreviationNameMap.put("brl", "Brazilian Real");
+		currencyAbbreviationNameMap.put("cny", "Chinese Yuan");currencyAbbreviationNameMap.put("hkd", "Hong Kong Dollar");
+		currencyAbbreviationNameMap.put("idr", "Indonesian Rupiah");currencyAbbreviationNameMap.put("ils", "Israeli New Sheqel");
+		currencyAbbreviationNameMap.put("inr", "Indian Rupee");currencyAbbreviationNameMap.put("krw", "South Korean Won");
+		currencyAbbreviationNameMap.put("mxn", "Mexican Peso");currencyAbbreviationNameMap.put("myr", "Malaysian Ringgit");
+		currencyAbbreviationNameMap.put("nzd", "New Zealand Dollar");currencyAbbreviationNameMap.put("php", "Philippine Peso");
+		currencyAbbreviationNameMap.put("sgd", "Singapore Dollar");currencyAbbreviationNameMap.put("thb", "Thai Baht");
+		currencyAbbreviationNameMap.put("zar", "South African Rand");
+		
 	}
 	
 	////TODO: Process Units XML's elements. Include a way to cache for later processing units that refer to component units that have not been loaded yet.
@@ -86,7 +108,7 @@ public class CurrencyUnitsMapXMLReader extends AsyncTaskLoader<UnitManagerFactor
 						if(tagName.equalsIgnoreCase("Cube")){
 							parser.require(XmlPullParser.START_TAG, null, "Cube");
 							
-							updateTime = readUpdateTime(parser);
+							updateTime = "Currency updated from European Central Bank at "+readUpdateTime(parser);
 							baseUnit.setDescription(updateTime);
 							while(parser.next() != XmlPullParser.END_TAG){
 								if(parser.getEventType() != XmlPullParser.START_TAG){
@@ -149,7 +171,10 @@ public class CurrencyUnitsMapXMLReader extends AsyncTaskLoader<UnitManagerFactor
 		return readAttribute(parser, "currency");
 	}
 	private String readUnitName(XmlPullParser parser) throws XmlPullParserException, IOException{
-		return readAbbreviation(parser);
+		String abrv = readAbbreviation(parser);
+		String name = currencyAbbreviationNameMap.get(abrv);
+		
+		return (name==null)?abrv:name;
 	}
 	private String readUpdateTime(XmlPullParser parser) throws XmlPullParserException, IOException{
 		return readAttribute(parser, "time");
@@ -210,9 +235,11 @@ public class CurrencyUnitsMapXMLReader extends AsyncTaskLoader<UnitManagerFactor
 		}
 		
 		UnitManagerFactory umcBundle = new UnitManagerFactory();
-		umcBundle.setNonBaseUnitsComponent(currencyUnitsGroup.get(1));
-		umcBundle.setBaseUnitsComponent(currencyUnitsGroup.get(0));
-		
+		if(currencyUnitsGroup.size() == 2){
+			umcBundle.setNonBaseUnitsComponent(currencyUnitsGroup.get(1));
+			umcBundle.setBaseUnitsComponent(currencyUnitsGroup.get(0));
+		}
+
 		return umcBundle;
 	}
 }

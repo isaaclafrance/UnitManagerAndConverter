@@ -53,7 +53,7 @@ public class UnitsMapXmlWriter {
 	}
 	private static void writeUnitXML(XmlSerializer serializer, String namespace, Unit unit) throws IllegalArgumentException, IllegalStateException, IOException{
 		serializer.startTag(namespace, "unitName");
-			serializer.text(unit.getUnitName());
+			serializer.text(unit.getName());
 		serializer.endTag(namespace, "unitName");
 		
 		serializer.startTag(namespace, "unitSystem");
@@ -65,11 +65,15 @@ public class UnitsMapXmlWriter {
 		serializer.endTag(namespace, "abbreviation");
 		
 		serializer.startTag(namespace, "unitCategory");
-			serializer.text(unit.getUnitCategory());
+			serializer.text(unit.getCategory());
 		serializer.endTag(namespace, "unitCategory");
 		
+		serializer.startTag(namespace, "unitDescription");
+			serializer.text(unit.getDescription());
+		serializer.endTag(namespace, "unitDescription");
+		
 		serializer.startTag(namespace, "componentUnits");
-			for(Entry<String, Double> entry:unit.getComponentUnitsExponentMap().entrySet()){
+			for(Entry<String, Double> entry:unit.getComponentUnitsDimension().entrySet()){
 				serializer.startTag(namespace, "component");
 					serializer.startTag(namespace, "unitName");
 						serializer.text(entry.getKey());
@@ -84,7 +88,7 @@ public class UnitsMapXmlWriter {
 		
 		serializer.startTag(namespace, "baseConversionPolyCoeffs");
 			serializer.startTag(namespace, "baseUnit");
-				serializer.text(unit.getBaseUnit().getUnitName());
+				serializer.text(unit.getBaseUnit().getName());
 			serializer.endTag(namespace, "baseUnit");
 			
 			serializer.startTag(namespace, "polynomialCoeffs");

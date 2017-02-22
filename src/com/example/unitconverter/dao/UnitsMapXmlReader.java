@@ -3,7 +3,6 @@ package com.example.unitconverter.dao;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -66,7 +65,7 @@ public class UnitsMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 		Map<String, Unit> baseUnitsMap = new HashMap<String, Unit>();
 		Map<String, Unit> nonBaseUnitsMap = new HashMap<String, Unit>();
 		
-		String unitNameString = "", unitSystemString = "", abbreviationString = "", unitCategoryString = "", tagName = "";
+		String unitNameString = "", unitSystemString = "", abbreviationString = "", unitCategoryString = "", unitDescriptionString = "", tagName = "";
 
 		tagName = parser.getName();
 		if(tagName.equalsIgnoreCase("main")){
@@ -91,7 +90,9 @@ public class UnitsMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 						}else if(tagName.equalsIgnoreCase("abbreviation")){
 							abbreviationString = readAbbreviationString(parser);
 						}else if(tagName.equalsIgnoreCase("unitCategory")){
-							unitCategoryString = readunitCategoryString(parser);
+							unitCategoryString = readUnitCategoryString(parser);
+						}else if(tagName.equalsIgnoreCase("unitDescription")){
+							unitDescriptionString = readUnitDescriptionString(parser);	
 						}else if(tagName.equalsIgnoreCase("componentUnits")){
 							componentUnitsExponentsMap_Array.add(readComponentUnits(parser));
 						}else if(tagName.equalsIgnoreCase("baseConversionPolyCoeffs")){
@@ -108,7 +109,7 @@ public class UnitsMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 				}
 						
 				//Use stored information from XML file to partially construct a new unit. The created units are missing base unit info, component unit info, and conversion polynomial info. Then places the unit in the unit map.
-				Unit constructedUnit = new Unit(unitNameString, unitCategoryString, unitCategoryString, unitSystemString, abbreviationString, new HashMap<String, Double>(), new Unit(baseUnitNameArray.get(baseUnitNameArray.size()-1), new HashMap<String, Double>(), true ), baseConversionPolyCoeffs.get(baseUnitNameArray.get(baseUnitNameArray.size()-1)));
+				Unit constructedUnit = new Unit(unitNameString, unitCategoryString, unitDescriptionString, unitSystemString, abbreviationString, new HashMap<String, Double>(), new Unit(baseUnitNameArray.get(baseUnitNameArray.size()-1), new HashMap<String, Double>(), true ), baseConversionPolyCoeffs.get(baseUnitNameArray.get(baseUnitNameArray.size()-1)));
 				
 				//Adds newly constructed unit to base units map if base unit otherwise adds unit to dynamic units map.
 				if(constructedUnit.isBaseUnit()){
@@ -175,12 +176,18 @@ public class UnitsMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 		parser.require(XmlPullParser.END_TAG, null, "abbreviation");
 		return abbreviation;
 	}
-	private String readunitCategoryString(XmlPullParser parser) throws XmlPullParserException, IOException{
+	private String readUnitCategoryString(XmlPullParser parser) throws XmlPullParserException, IOException{
 		parser.require(XmlPullParser.START_TAG, null, "unitCategory");
 		String abbreviation = readText(parser);
 		parser.require(XmlPullParser.END_TAG, null, "unitCategory");
 		return abbreviation;
-	}	
+	}
+	private String readUnitDescriptionString(XmlPullParser parser) throws XmlPullParserException, IOException{
+		parser.require(XmlPullParser.START_TAG, null, "unitDescription");
+		String abbreviation = readText(parser);
+		parser.require(XmlPullParser.END_TAG, null, "unitDescription");
+		return abbreviation;
+	}
 	private Map<String, Double> readComponentUnits(XmlPullParser parser) throws XmlPullParserException, IOException{
 		Map<String, Double> componentUnitsExponentsMap = new HashMap<String, Double>();
 		String componentUnitName = "";

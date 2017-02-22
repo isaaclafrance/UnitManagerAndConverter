@@ -6,7 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -94,6 +93,7 @@ public class PrefixesMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 				}
 			}
 		}
+
 		return prefixMap;
 	}
 	
@@ -140,7 +140,7 @@ public class PrefixesMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 				map_CorePrefixesNAbbreviations = loadPrefixesNAbbreviationsFromXML(getContext().getAssets().open(corePrefixesXmlSource));				
 			}
 			
-			File fileDPrefixes = new File("DynamicPrefixes.xml");		
+			File fileDPrefixes = new File(dynamicPrefixesXmlSource);		
 					
 			if(!fileDPrefixes.exists()){
 				fileDPrefixes.createNewFile();

@@ -75,7 +75,7 @@ public class ConversionFavoritesListXMLReader extends AsyncTaskLoader<ArrayList<
 							fromUnit = readText(parser);
 						}
 						else if(tagName.equalsIgnoreCase("toUnit")){							
-							conversionFavorites.add(unitCategory + ": " + fromUnit + " --> "+ readText(parser));
+							conversionFavorites.add(unitCategory.toUpperCase() + ": " + fromUnit + " --> "+ readText(parser));
 						}
 					}
 				}
