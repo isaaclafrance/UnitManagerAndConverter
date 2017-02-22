@@ -10,6 +10,7 @@
 	   	<unitSystem>si</unitSystem>
 	    <abbreviation>deg</abbreviation>
 	    <unitCategory>trigonometric_unit</unitCategory>
+	   	<unitDescription>A measurement of a plane angle, defined so that a full rotation is 360 degrees</unitDescription>
 	    <componentUnits>
 	        <component>
 	            <unitName>radian</unitName>
@@ -26,7 +27,8 @@
 	   	<unitName>radian</unitName>
 	   	<unitSystem>si</unitSystem>
 	    <abbreviation>rad</abbreviation>
-	    <unitCategory>trigonometric_unit</unitCategory>	    
+	    <unitCategory>trigonometric_unit</unitCategory>	 
+	    <unitDescription>Describes the plane angle subtended by a circular arc as the length of the arc divided by the radius of the arc</unitDescription>   
 	    <componentUnits>
 	        <component>
 	            <unitName>meter</unitName>
@@ -51,7 +53,8 @@
 	    <unitName>kelvin</unitName>	    
 	    <unitSystem>si</unitSystem>
 	    <abbreviation>K</abbreviation>
-	    <unitCategory>temperature_unit</unitCategory>	    
+	    <unitCategory>temperature_unit</unitCategory>	
+	    <unitDescription>Defined as the fraction  1⁄273.16 of the thermodynamic temperature of the triple point of water (exactly 0.01 °C or 32.018 °F)</unitDescription>  	        
 	    <componentUnits>
 	        <component>
 	            <unitName>kelvin</unitName>
@@ -69,6 +72,7 @@
 	    <unitSystem>si</unitSystem>
 	    <abbreviation>C</abbreviation>
 	    <unitCategory>temperature_unit</unitCategory>
+	   	<unitDescription>The unit "degree Celsius" and the Celsius scale are currently defined by two different temperatures: absolute zero, and the triple point of purified water.</unitDescription>  
 	    <componentUnits>
 	        <component>
 	            <unitName>celsius</unitName>
@@ -86,6 +90,7 @@
 	    <unitSystem>us customary system</unitSystem>
 	    <abbreviation>F</abbreviation>
 	    <unitCategory>temperature_unit</unitCategory>
+	    <unitDescription>Used in the United States, its territories and associated states (all served by the U.S. National Weather Service), as well as the Bahamas, Belize, and the Cayman Islands for everyday applications. For example, U.S. weather forecasts, food cooking, and freezing temperatures are typically given in degrees Fahrenheit. </unitDescription>  	    
 	    <componentUnits>
 	        <component>
 	            <unitName>fahrenheit</unitName>
@@ -103,6 +108,7 @@
 	    <unitSystem>us customary system</unitSystem>
 	    <abbreviation>R</abbreviation>
 	    <unitCategory>temperature_unit</unitCategory>
+	    <unitDescription>A thermodynamic temperature based on an absolute scale named after the Glasgow University engineer and physicist William John Macquorn Rankine, who proposed it during 1859.</unitDescription>  	    
 	    <componentUnits>
 	        <component>
 	            <unitName>rankine</unitName>
@@ -122,6 +128,7 @@
 	   	<unitSystem>si</unitSystem>
 	    <abbreviation>J</abbreviation>
 	    <unitCategory>energy_unit</unitCategory>
+	    <unitDescription>It is equal to the energy transferred to (or work done on) an object when a force of one newton acts on that object in the direction of its motion through a distance of one metre (1 newton metre or N·m). It is also the energy dissipated as heat when an electric current of one ampere passes through a resistance of one ohm for one second.</unitDescription>  	    
 	    <componentUnits>
 	        <component>
 	            <unitName>kilo-gram</unitName>
@@ -151,6 +158,7 @@
 	   	<unitSystem>si</unitSystem>
 	    <abbreviation>pa</abbreviation>
 	    <unitCategory>pressure_unit</unitCategory>
+	    <unitDescription>Named after Blaise Pascal, noted for his contributions to hydrodynamics and hydrostatics, and experiments with a barometer.</unitDescription>  	    
 	    <componentUnits>
 	        <component>
 	            <unitName>newton</unitName>
@@ -172,6 +180,7 @@
 	   	<unitSystem>us customary system</unitSystem>
 	    <abbreviation>psi</abbreviation>
 	    <unitCategory>pressure_unit</unitCategory>
+	    <unitDescription>A unit of pressure or of stress based on avoirdupois units.</unitDescription>  	    
 	    <componentUnits>
 	        <component>
 	            <unitName>pound_force</unitName>
@@ -195,6 +204,7 @@
 	   	<unitSystem>si</unitSystem>
 	    <abbreviation>N</abbreviation>
 	    <unitCategory>force_unit</unitCategory>
+	    <unitDescription>The amount needed to accelerate 1 kilogram of mass at the rate of 1 metre per second squared.</unitDescription>  	    
 	    <componentUnits>
 	        <component>
 	            <unitName>kilo-gram</unitName>
@@ -220,6 +230,7 @@
 	   	<unitSystem>us customary system</unitSystem>
 	    <abbreviation>lbf</abbreviation>
 	    <unitCategory>force_unit</unitCategory>
+	    <unitDescription>Is equal to the gravitational force exerted on a mass of one avoirdupois pound on the surface of Earth. </unitDescription>  	    
 	    <componentUnits>
 	        <component>
 	            <unitName>pound_force</unitName>
@@ -241,6 +252,7 @@
 	   	<unitSystem>si</unitSystem>
 	    <abbreviation>g</abbreviation>
 	    <unitCategory>mass_unit</unitCategory>
+	    <unitDescription>The absolute weight of a volume of pure water equal to the cube of the hundredth part of a metre, and at the temperature of melting ice.</unitDescription>  	    
 	    <componentUnits>
 	        <component>
 	            <unitName>gram</unitName>
@@ -258,6 +270,7 @@
 	   	<unitSystem>si</unitSystem>
 	    <abbreviation>kg</abbreviation>
 	    <unitCategory>mass_unit</unitCategory>
+	    <unitDescription>Equal to 1000 times the mass of 1 gram.</unitDescription>  	    
 	    <componentUnits>
 	        <component>
 	            <unitName>kilo-gram</unitName>
@@ -275,6 +288,7 @@
 	   	<unitSystem>us customary system</unitSystem>
 	    <abbreviation>lb</abbreviation>
 	    <unitCategory>mass_unit</unitCategory>
+	    <unitDescription>Descended from the Roman libra (hence the abbreviation "lb").</unitDescription>  	    
 	    <componentUnits>
 	        <component>
 	            <unitName>pound</unitName>
@@ -292,6 +306,7 @@
 	   	<unitSystem>us customary system</unitSystem>
 	    <abbreviation>ton</abbreviation>
 	    <unitCategory>mass_unit</unitCategory>
+	    <unitDescription>In the United States and formerly Canada, a ton is defined to be 2,000 pounds (907 kg).</unitDescription>  	    
 	    <componentUnits>
 	        <component>
 	            <unitName>ton</unitName>
@@ -310,7 +325,8 @@
 	   	<unitName>meter</unitName>
 	   	<unitSystem>si</unitSystem>
 	    <abbreviation>m</abbreviation>
-	    <unitCategory>length_unit</unitCategory>	    
+	    <unitCategory>length_unit</unitCategory>
+	    <unitDescription>The distance travelled by light in a vacuum in 3.33564095e-9</unitDescription>  	    	    
 	    <componentUnits>
 	        <component>
 	            <unitName>meter</unitName>
@@ -327,7 +343,8 @@
 	   	<unitName>inch</unitName>
 	   	<unitSystem>us customary system</unitSystem>
 	    <abbreviation>in</abbreviation>
-	    <unitCategory>length_unit</unitCategory>	    
+	    <unitCategory>length_unit</unitCategory>
+	    <unitDescription>Same as or derived from the word for "thumb".</unitDescription>  	    	    
 	    <componentUnits>
 	        <component>
 	            <unitName>inch</unitName>
@@ -344,7 +361,8 @@
 	   	<unitName>feet</unitName>
 	   	<unitSystem>us customary system</unitSystem>
 	    <abbreviation>ft</abbreviation>
-	    <unitCategory>length_unit</unitCategory>	    
+	    <unitCategory>length_unit</unitCategory>	 
+	    <unitDescription>Based on the historical tradition of using the human body to provide the basis for units of length.</unitDescription>  	       
 	    <componentUnits>
 	        <component>
 	            <unitName>feet</unitName>
@@ -361,7 +379,8 @@
 	   	<unitName>yard</unitName>
 	   	<unitSystem>us customary system</unitSystem>
 	    <abbreviation>yd</abbreviation>
-	    <unitCategory>length_unit</unitCategory>	    
+	    <unitCategory>length_unit</unitCategory>
+	    <unitDescription>It is by international agreement in 1959 standardized as exactly 0.9144 meters.</unitDescription>  	    	    
 	    <componentUnits>
 	        <component>
 	            <unitName>yard</unitName>
@@ -378,7 +397,8 @@
 	   	<unitName>mile</unitName>
 	   	<unitSystem>us customary system</unitSystem>
 	    <abbreviation>mi</abbreviation>
-	    <unitCategory>length_unit</unitCategory>	    
+	    <unitCategory>length_unit</unitCategory>
+	    <unitDescription>Derives from Middle English myl and Old English mīl, which was cognate with all other Germanic terms for "miles". These derived from apocopated forms of the Latin mīlia or mīllia, the plural of mīle or mīlle,literally "thousand" but used as a clipped form of mīlle passus or passuum, the Roman mile of one thousand paces.</unitDescription>  	    	    
 	    <componentUnits>
 	        <component>
 	            <unitName>mile</unitName>
@@ -387,7 +407,7 @@
 	    </componentUnits>
 	    <baseConversionPolyCoeffs>
 	    	<baseUnit>meter</baseUnit>
-	        <polynomialCoeffs>1609.34 0.0</polynomialCoeffs> 	                 
+	        <polynomialCoeffs>1609.344 0.0</polynomialCoeffs> 	                 
 	    </baseConversionPolyCoeffs>
 	</unit> 
 	
@@ -398,6 +418,7 @@
 	    <unitSystem>si</unitSystem>
 	    <abbreviation>sec</abbreviation>
 	    <unitCategory>time_unit</unitCategory>
+	    <unitDescription>The duration of 9 192 631 770 periods of the radiation corresponding to the transition between the two hyperfine levels of the ground state of the caesium 133 atom.</unitDescription>  	    
 	    <componentUnits>
 	        <component>
 	            <unitName>second</unitName>
@@ -415,6 +436,7 @@
 	    <unitSystem>si</unitSystem>
 	    <abbreviation>min</abbreviation>
 	    <unitCategory>time_unit</unitCategory>
+	    <unitDescription>The word "minute" comes from the Latin pars minuta prima, meaning "first small part".</unitDescription>  	    
 	    <componentUnits>
 	        <component>
 	            <unitName>minute</unitName>
@@ -432,6 +454,7 @@
 	    <unitSystem>si</unitSystem>
 	    <abbreviation>hr</abbreviation>
 	    <unitCategory>time_unit</unitCategory>
+	    <unitDescription>The Middle English word ure first appears in the 13th century, as a loanword from Old French ure, ore, from Latin hōra.Hora, in turn, derives from Greek ὥρα ("season, time of day, hour")</unitDescription>  	    
 	    <componentUnits>
 	        <component>
 	            <unitName>hour</unitName>
@@ -449,6 +472,7 @@
 	    <unitSystem>si</unitSystem>
 	    <abbreviation>day</abbreviation>
 	    <unitCategory>time_unit</unitCategory>
+	    <unitDescription>The period of time during which the Earth completes one rotation with respect to the Sun.</unitDescription>  	    
 	    <componentUnits>
 	        <component>
 	            <unitName>day</unitName>
@@ -466,6 +490,7 @@
 	    <unitSystem>si</unitSystem>
 	    <abbreviation>wk</abbreviation>
 	    <unitCategory>time_unit</unitCategory>
+	    <unitDescription>It is the standard time period used for cycles of work days and rest days in most parts of the world, mostly alongside (but not strictly part of) the Gregorian calendar.</unitDescription>  	    
 	    <componentUnits>
 	        <component>
 	            <unitName>week</unitName>
@@ -483,6 +508,7 @@
 	    <unitSystem>si</unitSystem>
 	    <abbreviation>yr</abbreviation>
 	    <unitCategory>time_unit</unitCategory>
+	    <unitDescription>The orbital period of the Earth moving in its orbit around the Sun</unitDescription>  	    
 	    <componentUnits>
 	        <component>
 	            <unitName>year</unitName>
@@ -503,6 +529,7 @@
 	    <unitSystem>si</unitSystem>
 	    <abbreviation>m3</abbreviation>
 	    <unitCategory>volume_unit</unitCategory>
+	    <unitDescription></unitDescription>  	    
 	    <componentUnits>
 	        <component>
 	            <unitName>meter</unitName>
@@ -520,6 +547,7 @@
 	    <unitSystem>us customary system</unitSystem>
 	    <abbreviation>cup</abbreviation>
 	    <unitCategory>volume_unit</unitCategory>
+	    <unitDescription>Used in the United States, Canada and Liberia where it is a legally defined unit of measurement, and is sometimes found in older recipes in the rest of the world using the metric system</unitDescription>  	    
 	    <componentUnits>
 	        <component>
 	            <unitName>cup</unitName>
@@ -537,6 +565,7 @@
 	    <unitSystem>us customary system</unitSystem>
 	    <abbreviation>pt</abbreviation>
 	    <unitCategory>volume_unit</unitCategory>
+	    <unitDescription>A U.S. pint equals roughly 473 millilitres, or 16 U.S. fluid ounces.</unitDescription>  	    
 	    <componentUnits>
 	        <component>
 	            <unitName>pint</unitName>
@@ -546,6 +575,78 @@
 	    <baseConversionPolyCoeffs>
 	       	<baseUnit>cup</baseUnit>
 	        <polynomialCoeffs>2.0 0.0</polynomialCoeffs>  	            
+	    </baseConversionPolyCoeffs>
+	</unit>
+	
+	<unit>
+	    <unitName>gallon</unitName>	    
+	    <unitSystem>us customary system</unitSystem>
+	    <abbreviation>gal</abbreviation>
+	    <unitCategory>volume_unit</unitCategory>
+	    <unitDescription>The US gallon is used in Liberia, Belize, Colombia, The Dominican Republic, Ecuador, El Salvador, Guatemala, Haiti, Honduras, Nicaragua, and Peru.</unitDescription>  	    
+	    <componentUnits>
+	        <component>
+	            <unitName>gallon</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	       	<baseUnit>quart</baseUnit>
+	        <polynomialCoeffs>4.0 0.0</polynomialCoeffs>  	            
+	    </baseConversionPolyCoeffs>
+	</unit>
+	
+	<unit>
+	    <unitName>quart</unitName>	    
+	    <unitSystem>us customary system</unitSystem>
+	    <abbreviation>qt</abbreviation>
+	    <unitCategory>volume_unit</unitCategory>
+	    <unitDescription>Equal to a quarter of a gallon </unitDescription>  	    
+	    <componentUnits>
+	        <component>
+	            <unitName>quart</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	       	<baseUnit>pint</baseUnit>
+	        <polynomialCoeffs>2.0 0.0</polynomialCoeffs>  	            
+	    </baseConversionPolyCoeffs>
+	</unit>
+	
+	<unit>
+	    <unitName>fluid_ounce</unitName>	    
+	    <unitSystem>us customary system</unitSystem>
+	    <abbreviation>fl. oz.</abbreviation>
+	    <unitCategory>volume_unit</unitCategory>
+	    <unitDescription>A unit of volume (also called capacity) typically used for measuring liquids. It is equivalent to approximately 30 millilitres. </unitDescription>  	    
+	    <componentUnits>
+	        <component>
+	            <unitName>fluid_ounce</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	       	<baseUnit>pint</baseUnit>
+	        <polynomialCoeffs>16.0 0.0</polynomialCoeffs>  	            
+	    </baseConversionPolyCoeffs>
+	</unit>
+	
+	<unit>
+	    <unitName>liter</unitName>	    
+	    <unitSystem>si</unitSystem>
+	    <abbreviation>L</abbreviation>
+	    <unitCategory>volume_unit</unitCategory>
+	    <unitDescription>One litre of liquid water has a mass of almost exactly one kilogram.</unitDescription>  	    
+	    <componentUnits>
+	        <component>
+	            <unitName>liter</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	       	<baseUnit>cubic_meter</baseUnit>
+	        <polynomialCoeffs>0.001 0.0</polynomialCoeffs>  	            
 	    </baseConversionPolyCoeffs>
 	</unit>
 	

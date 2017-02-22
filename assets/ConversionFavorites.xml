@@ -5,4 +5,10 @@
         <fromUnit>minute</fromUnit>
         <toUnit>second</toUnit>
     </conversion>
+    
+    <conversion>
+        <unitCategory>length_unit</unitCategory>
+        <fromUnit>meter</fromUnit>
+        <toUnit>feet</toUnit>
+    </conversion>
 </main>
