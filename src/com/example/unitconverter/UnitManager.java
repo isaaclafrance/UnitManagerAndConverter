@@ -2,10 +2,8 @@ package com.example.unitconverter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -63,24 +61,24 @@ public final class UnitManager{
 		}
 	}
 	public void addUnit(Unit unit){			
-		if(unit.getUnitManagerRef() != this || unit.getBaseUnit().getUnitType() == UNIT_TYPE.UNKNOWN || unit.getFundamentalUnitsExponentMap().containsKey(UNIT_TYPE.UNKNOWN)){			
-			unitsWithUnknownBaseOrUnknownFundDimension.put(unit.getUnitName(), unit);
+		if(unit.getUnitManagerRef() != this || unit.getBaseUnit().getType() == UNIT_TYPE.UNKNOWN || unit.getFundamentalTypesDimension().containsKey(UNIT_TYPE.UNKNOWN)){			
+			unitsWithUnknownBaseOrUnknownFundDimension.put(unit.getName(), unit);
 			unit.setUnitManagerRef(this);
-			if(unit.getBaseUnit().getUnitType() != UNIT_TYPE.UNKNOWN && !unit.getFundamentalUnitsExponentMap().containsKey(UNIT_TYPE.UNKNOWN)){
+			if(unit.getBaseUnit().getType() != UNIT_TYPE.UNKNOWN && !unit.getFundamentalTypesDimension().containsKey(UNIT_TYPE.UNKNOWN)){
 				addUnit(unit);
 			}
 		}else{
 			if(unit.isBaseUnit()){ 
 				//Move any other instances of base units with same dimension to non base unit dictionary	
-				for(Unit unitMatch:getUnitsByFundamentalUnitsDimension(unit.getFundamentalUnitsExponentMap())){
-					if(unitMatch.isBaseUnit() && !unitMatch.equals(unit)){
-						if(unitMatch.getCoreUnitState()){
-							coreBaseUnitsDictionary.remove(unitMatch.getUnitName());
-							coreUnitsDictionary.put(unitMatch.getUnitName(), unitMatch);
+				for(Unit unitMatch:getUnitsByFundamentalUnitsDimension(unit.getFundamentalTypesDimension())){
+					if(unitMatch.isBaseUnit() && !unitMatch.getName().equalsIgnoreCase(unit.getName())){
+						if(unitMatch.isCoreUnit()){
+							coreBaseUnitsDictionary.remove(unitMatch.getName());
+							coreUnitsDictionary.put(unitMatch.getName(), unitMatch);
 						}
 						else{
-							dynamicBaseUnitsDictionary.remove(unitMatch.getUnitName());
-							dynamicUnitsDictionary.put(unitMatch.getUnitName(), unitMatch);
+							dynamicBaseUnitsDictionary.remove(unitMatch.getName());
+							dynamicUnitsDictionary.put(unitMatch.getName(), unitMatch);
 						}
 										
 						//Makes sure that all units have proper base unit associations after replacement	
@@ -92,69 +90,63 @@ public final class UnitManager{
 					}
 				}
 				//If unit already exists in nonbase dictionary then remove it since it will instead be added to base dictionary.				
-				if(unit.getCoreUnitState()){
+				if(unit.isCoreUnit()){
 					if(coreUnitsDictionary.containsValue(unit)){
-						coreUnitsDictionary.remove(unit.getUnitName());
+						coreUnitsDictionary.remove(unit.getName());
 					}					
 				}
 				else{
 					if(dynamicUnitsDictionary.containsValue(unit)){
-						dynamicUnitsDictionary.remove(unit.getUnitName());
+						dynamicUnitsDictionary.remove(unit.getName());
 					}
 				}
 					
 				//If unit still unknown after being associated with unit manager, then it is isolated. Or else at to dictionary.
-				if(unit.getBaseUnit().getUnitType() == UNIT_TYPE.UNKNOWN || unit.getFundamentalUnitsExponentMap().containsKey(UNIT_TYPE.UNKNOWN)){
-					unitsWithUnknownBaseOrUnknownFundDimension.put(unit.getUnitName(), unit);
-				}else{
-					if(unit.getCoreUnitState()){
-						coreBaseUnitsDictionary.put(unit.getUnitName(), unit);	
-					}
-					else{
-						dynamicBaseUnitsDictionary.put(unit.getUnitName(), unit);	
-					}
-					updateAssociationsOfUnknownUnits();//Determines if this base unit can be associated with units that currently do not have base units.						
-				}	
+				if(unit.isCoreUnit()){
+					coreBaseUnitsDictionary.put(unit.getName(), unit);	
+				}
+				else{
+					dynamicBaseUnitsDictionary.put(unit.getName(), unit);	
+				}					
 			}
 			else{	
-
 				//If unit still unknown after incorporation into the unit manager, then isolate it into a group of units with unknown components.
-				if(unit.getBaseUnit().getUnitType() == UNIT_TYPE.UNKNOWN || unit.getFundamentalUnitsExponentMap().containsKey(UNIT_TYPE.UNKNOWN)){
-					unitsWithUnknownBaseOrUnknownFundDimension.put(unit.getUnitName(), unit);
-				}else{
-					if(unit.getCoreUnitState()){
-						coreUnitsDictionary.put(unit.getUnitName(), unit);	
-					}
-					else{
-						dynamicUnitsDictionary.put(unit.getUnitName(), unit);	
-					}	
-					updateAssociationsOfUnknownUnits();
+				if(unit.isCoreUnit()){
+					coreUnitsDictionary.put(unit.getName(), unit);	
 				}
-				
+				else{
+					dynamicUnitsDictionary.put(unit.getName(), unit);	
+				}	
 			}
+			updateAssociationsOfUnknownUnits();//Determines if this base unit can be associated with units that currently do not have base units.			
 		}
 
 	}
 	public void removeDynamicUnit(String unitName){
+		//Removes unit from hierarchy. Removes unit from base and dynamic dictionaries. Updates the base units of dependent units to unknown. Also removed a reference to this unit manager.
 		if(dynamicBaseUnitsDictionary.containsKey(unitName)){
-			//Removed unit from base dictionary. Updates the base units of dependent units to unknown. Also removed a reference to this unit manager.
-			Unit removedBaseUnit =	dynamicBaseUnitsDictionary.remove(unitName);	
-			for(Unit dependentUnit: removedBaseUnit.conversionPolyCoeffs.keySet()){
-				dependentUnit.setBaseUnit(getUnit(Unit.UNKNOWN_UNIT_NAME));
+			Unit removedBaseUnit =	dynamicBaseUnitsDictionary.remove(unitName);
+			if(removedBaseUnit != null){
+				removeUnitFromHierarchy(removedBaseUnit);
+				for(Unit dependentUnit: removedBaseUnit.conversionPolyCoeffs.keySet()){
+					dependentUnit.setBaseUnit(getUnit(Unit.UNKNOWN_UNIT_NAME));
+				}
+				removedBaseUnit.clearConversions();
+				removedBaseUnit.setUnitManagerRef(null);
 			}
-			removedBaseUnit.clearConversions();
-			removedBaseUnit.setUnitManagerRef(null);
 		}
 		else if(dynamicUnitsDictionary.containsKey(unitName)){
 			Unit removedUnit =	dynamicUnitsDictionary.remove(unitName);
-			removedUnit.setUnitManagerRef(null);
-			removedUnit.getBaseUnit().conversionPolyCoeffs.remove(removedUnit);
-			dynamicUnitsDictionary.remove(unitName);
-			updateFundamentalUnitsDimensionOfKnownUnits();	
+			if(removedUnit != null){
+				removeUnitFromHierarchy(removedUnit);
+				removedUnit.getBaseUnit().conversionPolyCoeffs.remove(removedUnit);
+				removedUnit.setUnitManagerRef(null);
+			}
 		}
+		updateFundamentalUnitsDimensionOfKnownUnits();	
 	}
 	public void removeDynamicUnit(Unit unit){
-		removeDynamicUnit(unit.getUnitName());
+		removeDynamicUnit(unit.getName());
 	}
 	public void removeAllDynamicUnits(){
 		for(Unit unit:dynamicBaseUnitsDictionary.values()){
@@ -175,27 +167,27 @@ public final class UnitManager{
 		for(int i=0;i<unknList.size();i++){
 			unit = unknList.get(i);
 			
-			unit.setAutomaticUnitTypeNFundmtUnitsExpMap();
+			unit.setAutomaticUnitTypeNFundmtTypesDim();
 
-			if(!(unit.getFundamentalUnitsExponentMap().containsKey(UNIT_TYPE.UNKNOWN))){
+			if(!(unit.getFundamentalTypesDimension().containsKey(UNIT_TYPE.UNKNOWN))){
 								
 				if(unit.isBaseUnit()){
-					if(unit.getCoreUnitState()){
-						coreBaseUnitsDictionary.put(unit.getUnitName(), unit);
+					if(unit.isCoreUnit()){
+						coreBaseUnitsDictionary.put(unit.getName(), unit);
 					}
 					else{
-						dynamicBaseUnitsDictionary.put(unit.getUnitName(), unit);
+						dynamicBaseUnitsDictionary.put(unit.getName(), unit);
 					}
 				}
 				else{
-					if(unit.getCoreUnitState()){
-						coreUnitsDictionary.put(unit.getUnitName(), unit);
+					if(unit.isCoreUnit()){
+						coreUnitsDictionary.put(unit.getName(), unit);
 					}
 					else{
-						dynamicUnitsDictionary.put(unit.getUnitName(), unit);
+						dynamicUnitsDictionary.put(unit.getName(), unit);
 					}
 				}
-				unitsWithUnknownBaseOrUnknownFundDimension.remove(unit.getUnitName());
+				unitsWithUnknownBaseOrUnknownFundDimension.remove(unit.getName());
 				unit.setAutomaticBaseUnit(true);				
 			}
 			
@@ -210,11 +202,11 @@ public final class UnitManager{
 	private void updateFundamentalUnitsDimensionOfKnownUnits(Map<String, Unit> unitsDictionary){
 		for(Unit unit:unitsDictionary.values()){
 			unit.setAutomaticUnitSystem();
-			unit.setAutomaticUnitTypeNFundmtUnitsExpMap();
+			unit.setAutomaticUnitTypeNFundmtTypesDim();
 			
-			if(unit.getBaseUnit() == getUnit(Unit.UNKNOWN_UNIT_NAME) || unit.getFundamentalUnitsExponentMap().containsKey(UNIT_TYPE.UNKNOWN)){
-				unitsDictionary.remove(unit.getUnitName());
-				unitsWithUnknownBaseOrUnknownFundDimension.put(unit.getUnitName(), unit);
+			if(unit.getBaseUnit() == getUnit(Unit.UNKNOWN_UNIT_NAME) || unit.getFundamentalTypesDimension().containsKey(UNIT_TYPE.UNKNOWN)){
+				unitsDictionary.remove(unit.getName());
+				unitsWithUnknownBaseOrUnknownFundDimension.put(unit.getName(), unit);
 			}
 		}
 	}
@@ -242,47 +234,53 @@ public final class UnitManager{
 	public Unit getUnit(String unitName){         
 		return getUnit(unitName, true);
 	}
-	Unit getUnit(String unitName, boolean createMissingPrefixedUnits){
+	Unit getUnit(String unitName, boolean createMissingUnits){
 		unitName = unitName.toLowerCase();
 		
-		if(coreBaseUnitsDictionary.containsKey(unitName)){
-			return coreBaseUnitsDictionary.get(unitName);
-		}
-		else if(dynamicBaseUnitsDictionary.containsKey(unitName)){
-			return dynamicBaseUnitsDictionary.get(unitName);
-		}
-		else if(coreUnitsDictionary.containsKey(unitName)){
-			return coreUnitsDictionary.get(unitName);
-		}
-		else if(dynamicUnitsDictionary.containsKey(unitName)){
-			return dynamicUnitsDictionary.get(unitName);
-		}
-		else if(unitsWithUnknownBaseOrUnknownFundDimension.containsKey(unitName)){
-			return unitsWithUnknownBaseOrUnknownFundDimension.get(unitName);
-		}
-		else if(unitName.contains("*") || unitName.contains("/") || unitName.contains("^")
-				   || unitName.contains("(") || unitName.contains(")")){
-			Unit complexUnit = new Unit(unitName, true);
-			addUnit(complexUnit);
-			return complexUnit;
-		}
-		else if(unitName.contains("-") && createMissingPrefixedUnits){ //Checks if unit name has a prefix component, then extracts it.
-			String[] unitNameNPrefix = unitName.split("-");
-			return getUnit(unitNameNPrefix[0], unitNameNPrefix[1]);
-		}
-		else{
-			return unitsWithUnknownBaseOrUnknownFundDimension.get(Unit.UNKNOWN_UNIT_NAME);
-		}
+		Unit unit;
+		unit = coreBaseUnitsDictionary.get(unitName);
+			if(unit != null)return unit;	
+		unit = dynamicBaseUnitsDictionary.get(unitName);
+			if(unit != null)return unit;
+		unit = coreUnitsDictionary.get(unitName);
+			if(unit != null)return unit;	
+		unit = dynamicUnitsDictionary.get(unitName);
+			if(unit != null)return unit;
+		unit = unitsWithUnknownBaseOrUnknownFundDimension.get(unitName);
+			if(unit != null){
+				return unit;	
+			}
+			else if(unitName.contains("*") || unitName.contains("/") || unitName.contains("^")
+					   || unitName.contains("(") || unitName.contains(")") && createMissingUnits){
+				//If unit manager does not already contain unit with similar complex dimension specified by unit name, 
+				//then added a newly created version of such unit and store it in the unit manager for easy future access
+				
+				ArrayList<Unit> complexUnitMatches = getUnitsByComponentUnitsDimension(unitName, false);
+				
+				if(complexUnitMatches.isEmpty()){
+					complexUnitMatches.add(new Unit(unitName, true));
+				}
+				
+				addUnit(complexUnitMatches.get(0));
+				return complexUnitMatches.get(0);
+			}
+			else if(unitName.contains("-") && createMissingUnits){ //Checks if unit name has a prefix component, then extracts it.
+				String[] unitNameNPrefix = unitName.split("-");
+				return getUnit(unitNameNPrefix[0], unitNameNPrefix[1]);
+			}
+			else{
+				return unitsWithUnknownBaseOrUnknownFundDimension.get(Unit.UNKNOWN_UNIT_NAME);
+			}	
 	}
 	private Unit getUnit(String prefixName, String unitName){
-		//First creates a copy of the unit. Next adds prefix to unit name and change base conversion to reflex prefix value. Then add new unit to appropriate map and return unit. 
+		//First gets or creates a copy of the unit. Next adds prefix to unit name and change base conversion to reflect prefix value. Then add new unit to appropriate map and returns unit. 
 		
 		prefixName = prefixName.toLowerCase();		
 		Unit unit = getUnit(unitName);
 		Unit prefixedUnit;
 		double prefixValue = getPrefixValue(prefixName);
 		
-		if(!unit.getUnitName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) && prefixValue != 0.0f){
+		if(!unit.getName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) && prefixValue != 0.0f){
 			double[] bConPolyCoeffs = new double[]{unit.getBaseConversionPolyCoeffs()[0]*getPrefixValue(prefixName), 
 					 											 unit.getBaseConversionPolyCoeffs()[1]*getPrefixValue(prefixName)};		
 			Map<String, Double> componentUnitMap = new HashMap<String, Double>(); componentUnitMap.put(prefixName+"-"+unitName, 1.0);
@@ -320,28 +318,28 @@ public final class UnitManager{
 	public double getPrefixValue(String prefixName){
 		prefixName = prefixName.toLowerCase();
 		
-		if(corePrefixValuesDictionary.containsKey(prefixName)){
-			return corePrefixValuesDictionary.get(prefixName);
-		}
-		else if(dynamicPrefixValuesDictionary.containsKey(prefixName)){
-			return dynamicPrefixValuesDictionary.get(prefixName);
-		}
-		else{
-			return 0.0f;
-		}
+		Double prefixValue;
+		prefixValue = corePrefixValuesDictionary.get(prefixName);
+			if(prefixValue != null) return prefixValue;
+		prefixValue = dynamicPrefixValuesDictionary.get(prefixName);
+			if(prefixValue != null){
+				return prefixValue;
+			}else{
+				return 0.0;
+			}
 	}	
 	public String getPrefixAbbreviation(String prefixName){
 		prefixName = prefixName.toLowerCase();
 		
-		if(corePrefixAbbreviationsDictionary.containsKey(prefixName)){
-			return corePrefixAbbreviationsDictionary.get(prefixName);
-		}
-		else if(dynamicPrefixAbbreviationsDictionary.containsKey(prefixName)){
-			return dynamicPrefixAbbreviationsDictionary.get(prefixName);
-		}
-		else{
-			return "";
-		}
+		String prefixAbbrev;
+		prefixAbbrev = corePrefixAbbreviationsDictionary.get(prefixName);
+			if(prefixAbbrev != null) return prefixAbbrev;
+		prefixAbbrev = dynamicPrefixAbbreviationsDictionary.get(prefixName);
+			if(prefixAbbrev != null){
+				return prefixAbbrev;
+			}else{
+				return "";
+			}
 	}
 	
 	public Map<String, Double> getAllPrefixValues(){
@@ -498,7 +496,7 @@ public final class UnitManager{
 		
 		for(Entry<String, Map<String, ArrayList<String>>> unitSystemsEntry:getUnitsClassificationMap().entrySet()){
 			for(String unitName:unitSystemsEntry.getValue().get(unitCategory)){
-				getUnit(unitName, false);
+				unitMatches.add(getUnit(unitName, false));
 			}
 		}
 		
@@ -509,9 +507,9 @@ public final class UnitManager{
 		ArrayList<Unit> correspondingUnits = new ArrayList<Unit>();		
 		
 		if(sourceUnit.getUnitManagerRef() == this){	
-			//Find a way to convert every component unit to one unit system. Then return resulting unit or return self.
-			if(!sourceUnit.getUnitSystem().contains(targetUnitSystemString) && !sourceUnit.getUnitSystem().contains(" and ") && sourceUnit.getComponentUnitsExponentMap().size() == 1){
-				ArrayList<Unit> matchCandidates = getUnitsByComponentUnitsDimension(sourceUnit.getComponentUnitsExponentMap(), true);
+			//Find a way to convert every component unit to one unit system. Then return resulting unit.
+			if(!sourceUnit.getUnitSystem().contains(targetUnitSystemString) && !sourceUnit.getUnitSystem().contains(" and ") && sourceUnit.getComponentUnitsDimension().size() == 1){
+				ArrayList<Unit> matchCandidates = getUnitsByComponentUnitsDimension(sourceUnit.getComponentUnitsDimension(), true);
 				if(matchCandidates.size() != 0){
 					for(Unit candidate:matchCandidates){
 					    if(sourceUnit.getUnitSystem().equalsIgnoreCase(candidate.getUnitSystem())){
@@ -520,14 +518,14 @@ public final class UnitManager{
 					}
 				}
 			}else{
-				if(!sourceUnit.getFundamentalUnitsExponentMap().containsKey(UNIT_TYPE.UNKNOWN)){
+				if(!sourceUnit.getFundamentalTypesDimension().containsKey(UNIT_TYPE.UNKNOWN)){
 					//Find replacement componentUnits in order to determine proper unit dimension associated with proper unitSystem.
 					Unit replacementUnit = null;
 					Map<String, Double> properComponentUnitDimension = new HashMap<String, Double>();
 					
-					for(Entry<String, Double> componentUnitEntry:sourceUnit.getComponentUnitsExponentMap().entrySet()){				
+					for(Entry<String, Double> componentUnitEntry:sourceUnit.getComponentUnitsDimension().entrySet()){				
 						replacementUnit = getCorrespondingUnitsWithUnitSystem(getUnit(componentUnitEntry.getKey(), false), targetUnitSystemString).get(0);
-						properComponentUnitDimension.put(replacementUnit.getUnitName(), componentUnitEntry.getValue());
+						properComponentUnitDimension.put(replacementUnit.getName(), componentUnitEntry.getValue());
 					}
 					
 					//See if unitManager already contains unit with proper dimension and return that unit. Otherwise return a new unit with proper dimensions and add this unit manager.
@@ -551,10 +549,10 @@ public final class UnitManager{
 		ArrayList<Unit> matchList = new ArrayList<Unit>(); 		
 		
 		if(unit.getUnitManagerRef() == this){
-			if(unit.getBaseUnit().isBaseUnit() && !unit.getBaseUnit().getUnitName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME)){
+			if(unit.getBaseUnit().isBaseUnit() && !unit.getBaseUnit().getName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME)){
 				matchList.addAll(unit.getBaseUnit().getConversionPolyCoeffs().keySet());
 			}else{
-				matchList.addAll(getUnitsByFundamentalUnitsDimension(unit.getFundamentalUnitsExponentMap()));			
+				matchList.addAll(getUnitsByFundamentalUnitsDimension(unit.getFundamentalTypesDimension()));			
 			}
 		}
 
@@ -566,7 +564,7 @@ public final class UnitManager{
 		double[] bCPC = new double[]{0.0f,0.0f};
 		
 		if(sourceUnit.getUnitManagerRef() == this && targetUnit.getUnitManagerRef() == this){
-			if(sourceUnit.equalsDimension(targetUnit) && targetUnit.getBaseUnit().getUnitType() != UNIT_TYPE.UNKNOWN){
+			if(sourceUnit.equalsDimension(targetUnit) && targetUnit.getBaseUnit().getType() != UNIT_TYPE.UNKNOWN){
 				if(sourceUnit.getBaseConversionPolyCoeffs()[1]==0.0f && targetUnit.getBaseConversionPolyCoeffs()[1]==0.0f){
 					bCPC = new double[]{sourceUnit.getBaseConversionPolyCoeffs()[0] / targetUnit.getBaseConversionPolyCoeffs()[0], 0.0f};				
 				}
@@ -589,15 +587,16 @@ public final class UnitManager{
 			if(sourceUnit.getUnitSystem().contains(targetUnitSystemString) && !sourceUnit.getUnitSystem().contains(" and ")){
 				conversionFactor = new double[]{1.0f, 0.0f}; 
 			}
-			else if(!sourceUnit.getUnitSystem().contains(targetUnitSystemString) && !sourceUnit.getUnitSystem().contains(" and ") && sourceUnit.getComponentUnitsExponentMap().size() == 1){
+			else if(!sourceUnit.getUnitSystem().contains(targetUnitSystemString) && !sourceUnit.getUnitSystem().contains(" and ") && sourceUnit.getComponentUnitsDimension().size() == 1){
 				ArrayList<Unit> candidateUnitsWithProperUnitSystem = getUnitsByUnitSystem(targetUnitSystemString);
 				
 				if(candidateUnitsWithProperUnitSystem.size() != 0){
 					Unit matchingUnit = null;;
 					for(Unit candidateUnit:candidateUnitsWithProperUnitSystem){
-						if(sourceUnit.equalsFundamentalUnitsDimension(candidateUnit.getFundamentalUnitsExponentMap())){
+						if(sourceUnit.equalsFundamentalUnitsDimension(candidateUnit.getFundamentalTypesDimension())){
 							matchingUnit = candidateUnit;
 						}
+						break;
 					}
 					if(matchingUnit != null){
 						conversionFactor = getConversionFactorToTargetUnit(sourceUnit, matchingUnit);
@@ -608,10 +607,10 @@ public final class UnitManager{
 					conversionFactor = new double[]{0.0f, 0.0f};
 				}
 			}else{	
-				if(!sourceUnit.getFundamentalUnitsExponentMap().containsKey(UNIT_TYPE.UNKNOWN)){
+				if(!sourceUnit.getFundamentalTypesDimension().containsKey(UNIT_TYPE.UNKNOWN)){
 					Unit componentUnit;
 					conversionFactor = new double[]{1.0f, 0.0f};					
-					for(Entry<String, Double> entry:sourceUnit.getComponentUnitsExponentMap().entrySet()){
+					for(Entry<String, Double> entry:sourceUnit.getComponentUnitsDimension().entrySet()){
 						componentUnit =  getUnit(entry.getKey(), false);
 						conversionFactor = new double[]{ conversionFactor[0] * (double)Math.pow(getConversionFactorToUnitSystem(componentUnit, targetUnitSystemString)[0], entry.getValue()), 0.0f};
 					}
@@ -628,7 +627,7 @@ public final class UnitManager{
 		ArrayList<Unit> unitMatches = getUnitsWithMatchingFundamentalUnitDimension(unit);			
 		if(unitMatches.size() > 0){
 			for(Unit unitMatch:unitMatches){
-				if(unitMatch.isBaseUnit()){
+				if(unitMatch.isBaseUnit() && !unitMatch.getName().equalsIgnoreCase(unit.getName())){
 					return unitMatch;
 				}
 			}
@@ -644,59 +643,65 @@ public final class UnitManager{
 	}	
 	
 	public Map<UNIT_TYPE, Double> calculateFundmtUnitsFromCompUnitsExpMap(Map<String, Double> compUnitsExpMap){
-		Map<UNIT_TYPE, Double> map = new HashMap<UnitManager.UNIT_TYPE, Double>();
+		Map<UNIT_TYPE, Double> fundMap = new HashMap<UnitManager.UNIT_TYPE, Double>();
 				
 		//Goes through each component unit whether derived or and sums up the recursively obtained total occurances of the fundamental units. Makes sure to multiply those totals by the exponent of the component unit.
 		Unit componentUnit;
 		for(String componentUnitName:compUnitsExpMap.keySet()){
 			componentUnit = getUnit(componentUnitName, true);
 			
-			if(componentUnit.getUnitType() == UNIT_TYPE.DERIVED_MULTI_UNIT 
-					&& componentUnit.getComponentUnitsExponentMap().size()>1){
-				Map<UNIT_TYPE, Double> recursedMap = calculateFundmtUnitsFromCompUnitsExpMap(componentUnit.getComponentUnitsExponentMap());	
+			if(componentUnit.getType() == UNIT_TYPE.DERIVED_MULTI_UNIT){
+				Map<UNIT_TYPE, Double> recursedMap = calculateFundmtUnitsFromCompUnitsExpMap(((componentUnit.getComponentUnitsDimension().size() == 1)?componentUnit.getBaseUnit():componentUnit)
+						                                                                       .getComponentUnitsDimension());	
 				for(UNIT_TYPE unitType:UNIT_TYPE.values()){	
-					
 					if(recursedMap.containsKey(unitType)){ 
-						if(!map.containsKey(unitType)){
-							map.put(unitType, 0.0);	
+						if(!fundMap.containsKey(unitType)){
+							fundMap.put(unitType, 0.0);	
 						}				
-						map.put(unitType,  
-								map.get(unitType)+ compUnitsExpMap.get(componentUnitName)*recursedMap.get(unitType));					
+						fundMap.put(unitType,  
+								fundMap.get(unitType)+ compUnitsExpMap.get(componentUnitName)*recursedMap.get(unitType));					
 					}				
 				}
 			}
 			else{
-				if(componentUnit.getUnitType()!=UNIT_TYPE.DERIVED_SINGLE_UNIT){
-					map.put(componentUnit.getUnitType(), compUnitsExpMap.get(componentUnitName));
+				if(componentUnit.getType()!=UNIT_TYPE.DERIVED_SINGLE_UNIT){
+					if(!fundMap.containsKey(componentUnit.getBaseUnit().getType())){
+						fundMap.put(componentUnit.getBaseUnit().getType(), 0.0);	
+					}				
+					fundMap.put(componentUnit.getBaseUnit().getType(), fundMap.get(componentUnit.getBaseUnit().getType()) + compUnitsExpMap.get(componentUnitName));
 				}
 				else{
-					for(Entry<UNIT_TYPE, Double> fundEntry:componentUnit.getBaseUnit().getFundamentalUnitsExponentMap().entrySet()){
-						map.put(fundEntry.getKey(), fundEntry.getValue() * compUnitsExpMap.get(componentUnitName));
+					for(Entry<UNIT_TYPE, Double> fundEntry:componentUnit.getBaseUnit().getFundamentalTypesDimension().entrySet()){
+						if(!fundMap.containsKey(fundEntry.getKey())){
+							fundMap.put(fundEntry.getKey(), 0.0);	
+						}	
+						
+						fundMap.put(fundEntry.getKey(), fundMap.get(fundEntry.getKey()) +  fundEntry.getValue() * compUnitsExpMap.get(componentUnitName));
 					}
 				}
 			}
 		}
 		
-		return map;
+		return fundMap;
 	}
 	public UNIT_TYPE determineUnitType(Unit unit){
 		UNIT_TYPE type;
 		
-		if(unit.getComponentUnitsExponentMap().size()>1){
+		if(unit.getComponentUnitsDimension().size()>1){
 			type = UNIT_TYPE.DERIVED_MULTI_UNIT;
 		}
-		else if(unit.getComponentUnitsExponentMap().size() == 1 
-				&&(Math.abs(unit.getComponentUnitsExponentMap().entrySet().iterator().next().getValue()) > 1 
-					       || unit.getComponentUnitsExponentMap().entrySet().iterator().next().getValue() == -1
-					       || unit.getComponentUnitsExponentMap().entrySet().iterator().next().getValue() == 0)){
+		else if(unit.getComponentUnitsDimension().size() == 1 
+				&&(Math.abs(unit.getComponentUnitsDimension().entrySet().iterator().next().getValue()) > 1 
+					       || unit.getComponentUnitsDimension().entrySet().iterator().next().getValue() == -1
+					       || unit.getComponentUnitsDimension().entrySet().iterator().next().getValue() == 0)){
 			type = UNIT_TYPE.DERIVED_SINGLE_UNIT;
 		}
 		else if(unit.getBaseUnit() != null){
-			if(fundamentalUnitsMap.keySet().contains(unit.getBaseUnit().getUnitSystem()) && fundamentalUnitsMap.get(unit.getBaseUnit().getUnitSystem()).containsKey(unit.getBaseUnit().getUnitName())){
-				type = fundamentalUnitsMap.get(unit.getBaseUnit().getUnitSystem()).get(unit.getBaseUnit().getUnitName());
+			if(fundamentalUnitsMap.keySet().contains(unit.getBaseUnit().getUnitSystem()) && fundamentalUnitsMap.get(unit.getBaseUnit().getUnitSystem()).containsKey(unit.getBaseUnit().getName())){
+				type = fundamentalUnitsMap.get(unit.getBaseUnit().getUnitSystem()).get(unit.getBaseUnit().getName());
 			}
 			else{
-				type = unit.getBaseUnit().getUnitType();
+				type = unit.getBaseUnit().getType();
 			}
 		}
 		else{
@@ -711,14 +716,14 @@ public final class UnitManager{
 
 		//RegEx pattern to parse string into groups of unit names and exponents succeeded or preceded by '/', '*', or ' '
 		//Valid group example: a^(#), (prefix-a)^#, a^#, (a)^(#)  
-		Pattern groupRegExPattern = Pattern.compile("([\\*|\\/]?[\\s]*)((([\\(]?[\\s]*(([a-zA-Z]+[\\-])?([a-zA-Z]+))[\\s]*[\\)]?)([\\s]*\\^[\\s]*([\\(]?[\\s]*[-+]?(\\d*[.])?\\d+[\\s]*[\\)]?)))|(([a-zA-Z]+[\\-])?([a-zA-Z]+)))");
+		Pattern groupRegExPattern = Pattern.compile("([\\*|\\/]?[\\s]*)((([\\(]?[\\s]*(([a-zA-Z]+[\\-])?([a-zA-Z_]+))[\\s]*[\\)]?)([\\s]*\\^[\\s]*([\\(]?[\\s]*[-+]?(\\d*[.])?\\d+[\\s]*[\\)]?)))|(([a-zA-Z]+[\\-])?([a-zA-Z_]+)))");
 		Matcher groupRegExMatcher = groupRegExPattern.matcher(componentUnitsDimensionString);
 		
 		//RegEx pattern to extract prefixes and unit name
-		Pattern prefixNunitNameRegExPattern = Pattern.compile("(([a-zA-Z]+[\\-])?([a-zA-Z]+))");
+		Pattern prefixNunitNameRegExPattern = Pattern.compile("(([a-zA-Z]+[\\-])?([a-zA-Z_]+))");
 		
 		//RegEx pattern to extract exponent
-		Pattern exponentRegExPattern = Pattern.compile("[\\-]?[\\d]+");
+		Pattern exponentRegExPattern = Pattern.compile("[-+]?(\\d*[.])?\\d+");
 		
 		//Perform extraction using RegEx patterns
 		if(groupRegExMatcher.find()){
@@ -764,7 +769,7 @@ public final class UnitManager{
 		Pattern unitTypeRegExPattern = Pattern.compile("[a-zA-Z]+");
 		
 		//RegEx pattern to extract exponent
-		Pattern exponentRegExPattern = Pattern.compile("[\\-]?[\\d]+");
+		Pattern exponentRegExPattern = Pattern.compile("[-+]?(\\d*[.])?\\d+");
 		
 		//Perform extraction using RegEx patterns
 		if(groupRegExMatcher.find()){
@@ -796,7 +801,7 @@ public final class UnitManager{
 			}while(groupRegExMatcher.find());
 		}
 		else{
-			//throw new Exception("Format not recognized at all. Try: (unitType1)^(#) (* or /) (unitName2)^(#)");
+			//throw new Exception("Format not recognized at all. Try: (unitType1)^(#) (* or /) (unitType2)^(#)");
 			fundamentalUnitsDimensionMap.put(UNIT_TYPE.UNKNOWN, 1.0);
 		}
 		return fundamentalUnitsDimensionMap;
@@ -826,14 +831,14 @@ public final class UnitManager{
 			unitsClassificationMap.put(unitSystem, new HashMap<String, ArrayList<String>>());
 		}
 		
-		if(unitsClassificationMap.get(unitSystem).containsKey(unit.getUnitCategory())){
+		if(unitsClassificationMap.get(unitSystem).containsKey(unit.getCategory())){
 			doesUnitCategoryExist = true;
 		}
 		else{
 			doesUnitCategoryExist = false;
 		}
 		
-		addUnitToUnitCategory(unit, unit.getUnitSystem(), unit.getUnitCategory(), doesUnitCategoryExist);		
+		addUnitToUnitCategory(unit, unitSystem, unit.getCategory(), doesUnitCategoryExist);		
 	}
 	private void addUnitToUnitCategory(Unit unit, String unitSystem, String category, boolean doesUnitCategoryExist){
 		
@@ -841,14 +846,14 @@ public final class UnitManager{
 			unitsClassificationMap.get(unitSystem).put(category, new ArrayList<String>());
 		}
 		
-		unitsClassificationMap.get(unitSystem).get(category).add(unit.getUnitName());
+		unitsClassificationMap.get(unitSystem).get(category).add(unit.getName());
 	}
 	public void removeUnitFromHierarchy(Unit unit){
 		if(unitsClassificationMap.containsKey(unit.getUnitSystem())){
-			if(unitsClassificationMap.get(unit.getUnitSystem()).containsKey(unit.getUnitCategory())){
-				unitsClassificationMap.get(unit.getUnitSystem()).get(unit.getUnitCategory()).remove(unit.getUnitName());
-				if(unitsClassificationMap.get(unit.getUnitSystem()).get(unit.getUnitCategory()).size() == 0){
-					unitsClassificationMap.get(unit.getUnitSystem()).remove(unit.getUnitCategory());
+			if(unitsClassificationMap.get(unit.getUnitSystem()).containsKey(unit.getCategory())){
+				unitsClassificationMap.get(unit.getUnitSystem()).get(unit.getCategory()).remove(unit.getName());
+				if(unitsClassificationMap.get(unit.getUnitSystem()).get(unit.getCategory()).size() == 0){
+					unitsClassificationMap.get(unit.getUnitSystem()).remove(unit.getCategory());
 				}
 			}
 			if(unitsClassificationMap.get(unit.getUnitSystem()).size() == 0){
