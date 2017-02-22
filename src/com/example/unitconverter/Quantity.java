@@ -71,7 +71,8 @@ public class Quantity {
 		Quantity newQuantity;
 	 	
 		if(this.unit.equalsDimension(secondQuantity.unit)){
-			newQuantity = new Quantity(this.value+ sign*secondQuantity.value, this.unit);
+			newQuantity = secondQuantity.convertToUnit(this.unit);
+			newQuantity.setValue(this.value + sign*newQuantity.value);
 		}
 		else{
 			if(unitManagerRef != null){
@@ -102,7 +103,7 @@ public class Quantity {
 		double value = 0.0;
 		Unit targetUnit = new Unit();
 		if(unitManagerRef != null){
-			if(unit.getUnitType() != UNIT_TYPE.UNKNOWN){
+			if(unit.getType() != UNIT_TYPE.UNKNOWN){
 				ArrayList<Unit> correspondingUnits = unitManagerRef.getCorrespondingUnitsWithUnitSystem(unit, targetUnitSystemString);
 				
 				if(correspondingUnits.size()>0){
@@ -154,6 +155,6 @@ public class Quantity {
 	///
 	@Override
 	public String toString(){
-		return String.format("%f %s", String.valueOf(value), unit.getUnitName());
+		return String.format("%f %s", String.valueOf(value), unit.getName());
 	}
 }
