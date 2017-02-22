@@ -7,6 +7,8 @@ import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.view.Menu;
@@ -15,7 +17,6 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnFocusChangeListener;
 import android.view.animation.AnimationUtils;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.MultiAutoCompleteTextView;
@@ -40,11 +41,15 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 	Button fromUnitBrowseButton;
 	Button toUnitBrowseButton;
 	Button convertButton;	
+	Button fromUnitViewDetailButton;
+	Button toUnitViewDetailButton;
 	//
 	MultiAutoCompleteTextView fromUnitText;
 	TextView fromValueText;
 	MultiAutoCompleteTextView toUnitText;
 	TextView conversionValueText;
+	//
+	AlertDialog unitDescDialog;
 	
 	//
 	@Override
@@ -72,22 +77,22 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 		super.onWindowFocusChanged(hasFocus);
 		
 		if(hasFocus){
-			if (!pSharablesApplication.getFromQuantity().getUnit().getUnitName().equalsIgnoreCase(fromUnitText.toString())
-				&& !pSharablesApplication.getFromQuantity().getUnit().getUnitName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME)	){
-				fromUnitText.setText(pSharablesApplication.getFromQuantity().getUnit().getUnitName());
+			if (!pSharablesApplication.getFromQuantity().getUnit().getName().equalsIgnoreCase(fromUnitText.toString())
+				&& !pSharablesApplication.getFromQuantity().getUnit().getName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME)	){
+				fromUnitText.setText(pSharablesApplication.getFromQuantity().getUnit().getName());				
 				setFromUnit();
 			}
 			
-			if (!pSharablesApplication.getToQuantity().getUnit().getUnitName().equalsIgnoreCase(toUnitText.toString())
-				&& !pSharablesApplication.getToQuantity().getUnit().getUnitName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME)){
-				toUnitText.setText(pSharablesApplication.getToQuantity().getUnit().getUnitName());
+			if (!pSharablesApplication.getToQuantity().getUnit().getName().equalsIgnoreCase(toUnitText.toString())
+				&& !pSharablesApplication.getToQuantity().getUnit().getName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME)){
+				toUnitText.setText(pSharablesApplication.getToQuantity().getUnit().getName());			
 				setToUnit();
 			}		
 			
 			checkUnits();
 		}
 		else{
-			pSharablesApplication.savePrefixesNUnits();
+			pSharablesApplication.saveUnits();
 			pSharablesApplication.saveConversionFavorites();
 		}
 	}
@@ -102,12 +107,16 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 	public boolean onOptionsItemSelected(MenuItem item){
 		switch(item.getItemId()){
 		case R.id.addToFavoritesItem:
-			String conversion = pSharablesApplication.getFromQuantity().getUnit().getUnitCategory().toUpperCase()+": "+pSharablesApplication.getFromQuantity().getUnit().getUnitName() + " --> " + pSharablesApplication.getToQuantity().getUnit().getUnitName();
-			if(!pSharablesApplication.getConversionFavoritesList().contains(conversion)
-					&& pSharablesApplication.getFromQuantity().getUnit().equalsDimension(pSharablesApplication.getToQuantity().getUnit())){
-				pSharablesApplication.addConversionToConversionFavoritesList(conversion);	
-				Collections.sort(pSharablesApplication.getConversionFavoritesList());
+			String conversion = pSharablesApplication.getFromQuantity().getUnit().getCategory().toUpperCase()+": "+pSharablesApplication.getFromQuantity().getUnit().getName() + " --> " + pSharablesApplication.getToQuantity().getUnit().getName();
+			if(pSharablesApplication.getFromQuantity().getUnit().equalsDimension(pSharablesApplication.getToQuantity().getUnit())){
+				if(!pSharablesApplication.getConversionFavoritesList().contains(conversion)){
+					pSharablesApplication.addConversionToConversionFavoritesList(conversion);	
+					Collections.sort(pSharablesApplication.getConversionFavoritesList());
+				}
+				fromUnitText.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.slide_out_right));
+				toUnitText.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.slide_out_right));
 			}
+			
 			
 			return true;
 		case R.id.viewFavoritesItem:
@@ -144,12 +153,23 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 		fromUnitBrowseButton = (Button) findViewById(R.id.fromUnitBrowseButton);
 		toUnitBrowseButton = (Button) findViewById(R.id.toUnitBrowseButton);
 		convertButton = (Button) findViewById(R.id.convertButton);	
+		fromUnitViewDetailButton = (Button) findViewById(R.id.fromUnitViewDescButton);
+		toUnitViewDetailButton = (Button) findViewById(R.id.toUnitViewDescButton);
 		
 		//
 		fromUnitText = (MultiAutoCompleteTextView) findViewById(R.id.fromUnitTextView);
 		fromValueText = (TextView) findViewById(R.id.fromValueTextView);
 		toUnitText = (MultiAutoCompleteTextView) findViewById(R.id.toUnitTextView);
 		conversionValueText = (TextView) findViewById(R.id.conversionValueTextView);
+		
+		//
+		unitDescDialog = new AlertDialog.Builder(MainActivity.this).create();
+		unitDescDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK", new DialogInterface.OnClickListener() {		
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				dialog.dismiss();
+			}
+		});
 	}
 	
 	//Data Loading Methods
@@ -189,6 +209,24 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 			}
 		});
 		
+		fromUnitViewDetailButton.setOnClickListener(new OnClickListener() {	
+			@Override
+			public void onClick(View v) {
+				unitDescDialog.setTitle("From Unit Details");				
+				unitDescDialog.setMessage(getUnitDetailsMessage(pSharablesApplication.getFromQuantity().getUnit()));
+				unitDescDialog.show();
+			}
+		});
+		
+		toUnitViewDetailButton.setOnClickListener(new OnClickListener() {	
+			@Override
+			public void onClick(View v) {
+				unitDescDialog.setTitle("To Unit Details");
+				unitDescDialog.setMessage(getUnitDetailsMessage(pSharablesApplication.getToQuantity().getUnit()));
+				unitDescDialog.show();
+			}
+		});
+				
 		convertButton.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View view){
@@ -202,6 +240,17 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 			}
 		});
 	}
+	private String getUnitDetailsMessage(Unit unit){
+		String category = unit.getCategory();
+		String fundamentalTypesDim = unit.getFundamentalTypesDimensionString();
+		String description = unit.getDescription();
+		
+		return (category.equals(fundamentalTypesDim.toLowerCase())?"":"Category: "+ category)
+								  +(description.length()==0?"":"\n\nDescription: "+description)
+								  +"\n\nFundamental Types Dimension: "+fundamentalTypesDim;
+		
+	}
+	
 	private void setListenersOnTextViews(){
 		fromUnitText.setOnFocusChangeListener(new OnFocusChangeListener() {
 			
@@ -212,8 +261,9 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 					checkUnits();
 				}
 			}
+			
 		});
-		
+	
 		toUnitText.setOnFocusChangeListener(new OnFocusChangeListener() {
 			
 			@Override
@@ -239,34 +289,12 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 	//
 	private void postLoadSetup(){
 		pSharablesApplication.recreateUnitManager();	
-		setupAutoComplete();
-		
+
 		//
 		((LinearLayout)findViewById(R.id.progressBarLinearLayout)).setVisibility(View.GONE);
 		((LinearLayout)findViewById(R.id.fromLinearLayout)).setVisibility(View.VISIBLE);
 		((LinearLayout)findViewById(R.id.switchLinearLayout)).setVisibility(View.VISIBLE);
 		((LinearLayout)findViewById(R.id.toLinearLayout)).setVisibility(View.VISIBLE);
-	}
-	private void setupAutoComplete(){
-		ArrayList<String> unitsNamesNPrefixes = new ArrayList<String>();
-		
-		for(Unit unit:pSharablesApplication.getUnitManager().getCoreUnits()){
-			unitsNamesNPrefixes.add(unit.getUnitName());
-		}
-		for(Unit unit:pSharablesApplication.getUnitManager().getDynamicUnits()){
-			unitsNamesNPrefixes.add(unit.getUnitName());
-		}
-		unitsNamesNPrefixes.addAll(pSharablesApplication.getUnitManager().getAllPrefixValues().keySet());
-		
-		ArrayAdapter<String> unitsNamesNPrefixes_Adapter = new ArrayAdapter<String>(this, android.R.layout.select_dialog_singlechoice, unitsNamesNPrefixes);
-		
-		fromUnitText.setAdapter(unitsNamesNPrefixes_Adapter);
-		toUnitText.setAdapter(unitsNamesNPrefixes_Adapter);		
-		
-		fromUnitText.setThreshold(1);
-		toUnitText.setThreshold(1);
-		
-		unitsNamesNPrefixes_Adapter.notifyDataSetChanged();
 	}
 	
 	//
@@ -282,19 +310,9 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 		
 		ArrayList<Unit> matchedUnits =  new ArrayList<Unit>();	
 		
-		if(!((isToUnit)?pSharablesApplication.getToQuantity().getUnit():pSharablesApplication.getFromQuantity().getUnit()).getUnitName().equalsIgnoreCase(unitNameOrDimension)){
+		if(!((isToUnit)?pSharablesApplication.getToQuantity().getUnit():pSharablesApplication.getFromQuantity().getUnit()).getName().equalsIgnoreCase(unitNameOrDimension)){
 			if(unitNameOrDimension.equals("") ){
 				matchedUnits.add(pSharablesApplication.getUnitManager().getUnit(Unit.UNKNOWN_UNIT_NAME));
-			}
-			else if(unitNameOrDimension.contains("*") || unitNameOrDimension.contains("/") || unitNameOrDimension.contains("^")
-				   || unitNameOrDimension.contains("(") || unitNameOrDimension.contains(")")){
-				
-				matchedUnits = pSharablesApplication.getUnitManager().getUnitsByComponentUnitsDimension(unitNameOrDimension, false);
-				
-				//If unit manager does not already contains units with similar dimension, then added a newly created version of such unit and store it in the unit manager for easy future access
-				if(matchedUnits.isEmpty()){
-					matchedUnits.add(pSharablesApplication.getUnitManager().getUnit(unitNameOrDimension));
-				}
 			}	
 			else{
 				matchedUnits.add(pSharablesApplication.getUnitManager().getUnit(unitNameOrDimension));
@@ -323,8 +341,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 	
 	//
 	private void checkUnits(){
-		if(!pSharablesApplication.getFromQuantity().getUnit().getFundamentalUnitsExponentMap().keySet().contains(UNIT_TYPE.UNKNOWN) 
-		   && !pSharablesApplication.getToQuantity().getUnit().getFundamentalUnitsExponentMap().keySet().contains(UNIT_TYPE.UNKNOWN)){
+		if(!pSharablesApplication.getFromQuantity().getUnit().getFundamentalTypesDimension().keySet().contains(UNIT_TYPE.UNKNOWN) 
+		   && !pSharablesApplication.getToQuantity().getUnit().getFundamentalTypesDimension().keySet().contains(UNIT_TYPE.UNKNOWN)){
 			if(pSharablesApplication.getFromQuantity().getUnit().equalsDimension(pSharablesApplication.getToQuantity().getUnit())){	
 				conversionValueText.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.fade_in));
 				conversionValueText.setText("##:Units Match");				
@@ -345,8 +363,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 			}
 		}
 		else{	
-			boolean isToUnk = pSharablesApplication.getToQuantity().getUnit().getFundamentalUnitsExponentMap().keySet().contains(UNIT_TYPE.UNKNOWN);
-			boolean isFromUkn = pSharablesApplication.getFromQuantity().getUnit().getFundamentalUnitsExponentMap().keySet().contains(UNIT_TYPE.UNKNOWN);
+			boolean isToUnk = pSharablesApplication.getToQuantity().getUnit().getFundamentalTypesDimension().keySet().contains(UNIT_TYPE.UNKNOWN);
+			boolean isFromUkn = pSharablesApplication.getFromQuantity().getUnit().getFundamentalTypesDimension().keySet().contains(UNIT_TYPE.UNKNOWN);
 		
 			if(isToUnk && isFromUkn){
 				conversionValueText.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.fade_in));
@@ -384,8 +402,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 		}		
 	}
 	private void getConversion(){
-		if(!pSharablesApplication.getFromQuantity().getUnit().getFundamentalUnitsExponentMap().keySet().contains(UNIT_TYPE.UNKNOWN) 
-		   && !pSharablesApplication.getToQuantity().getUnit().getFundamentalUnitsExponentMap().keySet().contains(UNIT_TYPE.UNKNOWN)){
+		if(!pSharablesApplication.getFromQuantity().getUnit().getFundamentalTypesDimension().keySet().contains(UNIT_TYPE.UNKNOWN) 
+		   && !pSharablesApplication.getToQuantity().getUnit().getFundamentalTypesDimension().keySet().contains(UNIT_TYPE.UNKNOWN)){
 			
 			if(pSharablesApplication.getFromQuantity().getUnit().equalsDimension(pSharablesApplication.getToQuantity().getUnit())){
 				
