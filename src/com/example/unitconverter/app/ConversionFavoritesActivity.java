@@ -64,9 +64,9 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
 	//Setup UI Components Methods
 	private void setupUIComponents(){
 		conversionsListView = (ListView) findViewById(R.id.conversionListView);
-		selectButton = (Button) findViewById(R.id.selectButton); 
+		selectButton = (Button) findViewById(R.id.selectUnitButton); 
 		removeButton = (Button) findViewById(R.id.removeButton);
-		cancelButton = (Button) findViewById(R.id.cancelButton); 
+		cancelButton = (Button) findViewById(R.id.cancelUnitButton); 
 		
 		conversionsListView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
 	}
@@ -119,7 +119,7 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
 			public void onItemClick(AdapterView<?> arg0, View arg1, int position,
 					long arg3) {
 				setSelection((String)arg0.getItemAtPosition(position), position);							
-				arg0.getChildAt(position).setBackgroundColor(Color.WHITE);		
+				arg0.getChildAt(position).setBackgroundColor(Color.CYAN);		
 			}
 			
 		});
