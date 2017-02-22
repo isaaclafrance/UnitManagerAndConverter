@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/main_activity_background"
+    android:animateLayoutChanges="true"
     android:dividerPadding="22dp"
     android:orientation="vertical"
     android:paddingBottom="@dimen/activity_vertical_margin"
@@ -74,6 +75,7 @@
             android:fadingEdge="horizontal"
             android:fadingEdgeLength="10dp"
             android:hint="Format: a, a^#, (prefix-a)^#, a^# / b^#,  a^# * b^#, etc"
+            android:padding="5dp"
             android:textSize="@dimen/from_unit_text_size"
             android:textStyle="bold" />
 
@@ -82,15 +84,25 @@
             android:layout_width="fill_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:gravity="right"
-            android:orientation="vertical"
+            android:paddingEnd="20dp"
+            android:paddingStart="20dp"
+            android:gravity="right|fill"
+            android:orientation="horizontal"
             android:paddingTop="@dimen/from_unit_button_top_padding" >
+
+            <Button
+                android:id="@+id/fromUnitViewDescButton"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="View Detail"
+                android:textSize="10dp" />
 
             <Button
                 android:id="@+id/fromUnitBrowseButton"
                 style="?android:attr/buttonStyleSmall"
                 android:layout_width="@dimen/from_unit_browse_button_width"
-                android:layout_height="0dp"
+                android:layout_height="match_parent"
                 android:layout_weight="0.85"
                 android:text="@string/unitBrowseButton_text"
                 android:textSize="10sp" />
@@ -178,6 +190,7 @@
             android:fadingEdge="horizontal"
             android:fadingEdgeLength="10dp"
             android:hint="Format: a, a^#, (prefix-a)^#, a^# / b^#,  a^# * b^#, etc"
+            android:padding="5dp"
             android:textSize="@dimen/to_unit_text_size"
             android:textStyle="bold" />
 
@@ -186,16 +199,26 @@
             android:layout_width="fill_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:gravity="right"
-            android:orientation="vertical"
-            android:paddingTop="@dimen/to_unit_button_top_padding" >
+            android:paddingEnd="20dp"
+            android:paddingStart="20dp"
+            android:gravity="right|fill"
+            android:orientation="horizontal"
+            android:paddingTop="@dimen/from_unit_button_top_padding" >
+
+            <Button
+                android:id="@+id/toUnitViewDescButton"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="View Detail"
+                android:textSize="10dp" />
 
             <Button
                 android:id="@+id/toUnitBrowseButton"
                 style="?android:attr/buttonStyleSmall"
                 android:layout_width="@dimen/to_unit_browse_button_width"
-                android:layout_height="0dp"
-                android:layout_weight="0.85"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.22"
                 android:text="@string/unitBrowseButton_text"
                 android:textSize="10sp" />
 

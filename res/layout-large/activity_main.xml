@@ -3,6 +3,7 @@
     android:id="@+id/mainLinearLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:animateLayoutChanges="true"
     android:background="@drawable/main_activity_background"
     android:dividerPadding="22dp"
     android:orientation="vertical"
@@ -20,7 +21,7 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:orientation="vertical"
-        android:visibility="visible" >
+        android:visibility="gone" >
 
         <ProgressBar
             android:id="@+id/unitManagerLoaderProgressBar"
@@ -76,6 +77,7 @@
             android:fadingEdge="horizontal"
             android:fadingEdgeLength="10dp"
             android:hint="Format: a, a^#, (prefix-a)^#, a^# / b^#,  a^# * b^#, etc"
+            android:paddingLeft="5dp"
             android:textSize="@dimen/from_unit_text_size"
             android:textStyle="bold" />
 
@@ -84,15 +86,24 @@
             android:layout_width="fill_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:gravity="right"
-            android:orientation="vertical"
+            android:paddingEnd="20dp"
+            android:paddingStart="20dp"
+            android:gravity="right|fill"
+            android:orientation="horizontal"
             android:paddingTop="@dimen/from_unit_button_top_padding" >
+
+            <Button
+                android:id="@+id/fromUnitViewDescButton"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="View Detail" />
 
             <Button
                 android:id="@+id/fromUnitBrowseButton"
                 style="?android:attr/buttonStyleSmall"
                 android:layout_width="@dimen/from_unit_browse_button_width"
-                android:layout_height="0dp"
+                android:layout_height="match_parent"
                 android:layout_weight="0.85"
                 android:text="@string/unitBrowseButton_text"
                 android:textSize="20sp" />
@@ -180,6 +191,7 @@
             android:fadingEdge="horizontal"
             android:fadingEdgeLength="10dp"
             android:hint="Format: a, a^#, (prefix-a)^#, a^# / b^#,  a^# * b^#, etc"
+            android:paddingLeft="5dp"
             android:textSize="@dimen/to_unit_text_size"
             android:textStyle="bold" />
 
@@ -188,15 +200,23 @@
             android:layout_width="fill_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:gravity="right"
-            android:orientation="vertical"
-            android:paddingTop="@dimen/to_unit_button_top_padding" >
+            android:paddingEnd="20dp"
+            android:paddingStart="20dp"
+            android:gravity="right|fill"
+            android:orientation="horizontal"
+            android:paddingTop="@dimen/from_unit_button_top_padding" >
 
+            <Button
+                android:id="@+id/toUnitViewDescButton"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="View Detail" />
             <Button
                 android:id="@+id/toUnitBrowseButton"
                 style="?android:attr/buttonStyleSmall"
                 android:layout_width="@dimen/to_unit_browse_button_width"
-                android:layout_height="0dp"
+                android:layout_height="match_parent"
                 android:layout_weight="0.85"
                 android:text="@string/unitBrowseButton_text"
                 android:textSize="20sp" />

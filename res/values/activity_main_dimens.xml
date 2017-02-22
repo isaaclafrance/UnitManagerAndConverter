@@ -37,8 +37,8 @@
     <dimen name="to_unit_browse_button_width">100dp</dimen>
     <dimen name="switch_button_width">60dp</dimen>
 
-    <dimen name="from_unit_browse_button_text_size">10sp</dimen>
-    <dimen name="to_unit_browse_button_text_size">10sp</dimen>
+    <dimen name="from_unit_browse_button_text_size">15sp</dimen>
+    <dimen name="to_unit_browse_button_text_size">15sp</dimen>
     <dimen name="switch_button_text_size">15dp</dimen>    
         
 </resources>

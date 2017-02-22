@@ -11,7 +11,7 @@
     tools:context=".ConversionFavoritesActivity" >
     
     <LinearLayout
-        android:id="@+id/conversionListLinearLayout"
+        android:id="@+id/unitSelectionLinearLayout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="5"
@@ -21,7 +21,7 @@
         android:padding="10dp" >
 
         <TextView
-            android:id="@+id/favoriteConversionViewLabel"
+            android:id="@+id/prefixNUnitSelectionViewLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="8dp"
@@ -31,6 +31,7 @@
 
         <ListView
             android:id="@+id/conversionListView"
+            android:animateLayoutChanges="true"
             android:layout_width="276dp"
             android:layout_height="match_parent"
             android:clickable="true"
@@ -51,7 +52,7 @@
         android:padding="10dp" >
 
         <Button
-            android:id="@+id/selectButton"
+            android:id="@+id/selectUnitButton"
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
@@ -69,7 +70,7 @@
             android:textSize="15sp" />
 
         <Button
-            android:id="@+id/cancelButton"
+            android:id="@+id/cancelUnitButton"
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"

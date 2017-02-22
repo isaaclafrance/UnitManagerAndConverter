@@ -4,5 +4,5 @@
     <string name="dimension_filter_selection"><u>Dimension Filter</u></string>  
     <string name="unit_system_selection"><u>Unit System Selection</u></string>
     <string name="category_selection"><u>Category Selection</u></string>
-    <string name="unit_selection"><u>Unit Selection</u></string>    
+    <string name="unit_selection"><u>Prefix &amp; Unit Selection</u></string>    
 </resources>

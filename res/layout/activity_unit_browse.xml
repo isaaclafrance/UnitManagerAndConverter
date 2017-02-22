@@ -100,7 +100,7 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/conversionListLinearLayout"
+        android:id="@+id/unitSelectionLinearLayout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -110,7 +110,7 @@
         android:padding="10dp" >
 
         <TextView
-            android:id="@+id/favoriteConversionViewLabel"
+            android:id="@+id/prefixNUnitSelectionViewLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="5dp"
@@ -119,18 +119,36 @@
             android:textSize="20sp"
             android:textStyle="bold" />
 
-        <Spinner
-            android:id="@+id/unitSpinner"
+        <LinearLayout
+            android:id="@+id/prefUnitNameLinearLayout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingLeft="10dp"
-            android:paddingRight="10dp"
-            android:textAlignment="center" />
+            android:layout_height="wrap_content" >
+
+            <Spinner
+                android:id="@+id/prefixSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp"
+                android:textAlignment="center" />
+
+            <Spinner
+                android:id="@+id/unitSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp"
+                android:textAlignment="center" />
+
+        </LinearLayout>
 
     </LinearLayout>
 
     <LinearLayout
         android:id="@+id/buttonsLinearLayout"
+        android:animateLayoutChanges="true"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -138,22 +156,31 @@
         android:padding="10dp" >
 
         <Button
-            android:id="@+id/selectButton"
+            android:id="@+id/selectUnitButton"
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
             android:padding="10dp"
             android:text="SELECT"
-            android:textSize="25sp" />
+            android:textSize="20sp" />
 
         <Button
-            android:id="@+id/cancelButton"
+            android:id="@+id/cancelUnitButton"
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
             android:padding="10dp"
             android:text="CANCEL"
-            android:textSize="25sp" />
+            android:textSize="20sp" />
+
+        <Button
+            android:id="@+id/deleteUnitButton"
+            android:layout_width="0dp"
+            android:layout_height="fill_parent"
+            android:layout_weight="1"
+            android:padding="10dp"
+            android:text="DELETE"
+            android:textSize="20sp" />
 
     </LinearLayout>
 
