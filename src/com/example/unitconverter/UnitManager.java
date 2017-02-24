@@ -8,7 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
-//A class that manages and converts between different units. 
+//A class that manages and converts among different units. 
 public final class UnitManager{
 	//Fields
 	private Map<String, Unit> coreBaseUnitsDictionary;
@@ -64,6 +64,7 @@ public final class UnitManager{
 		if(unit.getUnitManagerRef() != this || unit.getBaseUnit().getType() == UNIT_TYPE.UNKNOWN || unit.getFundamentalTypesDimension().containsKey(UNIT_TYPE.UNKNOWN)){			
 			unitsWithUnknownBaseOrUnknownFundDimension.put(unit.getName(), unit);
 			unit.setUnitManagerRef(this);
+			//Assess the characteristics(type, dimension, etc) of the unit again after associating it with this unit manager.
 			if(unit.getBaseUnit().getType() != UNIT_TYPE.UNKNOWN && !unit.getFundamentalTypesDimension().containsKey(UNIT_TYPE.UNKNOWN)){
 				addUnit(unit);
 			}
@@ -101,7 +102,6 @@ public final class UnitManager{
 					}
 				}
 					
-				//If unit still unknown after being associated with unit manager, then it is isolated. Or else at to dictionary.
 				if(unit.isCoreUnit()){
 					coreBaseUnitsDictionary.put(unit.getName(), unit);	
 				}
@@ -110,7 +110,6 @@ public final class UnitManager{
 				}					
 			}
 			else{	
-				//If unit still unknown after incorporation into the unit manager, then isolate it into a group of units with unknown components.
 				if(unit.isCoreUnit()){
 					coreUnitsDictionary.put(unit.getName(), unit);	
 				}
@@ -273,7 +272,7 @@ public final class UnitManager{
 			}	
 	}
 	private Unit getUnit(String prefixName, String unitName){
-		//First gets or creates a copy of the unit. Next adds prefix to unit name and change base conversion to reflect prefix value. Then add new unit to appropriate map and returns unit. 
+		//First gets or creates a copy of the unit. Next adds prefix to unit name and changes base conversion to reflect prefix value. Then adds new unit to appropriate map and returns unit. 
 		
 		prefixName = prefixName.toLowerCase();		
 		Unit unit = getUnit(unitName);

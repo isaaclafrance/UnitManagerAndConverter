@@ -220,7 +220,7 @@ public class Unit{
 		}else{
 			this.baseUnit = baseUnit;
 			
-			//When either the units or it base unit have unknown component, the usual tightly enforced conjunction restriction becomes a disjunction.
+			//When either the units or its base unit have unknown component, the usual tightly enforced conjunction restriction becomes a disjunction.
 			if(this.equals(baseUnit) || (baseConversionPolyCoeffs[0]==1.0f && baseConversionPolyCoeffs[1]==0.0f)){
 				this.isBaseUnit = true;
 			}
@@ -233,7 +233,7 @@ public class Unit{
 		setAutomaticUnitTypeNFundmtTypesDim();
 		setAutomaticUnitSystem();
 		
-		//Update the unassosciated units in this unit's unit manager.
+		//Update the unassociated units in this unit's unit manager.
 		if(unitManagerRef != null){
 			unitManagerRef.updateAssociationsOfUnknownUnits();	
 		}
@@ -243,7 +243,7 @@ public class Unit{
 	}	
 	public void setBaseUnit(Unit baseUnit, double[] baseConversionPolyCoeffs){
 		this.baseConversionPolyCoeffs = baseConversionPolyCoeffs;		
-		setBaseUnit(baseUnit, true);//setBaseUnit(baseUnit, false);
+		setBaseUnit(baseUnit, false);
 
 	}
 	
@@ -424,8 +424,8 @@ public class Unit{
 				otherComponentUnitsDimensionCopy.remove(entry.getKey());
 			}
 			if(otherComponentUnitsDimensionCopy.size()>0){
-				//Although the number of components are the same, there some components that are raised to zero and
-				//there are some components that were not compared in the OTHER map since THIS unit's map was the initial basis of comparsion.
+				//Although the number of components are the same, there are some components that are raised to zero and
+				//there are some components that were not compared in the OTHER map since THIS unit's map was the initial basis of comparision.
 				state = false;
 			}
 		}
@@ -508,6 +508,7 @@ public class Unit{
 					dimString +=  componentUnitName + " * ";
 				}
 				else{
+					//Remove calculated dimensions raised to zero. 
 					if(Math.abs(componentUnitsDimension.get(componentUnitName))>0){
 						dimString += "("+componentUnitName+")^"+"("+Double.toString(componentUnitsDimension.get(componentUnitName))+") * ";
 					}
@@ -530,6 +531,7 @@ public class Unit{
 				fDimString +=  fundUnit.name() + " * ";
 			}
 			else{
+				//Remove calculated dimensions raised to zero. 
 				if(Math.abs(fundamentalTypesDimension.get(fundUnit))>0){
 					fDimString += "("+fundUnit.name()+")^"+"("+Double.toString(fundamentalTypesDimension.get(fundUnit))+") * ";
 				}
