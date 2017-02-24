@@ -38,7 +38,7 @@ public class UnitBrowserActivity extends Activity {
 	//
 	String oppositeUnitType;
 	String callerButtonUnitType;
-	String categoryName;
+	String oppositeUnitCategoryName;
 
 	//
 	@Override
@@ -52,9 +52,9 @@ public class UnitBrowserActivity extends Activity {
 
 		//
 		oppositeUnitType = "";
-		categoryName = "";
+		oppositeUnitCategoryName = "";
 		
-		//Set unit category and the unit type of the opposite based on the unit for which activity was invoked
+		//Set unit category and the unit type of the opposite based on the unit for which activity was invoked.
 		Bundle extras = getIntent().getExtras();
 		if(extras != null){			
 			callerButtonUnitType = extras.getString("buttonName");
@@ -62,10 +62,10 @@ public class UnitBrowserActivity extends Activity {
 		}
 		
 		if(oppositeUnitType.equalsIgnoreCase("to")){
-			categoryName = pSharablesApplication.getToQuantity().getUnit().getCategory();
+			oppositeUnitCategoryName = pSharablesApplication.getToQuantity().getUnit().getCategory();
 		}
 		else if(oppositeUnitType.equalsIgnoreCase("from")){
-			categoryName = pSharablesApplication.getFromQuantity().getUnit().getCategory();
+			oppositeUnitCategoryName = pSharablesApplication.getFromQuantity().getUnit().getCategory();
 		}
 		
 		setTitle("Select "+callerButtonUnitType.toUpperCase()+" Unit");
@@ -294,7 +294,7 @@ public class UnitBrowserActivity extends Activity {
 			}
 			else{
 				for(String unitSystemName:pSharablesApplication.getUnitManager().getUnitsClassificationMap().keySet()){
-					if(pSharablesApplication.getUnitManager().getUnitsClassificationMap().get(unitSystemName).containsKey(categoryName)){
+					if(pSharablesApplication.getUnitManager().getUnitsClassificationMap().get(unitSystemName).containsKey(oppositeUnitCategoryName)){
 						unitSystemNamesList.add(unitSystemName);
 					}
 				}
@@ -313,7 +313,7 @@ public class UnitBrowserActivity extends Activity {
 			}	
 		}
 		else{
-			categoriesList.add(categoryName);
+			categoriesList.add(oppositeUnitCategoryName);
 		}
 		
 		ArrayAdapter<String> categorySpinnerArrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, categoriesList);
@@ -338,11 +338,16 @@ public class UnitBrowserActivity extends Activity {
 	
 	private void populatePrefixSpinner(){
 		ArrayList<String> prefixesList = new ArrayList<String>();
-		prefixesList.add("- - - - - - -  ::  1.0"); //When selected no factor is applied.
+		prefixesList.add("- - - - - - -  ::  1.0"); //When no selected selected is applied, the identity factor is used.
 		
-		//Only display prefixes if the unit name itself does not contain a prefix. Also make sure that unit name does not contain any complex term combinations
+		/*Only display prefixes if the unit name itself does not contain a prefix. 
+		 Make sure that unit name does not contain any complex term combinations.
+		 Also make sure it is not a currency or a temperature unit.
+		*/
 		if(!Pattern.matches("[a-zA-Z_]+-[a-zA-Z_]+",(String)unitSpinner.getSelectedItem())
 			&& !Pattern.compile("[/*()]").matcher((String)unitSpinner.getSelectedItem()).find()
+			&& !((String)categorySpinner.getSelectedItem()).equalsIgnoreCase("temperature_unit")
+			&& !((String)categorySpinner.getSelectedItem()).equalsIgnoreCase("currency_unit")
 			&& !((String)unitSpinner.getSelectedItem()).equalsIgnoreCase("No Compatible Units")){
 			
 			for(Entry<String,Double> prefixEntry:pSharablesApplication.getUnitManager().getAllPrefixValues().entrySet()){
