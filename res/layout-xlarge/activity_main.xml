@@ -157,6 +157,7 @@
             android:layout_height="0dp"
             android:layout_weight="0.79"
             android:drawableLeft="@drawable/ic_action_refresh"
+            android:drawablePadding="10dp"
             android:gravity="left|center_vertical"
             android:text="CONVERT"
             android:textSize="@dimen/switch_button_text_size" />
