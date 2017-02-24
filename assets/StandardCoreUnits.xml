@@ -306,7 +306,7 @@
 	   	<unitSystem>us customary system</unitSystem>
 	    <abbreviation>ton</abbreviation>
 	    <unitCategory>mass_unit</unitCategory>
-	    <unitDescription>In the United States and formerly Canada, a ton is defined to be 2,000 pounds (907 kg).</unitDescription>  	    
+	    <unitDescription>In the United States and formerly Canada, a ton is defined to be 2,000 pounds (about 907 kg).</unitDescription>  	    
 	    <componentUnits>
 	        <component>
 	            <unitName>ton</unitName>
@@ -315,7 +315,7 @@
 	    </componentUnits>
 	    <baseConversionPolyCoeffs>
 	        <baseUnit>gram</baseUnit>
-	       	<polynomialCoeffs>1.10231e-6 0.0</polynomialCoeffs> 	                   
+	       	<polynomialCoeffs>907185 0.0</polynomialCoeffs> 	                   
 	    </baseConversionPolyCoeffs>
 	</unit> 
 		
@@ -326,7 +326,7 @@
 	   	<unitSystem>si</unitSystem>
 	    <abbreviation>m</abbreviation>
 	    <unitCategory>length_unit</unitCategory>
-	    <unitDescription>The distance travelled by light in a vacuum in 3.33564095e-9</unitDescription>  	    	    
+	    <unitDescription>The distance travelled by light in a vacuum in 3.33564095e-9 seconds.</unitDescription>  	    	    
 	    <componentUnits>
 	        <component>
 	            <unitName>meter</unitName>
@@ -523,6 +523,60 @@
 	
 <!-- AREA -->
 
+	<unit>
+	    <unitName>square_meter</unitName>	    
+	    <unitSystem>si</unitSystem>
+	    <abbreviation>m2</abbreviation>
+	    <unitCategory>area_unit</unitCategory>
+	    <unitDescription></unitDescription>  	    
+	    <componentUnits>
+	        <component>
+	            <unitName>meter</unitName>
+	            <exponent>2.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	       	<baseUnit>square_meter</baseUnit>
+	        <polynomialCoeffs>1.0f 0.0f</polynomialCoeffs>  	            
+	    </baseConversionPolyCoeffs>
+	</unit>
+
+    <unit>
+	    <unitName>are</unitName>	    
+	    <unitSystem>si</unitSystem>
+	    <abbreviation>a</abbreviation>
+	    <unitCategory>area_unit</unitCategory>
+	    <unitDescription>It is commonly used to measure real estate, in particular in Indonesia, India, and in French-, Portuguese-, Slovakian-, Serbian-, Czech-, Polish-, Dutch-, and German-speaking countries.</unitDescription>  	    
+	    <componentUnits>
+	        <component>
+	            <unitName>are</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	       	<baseUnit>square_meter</baseUnit>
+	        <polynomialCoeffs>100.00f 0.0f</polynomialCoeffs>  	            
+	    </baseConversionPolyCoeffs>
+	</unit>
+	
+    <unit>
+	    <unitName>hectare</unitName>	    
+	    <unitSystem>si</unitSystem>
+	    <abbreviation>ha</abbreviation>
+	    <unitCategory>area_unit</unitCategory>
+	    <unitDescription>It is widely used throughout the world for the measurement of large areas of land, and it is the legal unit of measure in domains concerned with land ownership, planning, and management, including law (land deeds), agriculture, forestry, and town planning throughout the European Union</unitDescription>  	    
+	    <componentUnits>
+	        <component>
+	            <unitName>hectare</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	       	<baseUnit>square_meter</baseUnit>
+	        <polynomialCoeffs>10000.00f 0.0f</polynomialCoeffs>  	            
+	    </baseConversionPolyCoeffs>
+	</unit>
+    
 <!-- VOLUME -->
 	<unit>
 	    <unitName>cubic_meter</unitName>	    
