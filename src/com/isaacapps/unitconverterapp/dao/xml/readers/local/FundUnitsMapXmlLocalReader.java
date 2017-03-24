@@ -1,8 +1,6 @@
-package com.example.unitconverter.dao;
+package com.isaacapps.unitconverterapp.dao.xml.readers.local;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,46 +8,21 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.Context;
-import android.support.v4.content.AsyncTaskLoader;
-import android.util.Xml;
 
-import com.example.unitconverter.UnitManager;
-import com.example.unitconverter.UnitManagerFactory;
-import com.example.unitconverter.UnitManager.UNIT_TYPE;
+import com.isaacapps.unitconverterapp.dao.xml.readers.AsyncXmlReader;
+import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager;
+import com.isaacapps.unitconverterapp.models.unitmanager.UnitManagerBuilder;
+import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager.UNIT_TYPE;
 
-//Loads and creates a map of unit systems and unit namee that are associates with fundamental units
-public class FundUnitsMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
-	//Fields
-	private XmlPullParser parser;
-	private boolean isSourceOnline; //Determines if XML loaded from an online server or from local source.
-	private String fundUnitsXmlSource;
-	
-	//Constructors
-	public FundUnitsMapXmlReader(Context context){
+public class FundUnitsMapXmlLocalReader extends AsyncXmlReader<Map<String, Map<String, UNIT_TYPE>>, UnitManagerBuilder>{
+
+	///
+	public FundUnitsMapXmlLocalReader(Context context){
 		super(context);
-		this.isSourceOnline = false;
-		fundUnitsXmlSource = "FundamentalUnits.xml";
-		parser = Xml.newPullParser();
-	}
-	public FundUnitsMapXmlReader(Context context, boolean isSourceOnline, String fundUnitsXmlSource){
-		this(context);
-		this.isSourceOnline = isSourceOnline;
-		this.fundUnitsXmlSource = fundUnitsXmlSource;
 	}
 		
-	////TODO:Process Fundamental Unit XML's elements. Make sure that the fundamental units XML file is read and processed before the all the units have been loaded.
-	public Map<String, Map<String, UNIT_TYPE>> loadFundUnitsFromXML(InputStream in) throws XmlPullParserException, IOException{
-		try{
-			parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
-			parser.setInput(in, null);
-			parser.nextTag();
-			return readFundUnitsXML(parser);
-		}
-		finally{
-			in.close();
-		}
-	}
-	private Map<String, Map<String, UNIT_TYPE>> readFundUnitsXML(XmlPullParser parser) throws XmlPullParserException, IOException{
+	///
+	protected Map<String, Map<String, UNIT_TYPE>> readEntity(XmlPullParser parser) throws XmlPullParserException, IOException{
 		String tagName = "";
 		String unitSystemName = "";
 		Map<String, UNIT_TYPE> unitSystemDimensionAssoc = new HashMap<String, UnitManager.UNIT_TYPE>();
@@ -69,7 +42,7 @@ public class FundUnitsMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 					}
 					tagName = parser.getName();
 					if(tagName.equalsIgnoreCase("name")){
-						unitSystemName = readUnitSystemName(parser);
+						unitSystemName = readUnitSystem(parser);
 					}
 					else if(tagName.equalsIgnoreCase("dimensions")){
 						unitSystemDimensionAssoc = readDimensionAssoc(parser);
@@ -86,7 +59,9 @@ public class FundUnitsMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 		
 		return fundamentalUnitsMap;
 	}
-	private String readUnitSystemName(XmlPullParser parser) throws XmlPullParserException, IOException{
+	
+	///
+	private String readUnitSystem(XmlPullParser parser) throws XmlPullParserException, IOException{
 		parser.require(XmlPullParser.START_TAG, null, "name");
 		String name = readText(parser).toLowerCase();
 		parser.require(XmlPullParser.END_TAG, null, "name");
@@ -137,61 +112,24 @@ public class FundUnitsMapXmlReader extends AsyncTaskLoader<UnitManagerFactory>{
 	private UNIT_TYPE readDimensionType(XmlPullParser parser) throws XmlPullParserException, IOException{
 		parser.require(XmlPullParser.START_TAG, null, "type");
 		
-		String dimensionName = readText(parser);
+		String dimensionName = readText(parser).toUpperCase();
 		UNIT_TYPE dimensionType = UNIT_TYPE.valueOf(dimensionName);
 				
 		parser.require(XmlPullParser.END_TAG, null, "type");		
 		return dimensionType;
 	}
 	
-	////  Methods for Units Processing
- 	private void skip(XmlPullParser parser) throws XmlPullParserException, IOException{
-		if(parser.getEventType() != XmlPullParser.START_TAG){
-			throw new IllegalStateException();
-		}
-		int depth = 1;
-		while(depth != 0){
-			switch(parser.next()){
-				case XmlPullParser.END_TAG:
-					depth--;
-					break;
-				case XmlPullParser.START_TAG:
-					depth++;
-					break;				
-			}
-		}
-	}
-	private String readText(XmlPullParser parser)throws IOException, XmlPullParserException{
-		String text = "";
-		if(parser.next() == XmlPullParser.TEXT){
-			text = parser.getText();
-			parser.nextTag();
-		}
-		return text;
-	}
 	
 	//// Loader Methods
 	@Override
-	public UnitManagerFactory loadInBackground() {
-		Map<String, Map<String, UNIT_TYPE>> map_FundUnits = new HashMap<String, Map<String,UNIT_TYPE>>();
-		
+	public UnitManagerBuilder loadInBackground() {
+		UnitManagerBuilder unitManagerBuilderBundle = new UnitManagerBuilder();
 		try {
-			if(isSourceOnline){
-				URL onlineFileFundUnits = new URL(fundUnitsXmlSource);	
-				map_FundUnits = loadFundUnitsFromXML(onlineFileFundUnits.openStream());
-			}else{
-				map_FundUnits = loadFundUnitsFromXML(getContext().getAssets().open(fundUnitsXmlSource));
-			}
-			
-		} catch (XmlPullParserException e) {
-			e.printStackTrace();
+			unitManagerBuilderBundle.setFundUnitsMapComponent(parseXML(openAssetFile("FundamentalUnits.xml")));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		
-		UnitManagerFactory umFac = new UnitManagerFactory();
-		umFac.setFundUnitsMapComponent(map_FundUnits);
-		
-		return umFac;
+		return unitManagerBuilderBundle;
 	}
 }
