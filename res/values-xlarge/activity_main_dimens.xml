@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="from_unit_label_text_size">70sp</dimen>
-    <dimen name="from_value_label_text_size">70sp</dimen>
-    <dimen name="to_unit_label_text_size">70sp</dimen>
-    <dimen name="conversion_value_label_text_size">65sp</dimen>
+    <dimen name="from_unit_label_text_size">55sp</dimen>
+    <dimen name="from_value_label_text_size">55sp</dimen>
+    <dimen name="to_unit_label_text_size">55sp</dimen>
+    <dimen name="conversion_value_label_text_size">55sp</dimen>
     
     <dimen name="from_unit_text_size">38sp</dimen>
     <dimen name="from_value_text_size">65sp</dimen>

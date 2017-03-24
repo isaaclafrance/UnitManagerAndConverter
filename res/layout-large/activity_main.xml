@@ -97,14 +97,21 @@
                 style="?android:attr/buttonStyleSmall"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:text="View Detail" />
+                android:paddingLeft="20dp"
+                android:paddingRight="20dp"
+                android:text="View Info" />
+            
+            <LinearLayout                 
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_weight="0.50"> </LinearLayout>
 
             <Button
                 android:id="@+id/fromUnitBrowseButton"
                 style="?android:attr/buttonStyleSmall"
                 android:layout_width="@dimen/from_unit_browse_button_width"
                 android:layout_height="match_parent"
-                android:layout_weight="0.85"
+                android:layout_weight="0.50"
                 android:text="@string/unitBrowseButton_text"
                 android:textSize="20sp" />
 
@@ -211,13 +218,21 @@
                 style="?android:attr/buttonStyleSmall"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:text="View Detail" />
+                android:paddingLeft="20dp"
+                android:paddingRight="20dp"
+                android:text="View Info" />
+            
+            <LinearLayout                 
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_weight="0.50"> </LinearLayout>
+
             <Button
                 android:id="@+id/toUnitBrowseButton"
                 style="?android:attr/buttonStyleSmall"
                 android:layout_width="@dimen/to_unit_browse_button_width"
                 android:layout_height="match_parent"
-                android:layout_weight="0.85"
+                android:layout_weight="0.50"
                 android:text="@string/unitBrowseButton_text"
                 android:textSize="20sp" />
 

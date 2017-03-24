@@ -38,7 +38,8 @@
             android:layout_height="match_parent"
             android:layout_weight="0.93"
             android:clickable="true"
-            android:longClickable="true"
+            android:divider="#333300"
+            android:dividerHeight="1.0dp"
             android:scrollbarStyle="outsideOverlay"
             android:textAlignment="center"
             tools:listitem="@android:layout/simple_list_item_checked" >

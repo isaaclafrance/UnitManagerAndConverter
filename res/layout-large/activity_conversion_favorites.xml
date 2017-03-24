@@ -40,7 +40,8 @@
             android:layout_weight="0.23"
             android:choiceMode="singleChoice"
             android:clickable="true"
-            android:longClickable="true"
+            android:divider="#333300"
+            android:dividerHeight="1.0dp"
             android:scrollbarStyle="outsideOverlay"
             android:textAlignment="center"
             tools:listitem="@android:layout/simple_list_item_checked" >
