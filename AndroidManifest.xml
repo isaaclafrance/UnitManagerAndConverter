@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.unitconverter.app"
+    package="com.isaacapps.unitconverterapp.activities"
     android:versionCode="1"
     android:versionName="1.0" >
 
@@ -21,7 +21,7 @@
         android:theme="@style/AppTheme">
         
         <activity
-            android:name="com.example.unitconverter.app.MainActivity"
+            android:name="com.isaacapps.unitconverterapp.activities.MainActivity"
             android:screenOrientation="portrait"
             android:label="@string/app_name" 
             android:launchMode="singleInstance">
@@ -33,14 +33,14 @@
         </activity>
         
         <activity 
-            android:name="com.example.unitconverter.app.UnitBrowserActivity"         
+            android:name="com.isaacapps.unitconverterapp.activities.UnitBrowserActivity"         
             android:label="@string/activity_unit_browse_name"
             android:screenOrientation="portrait"
             android:configChanges="keyboardHidden|orientation|screenSize">
         </activity>
         
         <activity 
-            android:name="com.example.unitconverter.app.ConversionFavoritesActivity" 
+            android:name="com.isaacapps.unitconverterapp.activities.ConversionFavoritesActivity" 
             android:label="@string/activity_conversion_favorites_name"
             android:screenOrientation="portrait"
             android:configChanges="keyboardHidden|orientation|screenSize"

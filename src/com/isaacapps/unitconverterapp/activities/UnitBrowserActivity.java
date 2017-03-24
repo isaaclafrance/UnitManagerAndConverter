@@ -1,4 +1,4 @@
-package com.example.unitconverter.app;
+package com.isaacapps.unitconverterapp.activities;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -6,16 +6,14 @@ import java.util.Comparator;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
-import com.example.unitconverter.app.R;
-import com.example.unitconverter.Unit;
-import com.example.unitconverter.UnitManager.UNIT_TYPE;
+import com.isaacapps.unitconverterapp.activities.R;
+import com.isaacapps.unitconverterapp.models.Unit;
 
 import android.os.Bundle;
 import android.app.Activity;
 import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
@@ -25,22 +23,22 @@ import android.widget.Spinner;
 
 public class UnitBrowserActivity extends Activity {
 	PersistentSharablesApplication pSharablesApplication;	
-	//
+
 	Spinner dimFilterSpinner;
 	Spinner unitSystemSpinner;
 	Spinner categorySpinner;
 	Spinner unitSpinner;
 	Spinner prefixSpinner;
-	//
+
 	Button selectUnitButton;
 	Button cancelUnitButton;
 	Button deleteUnitButton;
-	//
+
 	String oppositeUnitType;
 	String callerButtonUnitType;
 	String oppositeUnitCategoryName;
 
-	//
+	///
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -54,7 +52,7 @@ public class UnitBrowserActivity extends Activity {
 		oppositeUnitType = "";
 		oppositeUnitCategoryName = "";
 		
-		//Set unit category and the unit type of the opposite based on the unit for which activity was invoked.
+		//Set unit category and the unit type of the opposite unit based on the current unit for which activity was invoked.
 		Bundle extras = getIntent().getExtras();
 		if(extras != null){			
 			callerButtonUnitType = extras.getString("buttonName");
@@ -79,12 +77,10 @@ public class UnitBrowserActivity extends Activity {
 	}
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
 	}
 	
-	//Setup UI Components Methods
+	///Setup UI Components Methods
 	private void setupUIComponents(){
 		dimFilterSpinner = (Spinner) findViewById(R.id.dimFilterSpinner);
 		unitSystemSpinner = (Spinner) findViewById(R.id.unitSystemSpinner);
@@ -99,15 +95,13 @@ public class UnitBrowserActivity extends Activity {
 	}
 	
 	private void showDeleteButtonIfSelectedUnitDeleteable(String selectedUnitName){
-		Unit unitToBePotentiallyDeleted = pSharablesApplication.getUnitManager().getUnit(selectedUnitName);
+		Unit unitToBePotentiallyDeleted = pSharablesApplication.getUnitManager().getQueryExecutor().getUnit(selectedUnitName);
 		
 		/*Only delete units that meet the following criteria:
 		  1.Not currently being used as a 'from' or 'to' unit.
-		  2.Not a core unit (ie. meter, second, etc)
-		  3.Not a currency unit  
+		  2.Not a core unit (ie. meter, second, currency, etc)
 	    */
 		if(!unitToBePotentiallyDeleted.isCoreUnit() 
-		   && unitToBePotentiallyDeleted.getType() != UNIT_TYPE.CURRENCY
 		   && !pSharablesApplication.getFromQuantity().getUnit().equals(unitToBePotentiallyDeleted)
 		   && !pSharablesApplication.getToQuantity().getUnit().equals(unitToBePotentiallyDeleted)){
 			
@@ -117,8 +111,20 @@ public class UnitBrowserActivity extends Activity {
 			deleteUnitButton.setVisibility(View.GONE);
 		}
 	}
+	private void showSelectButtonIfSelectedUnitSelectable(String selectedUnitName){		
+		/*Only show select button that meet the following criteria: Not a COMPLETELY unknown
+	    */
+		if(selectedUnitName != null && !selectedUnitName.equalsIgnoreCase("No Compatible Units")){
+			
+			selectUnitButton.setVisibility(View.VISIBLE);
+		}
+		else{
+			selectUnitButton.setVisibility(View.GONE);
+		}
+	}
 	
-	//Button Listeners Methods
+	
+	///Button Listeners Methods
 	private void addListenerOnUnitBrowserButtons(){
 		selectUnitButton.setOnClickListener(new OnClickListener(){
 			@Override
@@ -127,7 +133,7 @@ public class UnitBrowserActivity extends Activity {
 				String mainUnitName = (String)unitSpinner.getSelectedItem();
 				
 				if(mainUnitName != null){
-					Unit selectedUnit = pSharablesApplication.getUnitManager().getUnit( prefix + ((prefix.length()!=0)?"-":"") + mainUnitName );
+					Unit selectedUnit = pSharablesApplication.getUnitManager().getQueryExecutor().getUnit( prefix + ((prefix.length()!=0)?"-":"") + mainUnitName );
 					
 					if(callerButtonUnitType.equalsIgnoreCase("from")){
 						pSharablesApplication.getFromQuantity().setUnit(selectedUnit);				
@@ -152,9 +158,10 @@ public class UnitBrowserActivity extends Activity {
 			@Override
 			public void onClick(View v) {
 				String mainUnitName = (String)unitSpinner.getSelectedItem();	
-				pSharablesApplication.getUnitManager().removeDynamicUnit(mainUnitName);
+				pSharablesApplication.getUnitManager().getContentModifier().removeDynamicUnit(mainUnitName);
 				
 				//
+				unitSpinner.startAnimation(AnimationUtils.loadAnimation(UnitBrowserActivity.this, android.R.anim.slide_out_right));
 				populateUnitSpinner();
 				unitSpinner.setSelection(0);
 				unitSpinner.setSelected(true);
@@ -162,7 +169,7 @@ public class UnitBrowserActivity extends Activity {
 		});
 	}
 	
-	//Selection Spinner Listener Methods	
+	///Selection Spinner Listener Methods	
 	private void addListenerOnSelectionSpinners(){
 		dimFilterSpinner.setOnItemSelectedListener(new OnItemSelectedListener() {
 			@Override
@@ -237,6 +244,7 @@ public class UnitBrowserActivity extends Activity {
 				
 				///
 				showDeleteButtonIfSelectedUnitDeleteable((String)parent.getItemAtPosition(position));
+				showSelectButtonIfSelectedUnitSelectable((String)parent.getItemAtPosition(position));
 			}
 
 			@Override
@@ -247,7 +255,7 @@ public class UnitBrowserActivity extends Activity {
 		});
 	}
 	
-	//Populate Spinners
+	///Populate Spinners
 	private void populateSpinners(){
 		populateDimensionFilterSpinner();
 		dimFilterSpinner.startAnimation(AnimationUtils.loadAnimation(UnitBrowserActivity.this, android.R.anim.slide_in_left));
@@ -272,7 +280,7 @@ public class UnitBrowserActivity extends Activity {
 		prefixSpinner.setSelected(true);
 	}
 	private void populateDimensionFilterSpinner(){
-		String[] filterList = new String[]{"| All | Unit Types", "| "+oppositeUnitType+" | "+"Unit Type"};
+		String[] filterList = new String[]{"| All | Unit Types", "| "+oppositeUnitType+" | "+"Unit Types"};
 		
 		ArrayAdapter<String> dimFilterArrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, filterList);
 		dimFilterSpinner.setAdapter(dimFilterArrayAdapter);
@@ -281,10 +289,10 @@ public class UnitBrowserActivity extends Activity {
 		ArrayList<String> unitSystemNamesList = new ArrayList<String>();
 
 		if(((String)dimFilterSpinner.getSelectedItem()).equals("| All | Unit Types")){
-			for(String unitSystemName:pSharablesApplication.getUnitManager().getUnitsClassificationMap().keySet()){
+			for(String unitSystemName:pSharablesApplication.getUnitManager().getUnitsClassifier().getHierarchy().keySet()){
 				unitSystemNamesList.add(unitSystemName);
 			}
-			unitSystemNamesList.remove(pSharablesApplication.getUnitManager().getUnit(Unit.UNKNOWN_UNIT_NAME).getUnitSystem());
+			unitSystemNamesList.remove(pSharablesApplication.getUnitManager().getQueryExecutor().getUnit(Unit.UNKNOWN_UNIT_NAME).getUnitSystem());
 		}
 		else{
 			if(pSharablesApplication.getToQuantity().getUnit().getName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) && oppositeUnitType.equalsIgnoreCase("to") ||
@@ -293,8 +301,8 @@ public class UnitBrowserActivity extends Activity {
 			   unitSystemNamesList.add("No Compatible Unit Systems");	
 			}
 			else{
-				for(String unitSystemName:pSharablesApplication.getUnitManager().getUnitsClassificationMap().keySet()){
-					if(pSharablesApplication.getUnitManager().getUnitsClassificationMap().get(unitSystemName).containsKey(oppositeUnitCategoryName)){
+				for(String unitSystemName:pSharablesApplication.getUnitManager().getUnitsClassifier().getHierarchy().keySet()){
+					if(pSharablesApplication.getUnitManager().getUnitsClassifier().getHierarchy().get(unitSystemName).containsKey(oppositeUnitCategoryName)){
 						unitSystemNamesList.add(unitSystemName);
 					}
 				}
@@ -308,7 +316,7 @@ public class UnitBrowserActivity extends Activity {
 		ArrayList<String> categoriesList = new ArrayList<String>();
 		
 		if(((String)dimFilterSpinner.getSelectedItem()).equals("| All | Unit Types")){
-			for(String category:pSharablesApplication.getUnitManager().getUnitsClassificationMap().get((String)unitSystemSpinner.getSelectedItem()).keySet()){
+			for(String category:pSharablesApplication.getUnitManager().getUnitsClassifier().getHierarchy().get((String)unitSystemSpinner.getSelectedItem()).keySet()){
 				categoriesList.add(category);
 			}	
 		}
@@ -329,7 +337,7 @@ public class UnitBrowserActivity extends Activity {
 				   unitsList.add("No Compatible Units");	
 		}
 		else{
-			unitsList = pSharablesApplication.getUnitManager().getUnitsClassificationMap().get((String)unitSystemSpinner.getSelectedItem()).get((String)categorySpinner.getSelectedItem());
+			unitsList = pSharablesApplication.getUnitManager().getUnitsClassifier().getHierarchy().get((String)unitSystemSpinner.getSelectedItem()).get((String)categorySpinner.getSelectedItem());
 		}
 		
 		ArrayAdapter<String> unitsSpinnerArrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, (unitsList!=null)?unitsList:new ArrayList<String>());
@@ -342,15 +350,14 @@ public class UnitBrowserActivity extends Activity {
 		
 		/*Only display prefixes if the unit name itself does not contain a prefix. 
 		 Make sure that unit name does not contain any complex term combinations.
-		 Also make sure it is not a currency or a temperature unit.
+		 Also make sure it is not a currency. 
 		*/
 		if(!Pattern.matches("[a-zA-Z_]+-[a-zA-Z_]+",(String)unitSpinner.getSelectedItem())
 			&& !Pattern.compile("[/*()]").matcher((String)unitSpinner.getSelectedItem()).find()
-			&& !((String)categorySpinner.getSelectedItem()).equalsIgnoreCase("temperature_unit")
 			&& !((String)categorySpinner.getSelectedItem()).equalsIgnoreCase("currency_unit")
 			&& !((String)unitSpinner.getSelectedItem()).equalsIgnoreCase("No Compatible Units")){
 			
-			for(Entry<String,Double> prefixEntry:pSharablesApplication.getUnitManager().getAllPrefixValues().entrySet()){
+			for(Entry<String,Double> prefixEntry:pSharablesApplication.getUnitManager().getQueryExecutor().getAllPrefixValues().entrySet()){
 				prefixesList.add(prefixEntry.getKey()+"  ::  "+prefixEntry.getValue());
 			}
 			
@@ -358,8 +365,8 @@ public class UnitBrowserActivity extends Activity {
 			Collections.sort(prefixesList, new Comparator<String>(){
 				@Override
 				public int compare(String arg0, String arg1) {
-					return Double.compare(pSharablesApplication.getUnitManager().getPrefixValue(arg0.split("::")[0].trim())
-							              ,pSharablesApplication.getUnitManager().getPrefixValue(arg1.split("::")[0].trim()));
+					return Double.compare(pSharablesApplication.getUnitManager().getQueryExecutor().getPrefixValue(arg0.split("::")[0].trim())
+							              ,pSharablesApplication.getUnitManager().getQueryExecutor().getPrefixValue(arg1.split("::")[0].trim()));
 				}});
 		}
 		

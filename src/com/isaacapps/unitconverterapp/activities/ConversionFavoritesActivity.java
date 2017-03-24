@@ -1,12 +1,12 @@
-package com.example.unitconverter.app;
+package com.isaacapps.unitconverterapp.activities;
 
 import android.graphics.Color;
 import android.os.Bundle;
 
 import java.util.ArrayList;
 
-import com.example.unitconverter.app.R;
-import com.example.unitconverter.dao.ConversionFavoritesListXMLReader;
+import com.isaacapps.unitconverterapp.activities.R;
+import com.isaacapps.unitconverterapp.dao.xml.readers.local.ConversionFavoritesListXmlLocalReader;
 
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.LoaderManager;
@@ -22,24 +22,25 @@ import android.widget.ListView;
 
 public class ConversionFavoritesActivity extends FragmentActivity implements LoaderManager.LoaderCallbacks<ArrayList<String>>{
 	PersistentSharablesApplication pSharablesApplication;	
-	//
+
 	ListView conversionsListView;
 	Button selectButton; //Sets up selected conversion when clicked
 	Button removeButton; //Removes selected conversion from list when clicked
 	Button cancelButton; //Exits activity when clicked
 	ArrayAdapter<String> conversionsList_Adapter;
 	String selectedConversion;
-	int selectedConversionPosition = 0;
-	//
+	int pastSelectedConversionPosition;
+
 	int FAVORITES_LOADER = 1;
 		
-	//
+	///
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_conversion_favorites);
 		
 		pSharablesApplication = (PersistentSharablesApplication)this.getApplication();	
+		pastSelectedConversionPosition = -1;
 
 		setupUIComponents();
 				
@@ -56,27 +57,44 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
 	}
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
 	}
 	
-	//Setup UI Components Methods
+	///Setup UI Components Methods
 	private void setupUIComponents(){
 		conversionsListView = (ListView) findViewById(R.id.conversionListView);
 		selectButton = (Button) findViewById(R.id.selectUnitButton); 
 		removeButton = (Button) findViewById(R.id.removeButton);
 		cancelButton = (Button) findViewById(R.id.cancelUnitButton); 
 		
+		selectButton.setVisibility(View.GONE);
+		removeButton.setVisibility(View.GONE);
+		
 		conversionsListView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
 	}
+	private void showSelectButtonIfAppropriate(){
+		if(pastSelectedConversionPosition != -1){
+			selectButton.setVisibility(View.VISIBLE);
+		}
+		else{
+			selectButton.setVisibility(View.GONE);
+		}
+	}
+	private void showRemoveButtonIfAppropriate(){
+		if(pastSelectedConversionPosition != -1){
+			removeButton.setVisibility(View.VISIBLE);
+		}
+		else{
+			removeButton.setVisibility(View.GONE);
+		}
+	}
 	
-	//Data Loading Methods
+	///Data Loading Methods
 	private void loadConversionFavorites(){
 		getSupportLoaderManager().initLoader(FAVORITES_LOADER, null, this).forceLoad();
 	}
 	
-	//Button Listeners Methods
+	///Button Listeners Methods
 	private void addListenerOnConversionFavoritesButtons(){
 		selectButton.setOnClickListener(new OnClickListener(){
 			@Override
@@ -84,8 +102,8 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
 				String[] categoryNconversionUnits_names = selectedConversion.split(": ");
 				String[] conversionUnitNames = categoryNconversionUnits_names[1].split(" --> ");
 				
-				pSharablesApplication.getFromQuantity().setUnit(pSharablesApplication.getUnitManager().getUnit(conversionUnitNames[0]));
-				pSharablesApplication.getToQuantity().setUnit(pSharablesApplication.getUnitManager().getUnit(conversionUnitNames[1]));
+				pSharablesApplication.getFromQuantity().setUnit(pSharablesApplication.getUnitManager().getQueryExecutor().getUnit(conversionUnitNames[0]));
+				pSharablesApplication.getToQuantity().setUnit(pSharablesApplication.getUnitManager().getQueryExecutor().getUnit(conversionUnitNames[1]));
 				
 				//
 				finish();
@@ -96,9 +114,12 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
 		removeButton.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View view){
-				pSharablesApplication.getConversionFavoritesList().remove(selectedConversionPosition);
+				pSharablesApplication.getConversionFavoritesList().remove(pastSelectedConversionPosition);
+				pastSelectedConversionPosition = -1;
+				repopulateList();	
 				
-				repopulateList();		
+				showSelectButtonIfAppropriate();
+				showRemoveButtonIfAppropriate();
 			}
 		});
 		
@@ -112,24 +133,45 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
 		});		
 	}
 	
-	//List View Listener Methods
+	///List View Listener Methods
 	private void addListenerOnConversionListView(){
 		conversionsListView.setOnItemClickListener(new OnItemClickListener(){
 			@Override
-			public void onItemClick(AdapterView<?> arg0, View arg1, int position,
+			public void onItemClick(AdapterView<?> listView, View arg1, int currentSelectedConversionPosition,
 					long arg3) {
-				setSelection((String)arg0.getItemAtPosition(position), position);							
-				arg0.getChildAt(position).setBackgroundColor(Color.CYAN);		
+				
+				alterSelection(listView, currentSelectedConversionPosition);
+				
+				showSelectButtonIfAppropriate();
+				showRemoveButtonIfAppropriate();
 			}
 			
 		});
 	}
 
-	private void setSelection(String string, int position){
-		selectedConversion = string;
-		selectedConversionPosition = position;
+	///
+	private void alterSelection(AdapterView<?> listView, int currentSelectedConversionPosition){
+		if(currentSelectedConversionPosition != pastSelectedConversionPosition){
+			setSelection(listView, (String)listView.getItemAtPosition(currentSelectedConversionPosition), currentSelectedConversionPosition);							
+			listView.getChildAt(currentSelectedConversionPosition).setBackgroundColor(Color.CYAN);	
+		}
+		else if(pastSelectedConversionPosition == currentSelectedConversionPosition){
+			pastSelectedConversionPosition = -1;
+			listView.getChildAt(currentSelectedConversionPosition).setBackgroundColor(Color.TRANSPARENT);	
+		}	
+	}
+	private void setSelection(AdapterView<?> listView, String conversionString, int currentSelectedConversionPosition){
+		selectedConversion = conversionString;
+		
+		 //ensures that only one item at a time can be selected, by deselecting a previously selected alternate position.
+		if(pastSelectedConversionPosition != -1){
+			listView.getChildAt(pastSelectedConversionPosition).setBackgroundColor(Color.TRANSPARENT);
+		}
+		
+		pastSelectedConversionPosition = currentSelectedConversionPosition;
 	}
 	
+	///
 	private void populateList(boolean loaderFinished){
 		ArrayList<String> conversionList;
 		if(loaderFinished){
@@ -149,11 +191,11 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
 		conversionsList_Adapter.notifyDataSetChanged();
 	}
 
-	//Loader Manager methods
+	///Loader Manager methods
 	@Override
 	public Loader<ArrayList<String>> onCreateLoader(int id, Bundle arg1) {
 		if(id == FAVORITES_LOADER){
-			return new ConversionFavoritesListXMLReader(this);
+			return new ConversionFavoritesListXmlLocalReader(this);
 		}
 		else{
 			return null;
@@ -171,7 +213,5 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
 
 	@Override
 	public void onLoaderReset(Loader<ArrayList<String>> arg0) {
-		// TODO Auto-generated method stub
-		
 	}		
 }

@@ -1,18 +1,19 @@
-package com.example.unitconverter;
+package com.isaacapps.unitconverterapp.models;
 
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.example.unitconverter.UnitManager.UNIT_TYPE;
+import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager;
+import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager.UNIT_TYPE;
 
 public class Quantity {
-	//Fields
+	///
 	private UnitManager unitManagerRef;
 	private double value;
 	private Unit unit;
 	
-	//Constructors
+	///
 	public Quantity(){
 		this.value = 0.0f;
 		this.unit = new Unit();
@@ -36,7 +37,7 @@ public class Quantity {
 	public Quantity(double value, String unitDimensionString, UnitManager unitManager){
 		this.unitManagerRef = unitManager;
 		this.value = value;
-		ArrayList<Unit> matchingUnits =  unitManager.getUnitsByComponentUnitsDimension(unitDimensionString, false);
+		ArrayList<Unit> matchingUnits =  unitManager.getQueryExecutor().getUnitsByComponentUnitsDimension(unitDimensionString, false);
 		this.unit = matchingUnits.get(0);	
 	}	
 	public Quantity(String valueNUnitString, UnitManager unitManager){
@@ -56,7 +57,7 @@ public class Quantity {
 			value = 0.0f;
 		}
 
-		ArrayList<Unit> matchingUnits =  unitManager.getUnitsByComponentUnitsDimension(unitString, false);
+		ArrayList<Unit> matchingUnits =  unitManager.getQueryExecutor().getUnitsByComponentUnitsDimension(unitString, false);
 		this.unit = matchingUnits.get(0);		
 	}
 	
@@ -76,7 +77,7 @@ public class Quantity {
 		}
 		else{
 			if(unitManagerRef != null){
-				newQuantity = new Quantity(unitManagerRef.getUnit(Unit.UNKNOWN_UNIT_NAME));
+				newQuantity = new Quantity(unitManagerRef.getQueryExecutor().getUnit(Unit.UNKNOWN_UNIT_NAME));
 			}
 			else{
 				newQuantity = new Quantity();
@@ -94,7 +95,7 @@ public class Quantity {
 	
 	///
 	public Quantity convertToUnit(Unit targetUnit){
-		double[] conversionFactor = unitManagerRef.getConversionFactorToTargetUnit(unit,targetUnit);
+		double[] conversionFactor = unitManagerRef.getConverter().getConversionFactorToTargetUnit(unit,targetUnit);
 		return new Quantity( this.value * conversionFactor[0] + conversionFactor[1],  targetUnit);
 	}
 
@@ -104,13 +105,13 @@ public class Quantity {
 		Unit targetUnit = new Unit();
 		if(unitManagerRef != null){
 			if(unit.getType() != UNIT_TYPE.UNKNOWN){
-				ArrayList<Unit> correspondingUnits = unitManagerRef.getCorrespondingUnitsWithUnitSystem(unit, targetUnitSystemString);
+				ArrayList<Unit> correspondingUnits = unitManagerRef.getQueryExecutor().getCorrespondingUnitsWithUnitSystem(unit, targetUnitSystemString);
 				
 				if(correspondingUnits.size()>0){
 					targetUnit = correspondingUnits.get(0);
 				}
 				
-				double conversionFactor = unitManagerRef.getConversionFactorToUnitSystem(unit, targetUnitSystemString)[0];
+				double conversionFactor = unitManagerRef.getConverter().getConversionFactorToUnitSystem(unit, targetUnitSystemString)[0];
 				
 				if(conversionFactor > 0){
 					value = this.value * conversionFactor; 
@@ -135,17 +136,18 @@ public class Quantity {
 	public double getValue(){
 		return value;
 	}
+	public void setValue(double value){
+		this.value = value;
+	}
+	
 	public Unit getUnit(){
 		return unit;
 	}
-	
 	public void setUnit(Unit unit){
 		this.unit = unit;
 		this.unitManagerRef = unit.getUnitManagerRef();
 	}
-	public void setValue(double value){
-		this.value = value;
-	}
+
 	
 	///
 	public UnitManager getUnitManagerRef(){
