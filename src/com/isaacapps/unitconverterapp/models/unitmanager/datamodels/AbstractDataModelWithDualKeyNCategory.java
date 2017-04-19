@@ -22,32 +22,30 @@ public abstract class AbstractDataModelWithDualKeyNCategory<T, U, V> {
 	protected U addItem(V category,  T key1, T key2, U item, boolean removeDuplicateItems){
 		U addedItem = null;
 		
-		//If state is selected, then there can not be duplicates of item anywhere in this data structure.
-		if(removeDuplicateItems)
-			removeItem(item);
-		
-		addedItem = addItemToCategory(category, key2, item);
+		if(key1ToKey2Map.get(key1) == null || key2ToKey1Map.get(key2) == null){
+			int a = 3;
+			a++;
+			System.out.println(key1);
+			System.out.println(key2);
+		}
 		
 		//Ensure bijective relationship of keys if required
-		if(addedItem != null
-		   &&(keysMustHaveBijectiveRelation && !keyHasCountOfMoreThanTwoInValuesOfMap(key1ToKey2Map, key2) && !keyHasCountOfMoreThanTwoInValuesOfMap(key2ToKey1Map, key1)
-			  || !keysMustHaveBijectiveRelation)){
+		if(keysMustHaveBijectiveRelation
+				&& (!key1ToKey2Map.containsValue(key1) && !key2ToKey1Map.containsValue(key2) 
+		            || key1ToKey2Map.get(key1) != null &&  key1ToKey2Map.get(key1).equals(key2ToKey1Map.get(key2)) ) //Allows an identity key relation to be replaced despite bijection restriction                
+			  
+		   || !keysMustHaveBijectiveRelation){	
 			
+			//If state is selected, then there can not be duplicates of item anywhere in this data structure.
+			if(removeDuplicateItems)
+				removeItem(item);
+			
+			addedItem = addItemToCategory(category, key2, item);
 			key1ToKey2Map.put(key1, key2);
 			key2ToKey1Map.put(key2, key1);
 		}
 		
 		return addedItem;
-	}
-	private boolean keyHasCountOfMoreThanTwoInValuesOfMap(Map<T,T> map, T key){
-		int count = 0;
-		for(T value:map.values()){
-			if(value.equals(key))
-				count++;
-			if(count>1)
-				return true;
-		}
-		return false;
 	}
 	protected U addItemToCategory(V category, T key2, U item){
 		if(!key2ToItemMapsByCategory.containsKey(category)){
@@ -98,13 +96,14 @@ public abstract class AbstractDataModelWithDualKeyNCategory<T, U, V> {
 	}
 	protected boolean removeItem(U item){ //Remove item by its object reference from any category. Since searching done by value rather by keys, the Big O runtime is O(n).
 		boolean somethingRemoved = false;
-		for (V category:key2ToItemMapsByCategory.keySet()) {
+		for (V category:getAllAssignedCategories()) {
 			for(Iterator<Entry<T, U>> key2ToItemEntryIterator = key2ToItemMapsByCategory.get(category).entrySet().iterator()
 				;key2ToItemEntryIterator.hasNext();){
 				
 				Entry<T, U> key2ToItemEntry = key2ToItemEntryIterator.next();
 				if(key2ToItemEntry.getValue().equals(item)){
-					removeItemByAnyKey(key2ToItemEntry.getKey());
+					removeKeyRelations(key2ToItemEntry.getKey());
+					key2ToItemEntryIterator.remove();
 					somethingRemoved = true;
 				}		
 			}	
@@ -132,6 +131,8 @@ public abstract class AbstractDataModelWithDualKeyNCategory<T, U, V> {
 		U item = null;
 		for(V category:getAllAssignedCategories()){
 			item = getItem(category, key);
+			if(item != null)
+				break;
 		}	
 		return item;
 	}
@@ -154,7 +155,7 @@ public abstract class AbstractDataModelWithDualKeyNCategory<T, U, V> {
 		}
 		return null;
 	}
-	
+		
 	protected ArrayList<U> getItemsByCategory(V category){
 		ArrayList<U> items = new ArrayList<U>();
 		if(key2ToItemMapsByCategory.containsKey(category)){
@@ -226,11 +227,11 @@ public abstract class AbstractDataModelWithDualKeyNCategory<T, U, V> {
 	
 	///
 	protected T getKey2FromKey1(T key1){
-		//Accuracy depends on if key relation was set to be bijective
+		//Only gets last added association if non bijection.
 		return key1ToKey2Map.get(key1);
 	}
 	protected T getKey1FromKey2(T key2){
-		//Accuracy depends on if key relation was set to be bijective
+		//Only gets last added association if non bijection.
 		return key2ToKey1Map.get(key2);
 	}
 	
