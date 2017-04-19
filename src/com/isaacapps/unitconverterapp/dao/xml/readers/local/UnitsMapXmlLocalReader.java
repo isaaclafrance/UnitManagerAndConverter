@@ -1,13 +1,9 @@
 package com.isaacapps.unitconverterapp.dao.xml.readers.local;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.*;
 
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
+import org.xmlpull.v1.*;
 
 import com.isaacapps.unitconverterapp.dao.xml.readers.AsyncXmlReader;
 import com.isaacapps.unitconverterapp.models.Unit;
@@ -15,30 +11,27 @@ import com.isaacapps.unitconverterapp.models.unitmanager.UnitManagerBuilder;
 
 import android.content.Context;
 
+///According to official Google Android documentation, the XmlPullParser that reads one tag at a time is the most efficient way of parsing especially in situations where there are a large number of tags.
 public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<Unit>>,UnitManagerBuilder> {
-
+	Map<String, Unit> baseUnitsMap;
+	Map<String, Unit> nonBaseUnitsMap;
+	ArrayList<Unit> partiallyConstructedUnits;
+	
 	///
 	public UnitsMapXmlLocalReader(Context context) {
 		super(context);
+		baseUnitsMap = new HashMap<String, Unit>();
+		nonBaseUnitsMap = new HashMap<String, Unit>();
+		partiallyConstructedUnits = new ArrayList<Unit>();
 	}
 
 	///
 	@Override
 	protected ArrayList<ArrayList<Unit>> readEntity(XmlPullParser parser) throws IOException, XmlPullParserException {
-		Map<String, double[]> baseConversionPolyCoeffs = new HashMap<String, double[]>();
+		Unit partiallyConstructedUnit;
 		
-		ArrayList<Unit> partiallyConstructedUnits = new ArrayList<Unit>();
-		Map<String, Double> componentUnitsExponentsMap = new HashMap<String,Double>(); 
-		ArrayList<String> baseUnitNames = new ArrayList<String>();
-		
-		Map<String, Unit> baseUnitsMap = new HashMap<String, Unit>();
-		Map<String, Unit> nonBaseUnitsMap = new HashMap<String, Unit>();
-		
-		String unitName = "", unitSystem = "", abbreviation = "", unitCategory = "", unitDescription = "", tagName = "";
-
-		tagName = parser.getName();
+		String tagName = parser.getName();
 		if(tagName.equalsIgnoreCase("main")){
-			//Iterate through all elements of the XML file within the 'unit' element while storing properties pertaining to the unit.
 			parser.require(XmlPullParser.START_TAG, null, "main");
 			while(parser.next() != XmlPullParser.END_TAG){
 				if(parser.getEventType() != XmlPullParser.START_TAG){
@@ -46,69 +39,22 @@ public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<U
 				}
 				tagName = parser.getName();
 				if(tagName.equalsIgnoreCase("unit")){
-					parser.require(XmlPullParser.START_TAG, null, "unit");
-					while(parser.next() != XmlPullParser.END_TAG){
-						if(parser.getEventType() != XmlPullParser.START_TAG){
-							continue;
-						}
-						tagName = parser.getName();
-						if(tagName.equalsIgnoreCase("unitName")){
-							unitName = readUnitName(parser);
-						}else if(tagName.equalsIgnoreCase("unitSystem")){
-							unitSystem = readUnitSystem(parser);
-						}else if(tagName.equalsIgnoreCase("abbreviation")){
-							abbreviation = readAbbreviation(parser);
-						}else if(tagName.equalsIgnoreCase("unitCategory")){
-							unitCategory = readUnitCategory(parser);
-						}else if(tagName.equalsIgnoreCase("unitDescription")){
-							unitDescription = readUnitDescription(parser);	
-						}else if(tagName.equalsIgnoreCase("componentUnits")){
-							componentUnitsExponentsMap = readComponentUnits(parser);
-						}else if(tagName.equalsIgnoreCase("baseConversionPolyCoeffs")){
-							//Read base unit name and associated conversion polynomials
-							baseConversionPolyCoeffs = readBaseUnitNConversionPolyCoeffs(parser);
-							for(Entry<String, double[]> entry:baseConversionPolyCoeffs.entrySet()){
-								baseUnitNames.add(entry.getKey());
-							}							
-						}
-						else{
-							skip(parser);
-						}
+					partiallyConstructedUnit = readUnit(parser);	
+					partiallyConstructedUnits.add(partiallyConstructedUnit);
+					if(partiallyConstructedUnit.isBaseUnit()){
+						baseUnitsMap.put(partiallyConstructedUnit.getName(), partiallyConstructedUnit);
+					}else{
+						nonBaseUnitsMap.put(partiallyConstructedUnit.getName(), partiallyConstructedUnit);
 					}
 				}
 				else{
 					skip(parser);
 				}
-						
-				Unit constructedUnit = new Unit(unitName, unitCategory, unitDescription, unitSystem, abbreviation, componentUnitsExponentsMap, new Unit(baseUnitNames.get(baseUnitNames.size()-1), new HashMap<String, Double>(), true ), baseConversionPolyCoeffs.get(baseUnitNames.get(baseUnitNames.size()-1)));
-				
-				if(constructedUnit.isBaseUnit()){
-					baseUnitsMap.put(unitName, constructedUnit);
-				}else{
-					nonBaseUnitsMap.put(unitName, constructedUnit);
-				}
-				
-				//Also adds constructed unit to a separate array for unit construction finalization later on.
-				partiallyConstructedUnits.add(constructedUnit);
 			}
 		}
 		
-		//**Completes the construction of the previous constructed unit by adding missing elements i.e. conversion polynomial coefficients, and base unit.
-		//**Accomplishes this task by finding actual unit references for the base unit names now that all units have been created.
-						
-		//Adds base unit and associated conversion polynomial info to each partially constructed unit
-		int index = 0;
-		Unit baseUnit;
-		for(String buName:baseUnitNames){
-			baseUnit = baseUnitsMap.get(buName);
-			if(baseUnit == null){
-				baseUnit = nonBaseUnitsMap.get(buName);
-			}	
-			if(baseUnit != null){
-				partiallyConstructedUnits.get(index).setBaseUnit(baseUnit, partiallyConstructedUnits.get(index).getBaseConversionPolyCoeffs());	
-			}
-			index++;
-		}
+		//
+		completeUnitConstruction();
 		
 		//
 		ArrayList<ArrayList<Unit>> unitsLists = new ArrayList<ArrayList<Unit>>(2);
@@ -117,7 +63,53 @@ public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<U
 		
 		return unitsLists;	
 	}
+	/**
+	 *Completes the construction of the previous constructed unit by adding missing elements i.e. base unit.
+	 *Finds actual unit references for the base unit names now that all units have been created.
+	 */
+	private void completeUnitConstruction(){
+		for(Unit unit:partiallyConstructedUnits){
+			String baseUnitName = unit.getBaseUnit().getName();
+			unit.setBaseUnit(baseUnitsMap.containsKey(baseUnitName)?baseUnitsMap.get(baseUnitName):nonBaseUnitsMap.get(baseUnitName)
+					         ,unit.getBaseConversionPolyCoeffs());	
+		}
+	}
 
+	///
+	private Unit readUnit(XmlPullParser parser) throws XmlPullParserException, IOException{
+		Map<String, double[]> baseConversionPolyCoeffs = new HashMap<String, double[]>();
+		Map<String, Double> componentUnitsExponentsMap = new HashMap<String,Double>(); 
+		String unitName = "", unitSystem = "", abbreviation = "", unitCategory = "", unitDescription = "", tagName = "";
+		
+		parser.require(XmlPullParser.START_TAG, null, "unit");
+		while(parser.next() != XmlPullParser.END_TAG){
+			if(parser.getEventType() != XmlPullParser.START_TAG){
+				continue;
+			}
+			tagName = parser.getName();
+			if(tagName.equalsIgnoreCase("unitName")){
+				unitName = readUnitName(parser);
+			}else if(tagName.equalsIgnoreCase("unitSystem")){
+				unitSystem = readUnitSystem(parser);
+			}else if(tagName.equalsIgnoreCase("abbreviation")){
+				abbreviation = readAbbreviation(parser);
+			}else if(tagName.equalsIgnoreCase("unitCategory")){
+				unitCategory = readUnitCategory(parser);
+			}else if(tagName.equalsIgnoreCase("unitDescription")){
+				unitDescription = readUnitDescription(parser);	
+			}else if(tagName.equalsIgnoreCase("componentUnits")){
+				componentUnitsExponentsMap = readComponentUnits(parser);
+			}else if(tagName.equalsIgnoreCase("baseConversionPolyCoeffs")){
+				baseConversionPolyCoeffs = readBaseUnitNConversionPolyCoeffs(parser);						
+			}
+			else{
+				skip(parser);
+			}
+		}
+		
+		return new Unit(unitName, unitCategory, unitDescription, unitSystem, abbreviation, componentUnitsExponentsMap, new Unit(baseConversionPolyCoeffs.keySet().iterator().next(), new HashMap<String, Double>(), true ), baseConversionPolyCoeffs.values().iterator().next());
+	}
+	
 	///
 	private String readUnitName(XmlPullParser parser) throws XmlPullParserException, IOException{
 		parser.require(XmlPullParser.START_TAG, null, "unitName");	
@@ -152,7 +144,7 @@ public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<U
 	private Map<String, Double> readComponentUnits(XmlPullParser parser) throws XmlPullParserException, IOException{
 		Map<String, Double> componentUnitsExponentsMap = new HashMap<String, Double>();
 		String componentUnitName = "";
-		double componentExponentValue = 0.0f;
+		double componentExponentValue = 0.0;
 		String tagName = "";
 		
 		parser.require(XmlPullParser.START_TAG, null, "componentUnits");
@@ -188,7 +180,7 @@ public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<U
 	private Map<String, double[]> readBaseUnitNConversionPolyCoeffs(XmlPullParser parser) throws XmlPullParserException, IOException{
 		Map<String, double[]> conversionPolyCoeffsMap = new HashMap<String, double[]>();
 		String baseUnitName = "";
-		double[] polynomialCoeffs = new double[]{0.0f, 0.0f};
+		double[] polynomialCoeffs = new double[]{0.0, 0.0};
 		String tagName = "";
 		
 		parser.require(XmlPullParser.START_TAG, null, "baseConversionPolyCoeffs");
@@ -232,15 +224,15 @@ public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<U
 		}
 		
 		ArrayList<Unit> combinedUnits = coreUnitsGroup.get(0);
-		combinedUnits = coreUnitsGroup.get(1);
+		combinedUnits.addAll(coreUnitsGroup.get(1));
 		
 		if(dynamicUnitsGroup != null){
 			combinedUnits.addAll(dynamicUnitsGroup.get(0));
 			combinedUnits.addAll(dynamicUnitsGroup.get(1));
 		}
 			
-		return new UnitManagerBuilder().setBaseUnitsComponent(combinedUnits)
-									   .setNonBaseUnitsComponent(combinedUnits);
+		return new UnitManagerBuilder().addBaseUnits(combinedUnits)
+									   .addNonBaseUnits(combinedUnits);
 	}
 	
 

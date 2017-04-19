@@ -1,19 +1,20 @@
 package com.isaacapps.unitconverterapp.dao.xml.readers.local;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
+import org.xmlpull.v1.*;
 
 import com.isaacapps.unitconverterapp.dao.xml.readers.AsyncXmlReader;
-import com.isaacapps.unitconverterapp.models.unitmanager.UnitManagerBuilder;
+import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager.*;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.*;
+import com.isaacapps.unitconverterapp.models.unitmanager.*;
 
 import android.content.Context;
 
-public class PrefixesMapXmlLocalReader extends AsyncXmlReader<Map<String, Double>, UnitManagerBuilder>{
-
+///According to official Google Android documentation, the XmlPullParser that reads one tag at a time is the most efficient way of parsing especially in situations where there are a large number of tags.
+public class PrefixesMapXmlLocalReader extends AsyncXmlReader<PrefixesDataModel, UnitManagerBuilder>{
+	private DATA_MODEL_CATEGORY category;
+	
 	///
 	public PrefixesMapXmlLocalReader(Context context){
 		super(context);
@@ -21,12 +22,10 @@ public class PrefixesMapXmlLocalReader extends AsyncXmlReader<Map<String, Double
 		
 	///
 	@Override
-	protected Map<String, Double> readEntity(XmlPullParser parser) throws XmlPullParserException, IOException{
-		String tagName = "";
-		String prefixName = "";
-		String abbreviation = "";
+	protected PrefixesDataModel readEntity(XmlPullParser parser) throws XmlPullParserException, IOException{
+		String tagName = "", prefixName = "", abbreviation = "";
 		double prefixValue = 0.0;
-		Map<String, Double> prefixMap = new HashMap<String, Double>();
+		PrefixesDataModel prefixesDataModel = new PrefixesDataModel();
 		
 		//
 		tagName = parser.getName();
@@ -53,7 +52,12 @@ public class PrefixesMapXmlLocalReader extends AsyncXmlReader<Map<String, Double
 							skip(parser);
 						}	
 					}
-					prefixMap.put(prefixName +"::"+ abbreviation, prefixValue);
+					if(category == DATA_MODEL_CATEGORY.CORE){
+						prefixesDataModel.addCorePrefix(prefixName, abbreviation, prefixValue);
+					}
+					else{
+						prefixesDataModel.addDynamicPrefix(prefixName, abbreviation, prefixValue);
+					}
 				}
 				else{
 					skip(parser);
@@ -61,7 +65,7 @@ public class PrefixesMapXmlLocalReader extends AsyncXmlReader<Map<String, Double
 			}
 		}
 
-		return prefixMap;
+		return prefixesDataModel;
 	}
 	
 	///
@@ -69,8 +73,10 @@ public class PrefixesMapXmlLocalReader extends AsyncXmlReader<Map<String, Double
 	public UnitManagerBuilder loadInBackground() {
 		UnitManagerBuilder unitManagerBuilderBundle = new UnitManagerBuilder();
 		try {
-			unitManagerBuilderBundle.setCorePrefixesNAbbreviationsMapComponent(parseXML(openAssetFile("StandardCorePrefixes.xml")))
-									.setDynamicPrefixesNAbbreviationsMapComponent(parseXML(openXmlFile(getContext().getFilesDir().getPath().toString() + "DynamicPrefixes.xml", false)));
+			category = DATA_MODEL_CATEGORY.CORE;
+			unitManagerBuilderBundle.addPrefixDataModel(parseXML(openAssetFile("StandardCorePrefixes.xml")));
+			category = DATA_MODEL_CATEGORY.DYNAMIC;
+			unitManagerBuilderBundle.addPrefixDataModel(parseXML(openXmlFile(getContext().getFilesDir().getPath().toString() + "DynamicPrefixes.xml", false)));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

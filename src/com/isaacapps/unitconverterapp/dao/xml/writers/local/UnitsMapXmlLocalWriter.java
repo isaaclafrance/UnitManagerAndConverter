@@ -53,7 +53,7 @@ public class UnitsMapXmlLocalWriter extends XmlWriter<ArrayList<Unit>> {
 							serializer.endTag(namespace, "unitName");
 							
 							serializer.startTag(namespace, "exponent");
-								serializer.text(Double.toString(entry.getValue()));
+								serializer.text(entry.getValue().toString());
 							serializer.endTag(namespace, "exponent");
 						serializer.endTag(namespace, "component");
 					}

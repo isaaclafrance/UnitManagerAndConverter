@@ -1,12 +1,9 @@
 package com.isaacapps.unitconverterapp.dao.xml.readers.online;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
+import org.xmlpull.v1.*;
 
 import com.isaacapps.unitconverterapp.dao.xml.readers.AsyncXmlReader;
 import com.isaacapps.unitconverterapp.models.Unit;
@@ -14,6 +11,8 @@ import com.isaacapps.unitconverterapp.models.unitmanager.UnitManagerBuilder;
 
 import android.content.Context;
 
+//Completely ignores XML namespaces.
+///According to official Google Android documentation, the XmlPullParser that reads one tag at a time is the most efficient way of parsing especially in situations where there are a large number of tags.
 public class CurrencyUnitsMapXmlOnlineReader extends AsyncXmlReader<ArrayList<ArrayList<Unit>>,UnitManagerBuilder>{
 
 	///
@@ -24,21 +23,18 @@ public class CurrencyUnitsMapXmlOnlineReader extends AsyncXmlReader<ArrayList<Ar
 	///
 	@Override
 	protected ArrayList<ArrayList<Unit>> readEntity(XmlPullParser parser) throws XmlPullParserException, IOException{
-		Map<String, double[]> baseConversionPolyCoeffs = new HashMap<String, double[]>();
 		Map<String, Unit> unitsMap = new HashMap<String, Unit>();
-		Map<String, Double> componentUnitsDimension = new HashMap<String, Double>();
-		Map<String, String> currencyAbbreviationNameMap = getCurrencyAbbreviationNameMap();
 		
-		String unitName = "", unitSystem = "si", abbreviation = "", unitCategory = "currency_unit", tagName = "", updateTime = "";	
+		String unitName = "", unitSystem = "si", abbreviation = "", unitCategory = "currency_unit", tagName = "";	
 		String baseUnitName = "euro";
 
 		//Create Euro unit that is the basis of all the calculations
-		Unit baseUnit = new Unit(baseUnitName, unitCategory, "", unitSystem, "eur", new HashMap<String, Double>(), new Unit(), new double[]{1.0f, 0.0f});
-		baseUnit.addComponentUnit(baseUnitName, 1.0f);
+		Unit baseUnit = new Unit(baseUnitName, unitCategory, "", unitSystem, "eur", new HashMap<String, Double>(), new Unit(), new double[]{1.0, 0.0f});
+		baseUnit.addComponentUnit(baseUnitName, 1.0, false);
 		baseUnit.setBaseUnit(baseUnit);
 		baseUnit.setCoreUnitState(true);
 		
-		//Partially constructs currency units using info from xml file.
+		//Sift through the too many nested cube tags.
 		tagName = parser.getName();
 		if(tagName.equalsIgnoreCase("gesmes:Envelope")){
 			parser.require(XmlPullParser.START_TAG, null, "gesmes:Envelope");
@@ -48,7 +44,6 @@ public class CurrencyUnitsMapXmlOnlineReader extends AsyncXmlReader<ArrayList<Ar
 				}
 				tagName = parser.getName();
 				if(tagName.equalsIgnoreCase("Cube")){
-					//Iterate through all elements of the XML file within the 'unit' element while storing properties pertaining to the currency unit.	
 					parser.require(XmlPullParser.START_TAG, null, "Cube");
 					while(parser.next() != XmlPullParser.END_TAG){
 						if(parser.getEventType() != XmlPullParser.START_TAG){
@@ -58,28 +53,17 @@ public class CurrencyUnitsMapXmlOnlineReader extends AsyncXmlReader<ArrayList<Ar
 						if(tagName.equalsIgnoreCase("Cube")){
 							parser.require(XmlPullParser.START_TAG, null, "Cube");
 							
-							updateTime = "Currency updated from European Central Bank at "+readUpdateTime(parser);
-							baseUnit.setDescription(updateTime);
+							baseUnit.setDescription("Currency updated from European Central Bank at "+readUpdateTime(parser));
 							while(parser.next() != XmlPullParser.END_TAG){
 								if(parser.getEventType() != XmlPullParser.START_TAG){
 									continue;
 								}
 								tagName = parser.getName();
 								if(tagName.equalsIgnoreCase("Cube")){
-									unitName = readUnitName(parser, currencyAbbreviationNameMap);
-									abbreviation = readAbbreviation(parser);
-									
-									componentUnitsDimension = new HashMap<String, Double>();
-									componentUnitsDimension.put(unitName, 1.0);	
-									
-									baseConversionPolyCoeffs = readBaseConversionPolyCoeffs(parser, baseUnitName);
-									
-									//Use stored information from XML file to partially construct a new unit..
-									Unit constructedUnit = new Unit(unitName, unitCategory, updateTime, unitSystem, abbreviation, componentUnitsDimension, baseUnit, baseConversionPolyCoeffs.get(baseUnitName));
+									Unit constructedUnit = readUnit(parser, baseUnit, unitName,unitSystem,abbreviation, unitCategory);
 									constructedUnit.setCoreUnitState(true);
-									unitsMap.put(unitName, constructedUnit);
 									
-									parser.nextTag();
+									unitsMap.put(constructedUnit.getName(), constructedUnit);
 								}
 								else{
 									skip(parser);
@@ -105,6 +89,24 @@ public class CurrencyUnitsMapXmlOnlineReader extends AsyncXmlReader<ArrayList<Ar
 		return unitLists;
 	}
 	
+	///
+	private Unit readUnit(XmlPullParser parser, Unit baseUnit, String unitName, String unitSystem, String abbreviation, String unitCategory) throws XmlPullParserException, IOException{
+		parser.require(XmlPullParser.START_TAG, null, "Cube");
+		
+		Map<String, Double> componentUnitsDimension = new HashMap<String, Double>();
+		Map<String, String> currencyAbbreviationNameMap = getCurrencyAbbreviationNameMap();
+				
+		unitName = readUnitName(parser, currencyAbbreviationNameMap);
+		abbreviation = readAbbreviation(parser);
+		
+		componentUnitsDimension = new HashMap<String, Double>();
+		componentUnitsDimension.put(unitName, 1.0);	
+				
+		parser.nextTag();
+		
+		return new Unit(unitName, unitCategory, baseUnit.getDescription(), unitSystem, abbreviation, componentUnitsDimension, baseUnit, readBaseConversionPolyCoeffs(parser));
+	}
+	
 	///	
 	private String readAbbreviation(XmlPullParser parser) throws XmlPullParserException, IOException{
 		return readAttribute(parser, "currency");
@@ -118,12 +120,8 @@ public class CurrencyUnitsMapXmlOnlineReader extends AsyncXmlReader<ArrayList<Ar
 	private String readUpdateTime(XmlPullParser parser) throws XmlPullParserException, IOException{
 		return readAttribute(parser, "time");
 	}
-	private Map<String, double[]> readBaseConversionPolyCoeffs(XmlPullParser parser, String baseUnitName) throws XmlPullParserException, IOException{
-		Map<String, double[]> conversionPolyCoeffsMap = new HashMap<String, double[]>();
-		double[] polynomialCoeffs = new double[]{1.0/Double.parseDouble(readAttribute(parser, "rate")), 0.0};
-		conversionPolyCoeffsMap.put(baseUnitName, polynomialCoeffs);
-		
-		return conversionPolyCoeffsMap;
+	private double[] readBaseConversionPolyCoeffs(XmlPullParser parser) throws XmlPullParserException, IOException{
+		return new double[]{1.0/Double.parseDouble(readAttribute(parser, "rate")), 0.0};
 	}
 	
 	///
@@ -160,7 +158,7 @@ public class CurrencyUnitsMapXmlOnlineReader extends AsyncXmlReader<ArrayList<Ar
 			e.printStackTrace();
 		}
 				
-		return new UnitManagerBuilder().setNonBaseUnitsComponent(currencyUnitsGroup.get(1))
-									   .setBaseUnitsComponent(currencyUnitsGroup.get(0));
+		return new UnitManagerBuilder().addNonBaseUnits(currencyUnitsGroup.get(1))
+									   .addBaseUnits(currencyUnitsGroup.get(0));
 	}
 }

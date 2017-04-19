@@ -1,46 +1,38 @@
 package com.isaacapps.unitconverterapp.activities;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
+import java.io.*;
 
 import org.xmlpull.v1.XmlPullParserException;
 
-import com.isaacapps.unitconverterapp.dao.xml.writers.local.ConversionFavoritesListXmlLocalWriter;
-import com.isaacapps.unitconverterapp.dao.xml.writers.local.UnitsMapXmlLocalWriter;
-import com.isaacapps.unitconverterapp.models.Quantity;
-import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager;
-import com.isaacapps.unitconverterapp.models.unitmanager.UnitManagerBuilder;
+import com.isaacapps.unitconverterapp.dao.xml.writers.local.*;
+import com.isaacapps.unitconverterapp.models.*;
+import com.isaacapps.unitconverterapp.models.unitmanager.*;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.*;
 
 import android.app.Application;
 
 public class PersistentSharablesApplication extends Application{
-	private boolean conversionFavoriteListChanged;
 	private UnitManagerBuilder unitManagerBuilder;
 	private UnitManager unitManager;
-	private ArrayList<String> conversionFavoritesList;
-	private Quantity fromQuantity;
-	private Quantity toQuantity;	
-	public int numOfLoaderCompleted; 
-	public int initialUnitNum;
+	private ConversionFavoritesDataModel conversionFavoritesDataModel;
+	private Quantity fromQuantity, toQuantity;	
+	public int numOfLoaderCompleted, initialUnitNum, initialConversionFavoritesNum;
 		
 	///
 	public PersistentSharablesApplication(){
-		conversionFavoriteListChanged = false;
 		unitManagerBuilder = new UnitManagerBuilder();
 		unitManager = null;
-		conversionFavoritesList = new ArrayList<String>();
+		conversionFavoritesDataModel = new ConversionFavoritesDataModel();
 		fromQuantity = new Quantity();
 		toQuantity = new Quantity();
-		numOfLoaderCompleted = 0;
-		initialUnitNum = 0;
+		numOfLoaderCompleted = initialUnitNum = initialConversionFavoritesNum = 0;
 	}
 	
 	///
 	public void saveUnits(){
 		try {
-			if(getUnitManager().getQueryExecutor().getDynamicUnits().size() != initialUnitNum){
-				new UnitsMapXmlLocalWriter(getApplicationContext()).saveToXML(getUnitManager().getQueryExecutor().getDynamicUnits());
+			if(getUnitManager().getUnitsDataModel().getDynamicUnits().size() != initialUnitNum){
+				new UnitsMapXmlLocalWriter(getApplicationContext()).saveToXML(getUnitManager().getUnitsDataModel().getDynamicUnits());
 			}
 		} catch (IllegalArgumentException e) {
 			e.printStackTrace();
@@ -56,8 +48,8 @@ public class PersistentSharablesApplication extends Application{
 	}
 	public void saveConversionFavorites(){
 		try {
-			if(conversionFavoriteListChanged){
-				new ConversionFavoritesListXmlLocalWriter(getApplicationContext()).saveToXML(conversionFavoritesList);
+			if(conversionFavoritesDataModel.getAllFormattedConversions().size() != initialConversionFavoritesNum){
+				new ConversionFavoritesListXmlLocalWriter(getApplicationContext()).saveToXML(conversionFavoritesDataModel);
 			}
 		} catch (IllegalArgumentException e) {
 			e.printStackTrace();
@@ -75,9 +67,6 @@ public class PersistentSharablesApplication extends Application{
 	///	
 	public UnitManagerBuilder getUnitManagerBuilder(){
 		return unitManagerBuilder;
-	}
-	public void setUnitManagerBuilder(UnitManagerBuilder unitManagerBuilder){
-		this.unitManagerBuilder = unitManagerBuilder;
 	}	
 	
 	public UnitManager getUnitManager(){
@@ -88,14 +77,15 @@ public class PersistentSharablesApplication extends Application{
 	}	
 	public void recreateUnitManager(){
 		if(unitManagerBuilder != null){
-			unitManager = unitManagerBuilder.createUnitManager();
+			unitManager = unitManagerBuilder.build();
 			if(isUnitManagerPreReqLoadingComplete()){
-				initialUnitNum = unitManager.getQueryExecutor().getDynamicUnits().size();
+				initialUnitNum = unitManager.getUnitsDataModel().getDynamicUnits().size();
+				initialConversionFavoritesNum = unitManager.getConversionFavoritesDataModel().getAllFormattedConversions().size();
 			}
 		}
 	}
 	public boolean isUnitManagerPreReqLoadingComplete(){
-		return unitManagerBuilder.areMinComponentsForCreationAvailable() && numOfLoaderCompleted == 4;
+		return unitManagerBuilder.areMinComponentsForCreationAvailable() && numOfLoaderCompleted >= 2;
 	}
 	
 	///
@@ -104,14 +94,5 @@ public class PersistentSharablesApplication extends Application{
 	}
 	public Quantity getToQuantity(){
 		return toQuantity;
-	}
-		
-	///
-	public ArrayList<String> getConversionFavoritesList(){
-		return conversionFavoritesList;
-	}
-	public void addConversionToConversionFavoritesList(String conversion){
-		conversionFavoritesList.add(conversion);
-		conversionFavoriteListChanged = true;
 	}
 }

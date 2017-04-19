@@ -27,7 +27,7 @@ public class PrefixesMapXmlLocalWriter extends XmlWriter<Map<String, Double>>{
 					serializer.text(entry.getKey());
 				serializer.endTag(namespace, "name");
 				serializer.startTag(namespace, "value");
-					serializer.text(Double.toString(entry.getValue()));
+					serializer.text(entry.getValue().toString());
 				serializer.endTag(namespace, "value");
 			serializer.endTag(namespace, "prefix");
 		}

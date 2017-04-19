@@ -1,15 +1,15 @@
 package com.isaacapps.unitconverterapp.dao.xml.writers.local;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 import org.xmlpull.v1.XmlSerializer;
 
 import com.isaacapps.unitconverterapp.dao.xml.writers.XmlWriter;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.ConversionFavoritesDataModel;
 
 import android.content.Context;
 
-public class ConversionFavoritesListXmlLocalWriter extends XmlWriter<ArrayList<String>>{
+public class ConversionFavoritesListXmlLocalWriter extends XmlWriter<ConversionFavoritesDataModel>{
 
 	///
 	public ConversionFavoritesListXmlLocalWriter(Context context){
@@ -19,25 +19,22 @@ public class ConversionFavoritesListXmlLocalWriter extends XmlWriter<ArrayList<S
 	
 	///
 	@Override
-	protected void writeEntity(XmlSerializer serializer, String namespace, ArrayList<String> favoriteConversions) throws IllegalArgumentException, IllegalStateException, IOException{
-		String[] categoryNconversionUnitsNames;
-		String[] conversionUnitNames;
-		
-		for(String conversionGroup:favoriteConversions){
-			categoryNconversionUnitsNames = conversionGroup.split(": ");
-			conversionUnitNames = categoryNconversionUnitsNames[1].split(" --> ");
-			
-			serializer.startTag(namespace, "conversion");
+	protected void writeEntity(XmlSerializer serializer, String namespace, ConversionFavoritesDataModel conversionFavoritesModelData) throws IllegalArgumentException, IllegalStateException, IOException{
+		for(String formattedConversion:conversionFavoritesModelData.getAllFormattedConversions()){
+			serializer.startTag(namespace, "favorite");
+				serializer.startTag(namespace, "sourceUnit");
+					serializer.text(ConversionFavoritesDataModel.getSourceUnitNameFromConversion(formattedConversion));
+				serializer.endTag(namespace, "sourceUnit");
+				serializer.startTag(namespace, "targetUnit");
+					serializer.text(ConversionFavoritesDataModel.getTargetUnitNameFromConversion(formattedConversion));
+				serializer.endTag(namespace, "targetUnit");
 				serializer.startTag(namespace, "unitCategory");
-					serializer.text(categoryNconversionUnitsNames[0]);
-				serializer.endTag(namespace, "unitCategory");
-				serializer.startTag(namespace, "fromUnit");
-					serializer.text(conversionUnitNames[0]);
-				serializer.endTag(namespace, "fromUnit");
-				serializer.startTag(namespace, "toUnit");
-					serializer.text(conversionUnitNames[1]);
-				serializer.endTag(namespace, "toUnit");
-			serializer.endTag(namespace, "conversion");	
+					serializer.text(ConversionFavoritesDataModel.getTargetUnitNameFromConversion(formattedConversion));
+					serializer.endTag(namespace, "unitCategory");
+				serializer.startTag(namespace, "significanceRank");
+					serializer.text(String.valueOf(conversionFavoritesModelData.getSignificanceRankOfConversion(formattedConversion)));
+				serializer.endTag(namespace, "significanceRank");
+			serializer.endTag(namespace, "favorite");	
 		}
 	}
 }

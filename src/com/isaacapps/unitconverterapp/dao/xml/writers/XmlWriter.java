@@ -1,14 +1,8 @@
 package com.isaacapps.unitconverterapp.dao.xml.writers;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import java.io.*;
 
-import org.xmlpull.v1.XmlPullParserException;
-import org.xmlpull.v1.XmlPullParserFactory;
-import org.xmlpull.v1.XmlSerializer;
+import org.xmlpull.v1.*;
 
 import android.content.Context;
 

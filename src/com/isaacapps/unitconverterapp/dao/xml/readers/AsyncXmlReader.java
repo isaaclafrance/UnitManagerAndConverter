@@ -1,19 +1,15 @@
 package com.isaacapps.unitconverterapp.dao.xml.readers;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.io.*;
+import java.net.*;
 
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
+import org.xmlpull.v1.*;
 
 import android.content.Context;
 import android.support.v4.content.AsyncTaskLoader;
 import android.util.Xml;
 
+///According to official Google Android documentation, the XmlPullParser that reads one tag at a time is the most efficient way of parsing especially in situations where there are a large number of tags.
 public abstract class AsyncXmlReader<S, T> extends AsyncTaskLoader<T> {
 
 	///
@@ -21,7 +17,7 @@ public abstract class AsyncXmlReader<S, T> extends AsyncTaskLoader<T> {
 		super(context);
 	}
 
-	///
+	///According to official Google Android documentation, the XmlPullParser that reads one tag at a time is the most efficient way of parsing especially in situations where there are a large number of tags.
 	public S parseXML(InputStream in) {
 		try{
 			XmlPullParser parser = Xml.newPullParser();
@@ -81,7 +77,7 @@ public abstract class AsyncXmlReader<S, T> extends AsyncTaskLoader<T> {
 	}
 	protected double[] readDoubleArray(XmlPullParser parser) throws IOException, XmlPullParserException{
 		double[] doubles = new double[2];
-		String[] doublesTexts = readText(parser).trim().split(" ", 0);
+		String[] doublesTexts = readText(parser).split(" ", 0);
 		
 		doubles[0] = Double.valueOf(doublesTexts[0]);
 		if (doublesTexts.length > 1){

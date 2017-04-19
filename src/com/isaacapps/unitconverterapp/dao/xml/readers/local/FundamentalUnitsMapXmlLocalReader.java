@@ -1,32 +1,28 @@
 package com.isaacapps.unitconverterapp.dao.xml.readers.local;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
+import org.xmlpull.v1.*;
 
 import android.content.Context;
 
 import com.isaacapps.unitconverterapp.dao.xml.readers.AsyncXmlReader;
-import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager;
-import com.isaacapps.unitconverterapp.models.unitmanager.UnitManagerBuilder;
+import com.isaacapps.unitconverterapp.models.unitmanager.*;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager.UNIT_TYPE;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.FundamentalUnitsDataModel;
 
-public class FundUnitsMapXmlLocalReader extends AsyncXmlReader<Map<String, Map<String, UNIT_TYPE>>, UnitManagerBuilder>{
+///According to official Google Android documentation, the XmlPullParser that reads one tag at a time is the most efficient way of parsing especially in situations where there are a large number of tags.
+public class FundamentalUnitsMapXmlLocalReader extends AsyncXmlReader<FundamentalUnitsDataModel, UnitManagerBuilder>{
 
 	///
-	public FundUnitsMapXmlLocalReader(Context context){
+	public FundamentalUnitsMapXmlLocalReader(Context context){
 		super(context);
 	}
 		
 	///
-	protected Map<String, Map<String, UNIT_TYPE>> readEntity(XmlPullParser parser) throws XmlPullParserException, IOException{
-		String tagName = "";
-		String unitSystemName = "";
-		Map<String, UNIT_TYPE> unitSystemDimensionAssoc = new HashMap<String, UnitManager.UNIT_TYPE>();
-		Map<String, Map<String, UNIT_TYPE>> fundamentalUnitsMap = new HashMap<String, Map<String,UNIT_TYPE>>();
+	protected FundamentalUnitsDataModel readEntity(XmlPullParser parser) throws XmlPullParserException, IOException{
+		String tagName = "", unitSystem = "";
+		FundamentalUnitsDataModel fundamentalUnitsDataModel = new FundamentalUnitsDataModel();
 		
 		parser.require(XmlPullParser.START_TAG, null, "main");
 		while(parser.next() != XmlPullParser.END_TAG){
@@ -42,10 +38,10 @@ public class FundUnitsMapXmlLocalReader extends AsyncXmlReader<Map<String, Map<S
 					}
 					tagName = parser.getName();
 					if(tagName.equalsIgnoreCase("name")){
-						unitSystemName = readUnitSystem(parser);
+						unitSystem = readUnitSystem(parser);
 					}
 					else if(tagName.equalsIgnoreCase("dimensions")){
-						unitSystemDimensionAssoc = readDimensionAssoc(parser);
+						readDimensionAssoc(parser, unitSystem, fundamentalUnitsDataModel);
 					}else{
 						skip(parser);
 					}
@@ -54,10 +50,9 @@ public class FundUnitsMapXmlLocalReader extends AsyncXmlReader<Map<String, Map<S
 			else{
 				skip(parser);
 			}
-			fundamentalUnitsMap.put(unitSystemName, unitSystemDimensionAssoc);
 		}
 		
-		return fundamentalUnitsMap;
+		return fundamentalUnitsDataModel;
 	}
 	
 	///
@@ -67,11 +62,9 @@ public class FundUnitsMapXmlLocalReader extends AsyncXmlReader<Map<String, Map<S
 		parser.require(XmlPullParser.END_TAG, null, "name");
 		return name;
 	}
-	private Map<String, UNIT_TYPE> readDimensionAssoc(XmlPullParser parser) throws XmlPullParserException, IOException{
-		String tagName = "";
-		Map<String, UNIT_TYPE> dimensionAssociations = new HashMap<String, UnitManager.UNIT_TYPE>();
-		String unitName = "";
-		UNIT_TYPE dimensionType = UNIT_TYPE.UNKNOWN;
+	private void readDimensionAssoc(XmlPullParser parser, String unitSystem, FundamentalUnitsDataModel fundamentalUnitsDataModel) throws XmlPullParserException, IOException{
+		String tagName, unitName, dimensionName;
+		tagName = unitName = dimensionName = "";
 		
 		parser.require(XmlPullParser.START_TAG, null, "dimensions");
 		while(parser.next() != XmlPullParser.END_TAG){
@@ -87,7 +80,7 @@ public class FundUnitsMapXmlLocalReader extends AsyncXmlReader<Map<String, Map<S
 					}
 					tagName = parser.getName();
 					if(tagName.equalsIgnoreCase("type")){
-						dimensionType = readDimensionType(parser);
+						dimensionName = readFundamentalDimension(parser);
 					}else if(tagName.equalsIgnoreCase("unit")){
 						unitName = readUnitName(parser);
 					}
@@ -95,12 +88,11 @@ public class FundUnitsMapXmlLocalReader extends AsyncXmlReader<Map<String, Map<S
 						skip(parser);
 					}
 				}
+				fundamentalUnitsDataModel.addFundamentalUnit(unitSystem, unitName, UNIT_TYPE.valueOf(dimensionName));
 			}else{
 				skip(parser);
 			}
-			dimensionAssociations.put(unitName, dimensionType);
 		}
-		return dimensionAssociations;
 	}
 	private String readUnitName(XmlPullParser parser) throws XmlPullParserException, IOException{
 		parser.require(XmlPullParser.START_TAG, null, "unit");
@@ -109,14 +101,11 @@ public class FundUnitsMapXmlLocalReader extends AsyncXmlReader<Map<String, Map<S
 		return unitName;
 		
 	}
-	private UNIT_TYPE readDimensionType(XmlPullParser parser) throws XmlPullParserException, IOException{
-		parser.require(XmlPullParser.START_TAG, null, "type");
-		
-		String dimensionName = readText(parser).toUpperCase();
-		UNIT_TYPE dimensionType = UNIT_TYPE.valueOf(dimensionName);
-				
+	private String readFundamentalDimension(XmlPullParser parser) throws XmlPullParserException, IOException{
+		parser.require(XmlPullParser.START_TAG, null, "type");	
+		String fundamentalDimension = readText(parser).toUpperCase();			
 		parser.require(XmlPullParser.END_TAG, null, "type");		
-		return dimensionType;
+		return fundamentalDimension;
 	}
 	
 	
@@ -125,7 +114,7 @@ public class FundUnitsMapXmlLocalReader extends AsyncXmlReader<Map<String, Map<S
 	public UnitManagerBuilder loadInBackground() {
 		UnitManagerBuilder unitManagerBuilderBundle = new UnitManagerBuilder();
 		try {
-			unitManagerBuilderBundle.setFundUnitsMapComponent(parseXML(openAssetFile("FundamentalUnits.xml")));
+			unitManagerBuilderBundle.addFundamentalUnitsDataModel(parseXML(openAssetFile("FundamentalUnits.xml")));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

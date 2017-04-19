@@ -1,30 +1,30 @@
 package com.isaacapps.unitconverterapp.dao.xml.readers.online;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.regex.*;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
 import com.isaacapps.unitconverterapp.dao.xml.readers.AsyncXmlReader;
-import com.isaacapps.unitconverterapp.models.Unit;
-import com.isaacapps.unitconverterapp.models.unitmanager.UnitManagerBuilder;
-import com.isaacapps.unitconverterapp.models.unitmanager.Utility;
+import com.isaacapps.unitconverterapp.models.*;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.PrefixesDataModel;
+import com.isaacapps.unitconverterapp.models.unitmanager.*;
 
 import android.content.Context;
 
+//Completely ignores XML namespaces.
+///According to official Google Android documentation, the XmlPullParser that reads one tag at a time is the most efficient way of parsing especially in situations where there are a large number of tags.
 public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManagerBuilder,UnitManagerBuilder>{
 
 	private ArrayList<Unit> partiallyConstructedUnits;
 	private Map<String, String> abbreviationCodeToFullNameMap;
 	private Map<String, Unit> abbreviatedNameBaseUnitsMap;
 	private Map<String, Unit> abbreviatedNameNonBaseUnitsMap;
-	private Map<String, Double> prefixesMap;
+	private PrefixesDataModel prefixesDataModel;
 	
 	public PrefixesNUnitsMapXmlOnlineReader(Context context){
 		super(context);
@@ -32,13 +32,12 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
 		abbreviationCodeToFullNameMap = new HashMap<String, String>();
 		abbreviatedNameBaseUnitsMap = new HashMap<String, Unit>();
 		abbreviatedNameNonBaseUnitsMap = new HashMap<String, Unit>();
-		prefixesMap = new HashMap<String, Double>();
+		prefixesDataModel = new PrefixesDataModel();
 	}
 		
 	///
 	@Override
 	protected UnitManagerBuilder readEntity(XmlPullParser parser) throws XmlPullParserException, IOException{
-		UnitManagerBuilder unitManagerBuilder = new UnitManagerBuilder();
 		Unit partiallyConstructedUnit;
 		
 		//
@@ -53,7 +52,7 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
 				tagName = parser.getName();
 				if(tagName.equalsIgnoreCase("prefix")){
 					partiallyConstructedUnit = null;
-					prefixesMap.putAll(readPrefix(parser));
+					readPrefix(parser);
 				}
 				else if(tagName.equalsIgnoreCase("base-unit")){
 					partiallyConstructedUnit = readUnit(parser, rootDescription, true);
@@ -67,8 +66,8 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
 				}
 				
 				if(partiallyConstructedUnit != null){
-					//The raw information parsed from the xml connects the units using their code abbreviation name for conversion purposes; therefore, the abbreviation has greater 
-					//preference over the full name name storing and retrieving units, at least initially.
+					/*The raw information parsed from the xml connects the units using their code abbreviation name for conversion purposes; therefore, the abbreviation has greater 
+					 preference over the full name for storing and retrieving units, at least initially. */
 					if(partiallyConstructedUnit.isBaseUnit()){
 						abbreviatedNameBaseUnitsMap.put(partiallyConstructedUnit.getAbbreviation(), partiallyConstructedUnit);
 					}
@@ -85,26 +84,33 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
 		completeUnitConstruction();
 		
 		//
-		unitManagerBuilder.setBaseUnitsComponent(new ArrayList<Unit>(abbreviatedNameBaseUnitsMap.values()));
-		unitManagerBuilder.setNonBaseUnitsComponent(new ArrayList<Unit>(abbreviatedNameNonBaseUnitsMap.values()));
-		unitManagerBuilder.setCorePrefixesNAbbreviationsMapComponent(prefixesMap);
-		
-		return unitManagerBuilder; 
+		return new UnitManagerBuilder().addBaseUnits(new ArrayList<Unit>(abbreviatedNameBaseUnitsMap.values()))
+		                  			   .addNonBaseUnits(new ArrayList<Unit>(abbreviatedNameNonBaseUnitsMap.values()))
+		                  			   .addPrefixDataModel(prefixesDataModel);
 	}
 	
+	///
 	private void completeUnitConstruction(){
-		//**Completes the construction of the previous constructed unit by adding missing elements i.e. coreUnitState, conversion polynomial coefficients, and base unit.
-		//**Accomplishes this task by finding actual unit references for the base unit names now that all units have been created.
+		/*Completes the construction of the previous constructed unit by adding missing elements i.e. coreUnitState, conversion polynomial coefficients, and base unit.
+		 Accomplishes this task by finding actual unit references for the base unit names now that all units have been created.*/
 		for(Unit partiallyConstructedUnit:partiallyConstructedUnits){
-			assignBaseUnitNConversionPolyCoeffs(partiallyConstructedUnit);
-			assignFullNameComponentUnitDimension(partiallyConstructedUnit);	
+			
+			 ////////////////
+			if(partiallyConstructedUnit.getName().equalsIgnoreCase("foot")){
+				int a = 1;
+				a++;
+			}
+			/////////////////
+			recalculatedBaseConversionPolyCoeffsFromComponentUnitsDimension(partiallyConstructedUnit);
+			assignBaseUnit(partiallyConstructedUnit);
+			assignCorrectedAbbreviatedComponentUnitsDimension(partiallyConstructedUnit);
+			assignFullNameComponentUnitDimension(partiallyConstructedUnit, false);	
 			partiallyConstructedUnit.setCoreUnitState(true);
 		}
 	}
-	private void assignBaseUnitNConversionPolyCoeffs(Unit partiallyConstructedUnit){
-		//Since the actually base unit may not have already been parsed during this unit's partial construction, only a dummy unit with the name of the base unit and the conversion was associated.
-		//Therefore the actual base unit candidate needs to be retrieved.
-			
+	private void assignBaseUnit(Unit partiallyConstructedUnit){
+		/*Since the actually base unit may not have already been parsed during this unit's partial construction, only a dummy unit with the name of the base unit and the conversion was associated.
+		 Therefore the actual base unit candidate needs to be retrieved. */
 		partiallyConstructedUnit.setBaseUnit(getUnitFromAbbreviatedName(partiallyConstructedUnit.getBaseUnit().getAbbreviation())
 				                             , partiallyConstructedUnit.getBaseConversionPolyCoeffs());	
 		
@@ -116,95 +122,135 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
 			partiallyConstructedUnit.getBaseUnit().setDescription(partiallyConstructedUnit.getDescription());
 		}
 	}
-	private void assignFullNameComponentUnitDimension(Unit partiallyConstructedUnit){
-		//Copies the raw abbreviation encoded component unit dimension map that was initially assigned directly from parsing, before deleting it.
-		//Then transforms that copy into an equivalent component dimension map with full names of the component units.	
+	private void assignCorrectedAbbreviatedComponentUnitsDimension(Unit partiallyConstructedUnit){
+		boolean hasManyComponents = partiallyConstructedUnit.getComponentUnitsDimension().size() > 1;
+		boolean baseConversionIsIndentity = partiallyConstructedUnit.getBaseConversionPolyCoeffs()[0] == 1.0;
+		boolean hasAnExponentialIndentity = partiallyConstructedUnit.getComponentUnitsDimension().containsValue(1.0);
+		
+		if( (hasManyComponents || !hasManyComponents && !hasAnExponentialIndentity ) && !baseConversionIsIndentity || !hasManyComponents && hasAnExponentialIndentity ){	
+			partiallyConstructedUnit.clearComponentUnitsDimension(false);
+			partiallyConstructedUnit.addComponentUnit(partiallyConstructedUnit.getAbbreviation(), 1.0, false);
+		}
+	}
+	private void assignFullNameComponentUnitDimension(Unit partiallyConstructedUnit, boolean recreateUnitName){
+		//Transforms abbreviated component units dimension into its equivalent full name dimension.	
 		Map<String, Double> abbreviatedComponentUnitsDimension = new HashMap<String,Double>(partiallyConstructedUnit.getComponentUnitsDimension());
-		partiallyConstructedUnit.clearComponentUnitsDimension();
-
+		partiallyConstructedUnit.clearComponentUnitsDimension(false);
+		
 		for(Entry<String, Double> componentEntry:abbreviatedComponentUnitsDimension.entrySet()){
-			partiallyConstructedUnit.addComponentUnit(abbreviationCodeToFullNameMap.get(componentEntry.getKey()), componentEntry.getValue());
+			partiallyConstructedUnit.addComponentUnit(abbreviationCodeToFullNameMap.get(componentEntry.getKey()), componentEntry.getValue(), recreateUnitName || partiallyConstructedUnit.getName().matches("(\\w+[\\/*])+\\w+"));
 		}
 	}	
 	
 	private Unit getUnitFromAbbreviatedName(String abbreviatedName){
-		Unit unit = abbreviatedNameBaseUnitsMap.get(abbreviatedName); 
+		String abbreviatedNameWithNoConversionFactors = abbreviatedName.replaceAll("[*\\/]\\d+", ""); //Strip any conversion factors is any exists, which may hinder map search.
+		
+		//Roundabout way of using existing methods to put it in format "[*/](a)^(#)". Some previous stored units with complex combinations will be stored as such.
+		String abbreviatedNameWithNoConversionFactorsWithParen = Utility.getComponentUnitsDimensionAsString(convertStringToComponentUnitsDimension(abbreviatedNameWithNoConversionFactors));
+		
+		Unit unit = abbreviatedNameBaseUnitsMap.get(abbreviatedNameWithNoConversionFactorsWithParen); 
 		if(unit != null){
 			return unit;
 		}
 		
-		unit = abbreviatedNameNonBaseUnitsMap.get(abbreviatedName);
+		unit = abbreviatedNameNonBaseUnitsMap.get(abbreviatedNameWithNoConversionFactorsWithParen);
 		if(unit != null){
 			return unit;
 		}
-		else{//Very likely unit name is composed a complex combination of prefix abbreviations and unit abbreviations. After decomposition, use this name to create the missing unit.		
-			Map<String, Double> abbreviatedComponentUnitsDimension = convertAbbreviatedStringToComponentUnitsDimension(abbreviatedName);
-			Map<String, Double> fullNameComponentUnitsDimension = new HashMap<String, Double>();
-			
-			String fullName;
-			for(Entry<String, Double> abbreviatedCompUnitEntry:abbreviatedComponentUnitsDimension.entrySet()){
-				fullName = abbreviationCodeToFullNameMap.get(abbreviatedCompUnitEntry.getKey());
-				if(fullName == null){ //Very likely no match was found because the name contains a prefix.  
-					unit = createMissingPrefixedUnit(abbreviatedCompUnitEntry.getKey());
-					abbreviatedNameNonBaseUnitsMap.put(abbreviatedCompUnitEntry.getKey(), unit);					
-					fullName = unit.getName();		
-				}
-				fullNameComponentUnitsDimension.put(fullName, abbreviatedCompUnitEntry.getValue());
-			}
-			
-			//
-			unit = new Unit(fullNameComponentUnitsDimension, true);
-			unit.setAbbreviation(abbreviatedName);
-			abbreviatedNameBaseUnitsMap.put(unit.getAbbreviation(), unit);
-			
-			return unit;
+		else{ //Very likely unit name is composed of a complex component unit dimension combination of regular and prefixed unit abbreviations. After decomposition, use this name to create a missing prefixed units where necessary.			
+			return createMissingUnitsFromComponentUnitsDimensionString(abbreviatedNameWithNoConversionFactors);
 		}
 	}
-	private Unit createMissingPrefixedUnit(String prefixedAbbreviatedName){
-		//Identify the prefix  and construct the prefixed unit with the appropriate base conversion based on the prefix factor.
+	private Unit createMissingUnitsFromComponentUnitsDimensionString(String abbreviatedComponentUnitsDimensionString){
+		Map<String, Double> componentUnitsDimension = convertStringToComponentUnitsDimension(abbreviatedComponentUnitsDimensionString);
+		boolean prefixedUnitsHaveBeenCreated = false;
 		
-		Map<String, Double> createPrefixedUnitComponentUnitsDimension = new HashMap<String, Double>();
+		for( Entry<String, Double> abbreviatedCompUnitEntry:componentUnitsDimension.entrySet()){
+			if(!abbreviationCodeToFullNameMap.containsKey(abbreviatedCompUnitEntry.getKey())){
+				prefixedUnitsHaveBeenCreated = createMissingPrefixedUnitFromCandidateName(abbreviatedCompUnitEntry.getKey());		
+			}
+		}
+		
+		Unit createdUnit = new Unit(componentUnitsDimension, true);
+		extractConversionFactorsListFromComponentUnitsDimension(createdUnit.getComponentUnitsDimension());
+		assignCorrectedAbbreviatedComponentUnitsDimension(createdUnit);
+		
+		//If there is only one component unit and the component unit is a prefixed unit, then the unit was already added 
+		//to the non-base unit map by createMissingPrefixedUnitFromCandidateName method. There no need to add again.
+		if(!(prefixedUnitsHaveBeenCreated && createdUnit.getComponentUnitsDimension().size() == 1)){
+			abbreviatedNameBaseUnitsMap.put(createdUnit.getAbbreviation(), createdUnit);
+			abbreviationCodeToFullNameMap.put(createdUnit.getAbbreviation(), createdUnit.getName());
+			
+			System.out.println(createdUnit.getAbbreviation());
+		}
+		System.out.println(createdUnit.getAbbreviation());
+		
+		assignFullNameComponentUnitDimension(createdUnit, true);
+		createdUnit.setCoreUnitState(true);
+		
+		return createdUnit;
+	}
+	private boolean createMissingPrefixedUnitFromCandidateName(String candidatePrefixedAbbreviatedName){
+		/*Identify the prefix  and construct the prefixed unit with the appropriate base conversion based on the prefix factor.
+		The forced assumption is that the xml was parsed properly, therefore the candidateprefixedAbbreviatedName will contain a prefix from prefixesMap if it has any
+		and the prefixlessFullName will be retrievable from abbreviationCodeToFullNameMap. Hence, in all cases the prefixed unit will be able to be created. */
+
+		System.out.println(candidatePrefixedAbbreviatedName);
+
 		Unit createdPrefixedUnit = null;
-		String abbreviatedPrefix, fullPrefix;
 		String prefixlessFullName, prefixlessAbbreviatedName;
-		//Matcher exponentMatcher = Pattern.compile("[-]?\\d+").matcher(prefixedOrExponentiatedAbbreviatedName);
-		//Double exponent = exponentMatcher.find()?Double.parseDouble(exponentMatcher.group()):1.0;
 		
-		for(Entry<String, Double> prefixEntry:prefixesMap.entrySet()){
-			abbreviatedPrefix = prefixEntry.getKey().split("::")[1];
-			if(prefixedAbbreviatedName.indexOf(abbreviatedPrefix) != 0){ //make sure only matchable prefixes characters in front of the string will be replaced
+		for(String abbreviatedPrefix :prefixesDataModel.getAllPrefixAbbreviations()){
+			if(candidatePrefixedAbbreviatedName.indexOf(abbreviatedPrefix) != 0){ //make sure only matchable prefixes characters in front of the string will be replaced
 				continue;
 			}
-			prefixlessAbbreviatedName = prefixedAbbreviatedName.replaceFirst(abbreviatedPrefix, "");
+			prefixlessAbbreviatedName = candidatePrefixedAbbreviatedName.replaceFirst(abbreviatedPrefix, "");
 			prefixlessFullName = abbreviationCodeToFullNameMap.get(prefixlessAbbreviatedName);			
 			
-			if(prefixlessFullName != null){	
-				fullPrefix = prefixEntry.getKey().split("::")[0];
-				createPrefixedUnitComponentUnitsDimension.put(fullPrefix+"-"+prefixlessFullName, 1.0);
+			if(prefixlessFullName != null){					
+				createdPrefixedUnit = new PrefixedUnit(prefixesDataModel.getPrefixFullName(abbreviatedPrefix)
+						                               , abbreviatedPrefix, prefixesDataModel.getPrefixValue(abbreviatedPrefix)
+						                               , getUnitFromAbbreviatedName(prefixlessAbbreviatedName), true);
 				
-				createdPrefixedUnit = new Unit(createPrefixedUnitComponentUnitsDimension, false);
-				createdPrefixedUnit.setBaseUnit(getUnitFromAbbreviatedName(prefixlessAbbreviatedName), new double[]{prefixEntry.getValue(), 0.0});
-				createdPrefixedUnit.setAbbreviation(prefixedAbbreviatedName);
-				
-				abbreviationCodeToFullNameMap.put(prefixedAbbreviatedName, createdPrefixedUnit.getName());
-				break;
+				abbreviationCodeToFullNameMap.put(candidatePrefixedAbbreviatedName, createdPrefixedUnit.getName());
+				abbreviatedNameNonBaseUnitsMap.put(candidatePrefixedAbbreviatedName, createdPrefixedUnit);
+				return true;
 			}
 		}	
 		
-		//The forced assumption is that the xml was parsed properly, therefore the prefixedAbbreviatedName will contain a prefix from prefixesMap if it has any
-		//and the prefixlessFullName will be retrievable from abbreviationCodeToFullNameMap. Hence, in all cases the returned unit will not be null.
-		return createdPrefixedUnit;
+		return false;
+	}
+	private void recalculatedBaseConversionPolyCoeffsFromComponentUnitsDimension(Unit partiallyConstructedUnit){
+		/*Due to how the original xml is setup and consequently how it parsed, conversion factors can inadvertently be parsed as a component.
+		Therefore, they have to be removed after being used to update the base conversion coefficient. */
+		ArrayList<Double> conversionFactors  = extractConversionFactorsListFromComponentUnitsDimension(partiallyConstructedUnit.getComponentUnitsDimension());
+		for(Double conversionFactor:conversionFactors){
+			partiallyConstructedUnit.getBaseConversionPolyCoeffs()[0] *= Math.abs((conversionFactor<0.0? 1/conversionFactor:conversionFactor));
+		}
+	}
+	private ArrayList<Double> extractConversionFactorsListFromComponentUnitsDimension(Map<String, Double> componentUnitsDimension){
+		ArrayList<Double> conversionFactors = new ArrayList<Double>();
+		
+		Iterator<Entry<String, Double>> dimensionEntryIterator =  componentUnitsDimension.entrySet().iterator();
+		Entry<String, Double> dimensionEntry;
+		while(dimensionEntryIterator.hasNext()){
+			dimensionEntry = dimensionEntryIterator.next();
+			if(dimensionEntry.getKey().matches("\\d+")){
+				//Due to how the parsing was designed when a conversion factor is picked up as a component unit, the key and values pairs have the same absolute number.
+				conversionFactors.add(Math.abs((dimensionEntry.getValue()<0.0? 1/dimensionEntry.getValue():dimensionEntry.getValue())));
+				dimensionEntryIterator.remove();
+			}
+		}
+		
+		return conversionFactors;
 	}
 	
 	///
-	private Map<String, Double> readPrefix(XmlPullParser parser) throws XmlPullParserException, IOException{
-		String tagName;
-		String fullPrefixName = "";
-		String abbreviatedPrefixName = "";
-		double prefixValue = 0.0;
-		Map<String, Double> prefixMap = new HashMap<String, Double>();
+	private void readPrefix(XmlPullParser parser) throws XmlPullParserException, IOException{
+		parser.require(XmlPullParser.START_TAG, null, "prefix");		
 		
-		parser.require(XmlPullParser.START_TAG, null, "prefix");
+		String tagName, fullPrefixName = "", abbreviatedPrefixName = "";
+		Double prefixValue = 0.0;
 		
 		abbreviatedPrefixName = readAttribute(parser, "CODE");
 		while(parser.next() != XmlPullParser.END_TAG){
@@ -215,23 +261,22 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
 			if(tagName.equalsIgnoreCase("name")){
 				fullPrefixName= readText(parser);
 			}else if(tagName.equalsIgnoreCase("value")){
-				prefixValue = Double.parseDouble(readAttribute(parser, "value"));
+				prefixValue = Double.valueOf(readAttribute(parser, "value"));
 				skip(parser); //only attributes were being read which does not automatically advance the parser, therefore the advancement has to be forced.
 			}else{
 				skip(parser);
 			}
 		}
-		prefixMap.put(fullPrefixName +"::"+ abbreviatedPrefixName, prefixValue);
-		
-		return prefixMap;
+
+		prefixesDataModel.addCorePrefix(fullPrefixName, abbreviatedPrefixName, prefixValue);
 	}
 	private Unit readUnit(XmlPullParser parser, String rootDescription, boolean isBaseUnit) throws XmlPullParserException, IOException{
+		parser.require(XmlPullParser.START_TAG, null, (isBaseUnit)?"base-unit":"unit");		
+		
 		Map<String, double[]> baseUnitNConversionPolyCoeffs = new HashMap<String, double[]>();
 		Map<String, Double> abbreviatedComponentUnitsDimension = new HashMap<String,Double>(); 
 		String unitName = "", unitSystem = "", unitAbbreviation = "", unitCategory = "", tagName = "";
-		
-		parser.require(XmlPullParser.START_TAG, null, (isBaseUnit)?"base-unit":"unit");
-		
+			
 		unitAbbreviation = readUnitAbbreviation(parser, isBaseUnit);
 		unitSystem = (isBaseUnit)?"si":readUnitSystem(parser);
 		while(parser.next() != XmlPullParser.END_TAG){
@@ -260,6 +305,13 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
 			}
 		}
 		
+		////////////////////////////
+		if(unitName.equalsIgnoreCase("foot")){
+			int a = 1;
+			a++;
+		}
+		////////////////////////////
+		
 		abbreviationCodeToFullNameMap.put(unitAbbreviation, unitName);
 		
 		//Only return a created unit:
@@ -272,15 +324,19 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
 			return null;
 		}
 		else{
-			Unit createdUnit = new Unit(unitName, unitCategory, rootDescription, unitSystem, unitAbbreviation, abbreviatedComponentUnitsDimension
-	                , isBaseUnit?new Unit():new Unit(baseUnitNConversionPolyCoeffs.keySet().iterator().next(), new HashMap(), true)
-	                , isBaseUnit? new double[]{0.0, 0.0}:baseUnitNConversionPolyCoeffs.values().iterator().next());
-			
-			if(isBaseUnit){
-				createdUnit.setBaseUnit(createdUnit);
-				createdUnit.addComponentUnit(createdUnit.getAbbreviation(), 1.0);
-			}
-			
+			Unit createdUnit = null;
+			//////////////////////////////////
+			//if(unitSystem.equalsIgnoreCase("us(non-metric)") || unitName.equalsIgnoreCase("meter")){
+				createdUnit = new Unit(unitName, unitCategory, rootDescription, unitSystem, unitAbbreviation, abbreviatedComponentUnitsDimension
+		                , isBaseUnit?new Unit():new Unit(baseUnitNConversionPolyCoeffs.keySet().iterator().next(), new HashMap(), true)
+		                , isBaseUnit? new double[]{0.0, 0.0}:baseUnitNConversionPolyCoeffs.values().iterator().next());
+				
+				if(isBaseUnit){
+					createdUnit.setBaseUnit(createdUnit);
+					createdUnit.addComponentUnit(createdUnit.getAbbreviation(), 1.0, false);
+				}
+			//}
+			///////////////////////////////////
 			return createdUnit;
 		}
 	}
@@ -288,7 +344,7 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
 	/// Methods for retrieving entity components from XML	
 	private String readUnitName(XmlPullParser parser) throws XmlPullParserException, IOException{
 		parser.require(XmlPullParser.START_TAG, null, "name");	
-		String unitNameString = readText(parser).trim().replaceAll(" ", "_").replace("-", "_");
+		String unitNameString = readText(parser).trim().replaceAll("\\s+", "_").replace("-", "_");
 		parser.require(XmlPullParser.END_TAG, null, "name");
 		return unitNameString;
 	}
@@ -313,7 +369,7 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
 	}
 	private Map<String, Double> readAbbreviatedComponentUnitsDimension(XmlPullParser parser) throws XmlPullParserException, IOException{
 		parser.require(XmlPullParser.START_TAG, null, "value");
-		return convertAbbreviatedStringToComponentUnitsDimension(readAttribute(parser, "UNIT"));	
+		return convertStringToComponentUnitsDimension(readAttribute(parser, "UNIT"));	
 	}
 	private Map<String, double[]> readBaseUnitNConversionPolyCoeffs(XmlPullParser parser) throws XmlPullParserException, Exception{
 		Map<String, double[]> conversionPolyCoeffsMap = new HashMap<String, double[]>();
@@ -323,11 +379,12 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
 		return conversionPolyCoeffsMap;
 	}
 	
-	private Map<String, Double> convertAbbreviatedStringToComponentUnitsDimension(String abbreviatedComponentUnitsDimensionString){
-		//type match requirement: 1. letters and underscore 2. number can only be included if bounded by bracket. 3. words can optionally be to the left of the left bracket.
-		//exponent match requirement: numeric can only be found to the right of right bracket there are any in matching group.
+	private Map<String, Double> convertStringToComponentUnitsDimension(String abbreviatedComponentUnitsDimensionString){
+		//type match requirement: 1. letters and underscore 2. words can optionally be to the left of the left bracket.
+		//exponent match requirement: numeric can only be found to the right of right bracket if there are any in matching group.
+		//[period] symbol represents multiplication
 		return Utility.getDimensionFromString(abbreviatedComponentUnitsDimensionString, Pattern.compile("\\w*\\[\\w+\\]|[a-zA-Z_]+"), Pattern.compile("[-]?\\d+(?!.*\\])"), Pattern.compile("[\\/.]?[\\[\\]a-zA-Z_0-9-]+")
-				                             , new Utility.ComponentUnitsDimensionUpdater(), new HashMap<String, Double>());
+				                             , '/' , new Utility.ComponentUnitsDimensionUpdater(), new HashMap<String, Double>());
 		
 	}
 		
