@@ -1,8 +1,7 @@
 package com.isaacapps.unitconverterapp.models;
 
 import java.util.ArrayList;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.regex.*;
 
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager.UNIT_TYPE;
@@ -15,7 +14,7 @@ public class Quantity {
 	
 	///
 	public Quantity(){
-		this.value = 0.0f;
+		this.value = 0.0;
 		this.unit = new Unit();
 		this.unitManagerRef = unit.getUnitManagerRef();
 	}
@@ -30,14 +29,14 @@ public class Quantity {
 		this.unitManagerRef = unit.getUnitManagerRef();
 	}
 	public Quantity(Unit unit){
-		this.value = 0.0f;
+		this.value = 0.0;
 		this.unit = unit;
 		this.unitManagerRef = unit.getUnitManagerRef();
 	}
 	public Quantity(double value, String unitDimensionString, UnitManager unitManager){
 		this.unitManagerRef = unitManager;
 		this.value = value;
-		ArrayList<Unit> matchingUnits =  unitManager.getQueryExecutor().getUnitsByComponentUnitsDimension(unitDimensionString, false);
+		ArrayList<Unit> matchingUnits =  unitManager.getUnitsDataModel().getUnitsByComponentUnitsDimension(unitDimensionString, false);
 		this.unit = matchingUnits.get(0);	
 	}	
 	public Quantity(String valueNUnitString, UnitManager unitManager){
@@ -54,10 +53,10 @@ public class Quantity {
 		}
 		else{
 			unitString = Unit.UNKNOWN_UNIT_NAME;
-			value = 0.0f;
+			value = 0.0;
 		}
 
-		ArrayList<Unit> matchingUnits =  unitManager.getQueryExecutor().getUnitsByComponentUnitsDimension(unitString, false);
+		ArrayList<Unit> matchingUnits =  unitManager.getUnitsDataModel().getUnitsByComponentUnitsDimension(unitString, false);
 		this.unit = matchingUnits.get(0);		
 	}
 	
@@ -77,7 +76,7 @@ public class Quantity {
 		}
 		else{
 			if(unitManagerRef != null){
-				newQuantity = new Quantity(unitManagerRef.getQueryExecutor().getUnit(Unit.UNKNOWN_UNIT_NAME));
+				newQuantity = new Quantity(unitManagerRef.getUnitsDataModel().getUnit(Unit.UNKNOWN_UNIT_NAME));
 			}
 			else{
 				newQuantity = new Quantity();
@@ -105,7 +104,7 @@ public class Quantity {
 		Unit targetUnit = new Unit();
 		if(unitManagerRef != null){
 			if(unit.getType() != UNIT_TYPE.UNKNOWN){
-				ArrayList<Unit> correspondingUnits = unitManagerRef.getQueryExecutor().getCorrespondingUnitsWithUnitSystem(unit, targetUnitSystemString);
+				ArrayList<Unit> correspondingUnits = unitManagerRef.getUnitsDataModel().getCorrespondingUnitsWithUnitSystem(unit, targetUnitSystemString);
 				
 				if(correspondingUnits.size()>0){
 					targetUnit = correspondingUnits.get(0);
