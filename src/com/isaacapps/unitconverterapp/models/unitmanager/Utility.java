@@ -1,8 +1,5 @@
 package com.isaacapps.unitconverterapp.models.unitmanager;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -13,58 +10,22 @@ import com.isaacapps.unitconverterapp.models.Unit;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager.UNIT_TYPE;
 
 public class Utility {
-	private DataMaps dataMaps;
-	private QueryExecutor queryExecutor;
+	private UnitManager unitManagerRef;
 	
 	///
-	Utility(DataMaps dataMaps, QueryExecutor queryExecutor){
-		this.dataMaps = dataMaps;
-		this.queryExecutor = queryExecutor;
-	}
-	
+	Utility(){}
+		
 	///
-	public Unit getBaseUnit(Unit unit){
-        //Tries to match the fundamental unit with one unit in the dictionary. 
-		ArrayList<Unit> unitMatches = queryExecutor.getUnitsWithMatchingFundamentalUnitDimension(unit);			
-		if(unitMatches.size() > 0){
-			for(Unit unitMatch:unitMatches){
-				if(unitMatch.isBaseUnit() && !unitMatch.getName().equalsIgnoreCase(unit.getName())){
-					return unitMatch;
-				}
-			}
-		}
-		
-		return queryExecutor.getUnit(Unit.UNKNOWN_UNIT_NAME);
-	}	
-	public Unit getReducedUnitMatch(Unit unit){
-		ArrayList<Unit> matchingUnits = queryExecutor.getUnitsByFundamentalUnitTypeDimension(unit.getFundamentalUnitTypesDimension());
-		
-		//If result set is large enough sort from least to greatest component unit size, then get the unit with the smallest dimension
-		if(matchingUnits.size() > 0){
-			Collections.sort(matchingUnits, new Comparator<Unit>() {
-				@Override
-				public int compare(Unit lhsUnit, Unit rhsUnit) {
-					return Double.compare(lhsUnit.getComponentUnitsDimension().size(), rhsUnit.getComponentUnitsDimension().size());
-				}
-			});
-			
-			return matchingUnits.get(0);
-		}
-		else{
-			return queryExecutor.getUnit(Unit.UNKNOWN_UNIT_NAME);
-		}
-	}	
-	
-	public Map<UNIT_TYPE, Double> calculateFundmtUnitTypesFromCompUnitsDimensionMap(Map<String, Double> compUnitsDimensionMap){
+	public Map<UNIT_TYPE, Double> calculateFundmtUnitTypesFromCompUnitsDimension(Map<String, Double> compUnitsDimension){
 		Map<UNIT_TYPE, Double> fundMap = new HashMap<UnitManager.UNIT_TYPE, Double>();
 				
-		//Goes through each component unit whether derived or and sums up the recursively obtained total occurances of the fundamental units. Makes sure to multiply those totals by the exponent of the component unit.
+		//Goes through each component unit whether derived or and sums up the recursively obtained total occurrences of the fundamental units. Makes sure to multiply those totals by the exponent of the component unit.
 		Unit componentUnit;
-		for(String componentUnitName:compUnitsDimensionMap.keySet()){
-			componentUnit = queryExecutor.getUnit(componentUnitName, true);
+		for(String componentUnitName:compUnitsDimension.keySet()){
+			componentUnit = unitManagerRef.getUnitsDataModel().getUnit(componentUnitName, true);
 			
 			if(componentUnit.getType() == UNIT_TYPE.DERIVED_MULTI_UNIT){
-				Map<UNIT_TYPE, Double> recursedMap = calculateFundmtUnitTypesFromCompUnitsDimensionMap(((componentUnit.getComponentUnitsDimension().size() == 1)?componentUnit.getBaseUnit():componentUnit)
+				Map<UNIT_TYPE, Double> recursedMap = calculateFundmtUnitTypesFromCompUnitsDimension(((componentUnit.getComponentUnitsDimension().size() == 1)?componentUnit.getBaseUnit():componentUnit)
 						                                                                       .getComponentUnitsDimension());	
 				for(UNIT_TYPE unitType:UNIT_TYPE.values()){	
 					if(recursedMap.containsKey(unitType)){ 
@@ -72,7 +33,7 @@ public class Utility {
 							fundMap.put(unitType, 0.0);	
 						}				
 						fundMap.put(unitType,  
-								fundMap.get(unitType)+ compUnitsDimensionMap.get(componentUnitName)*recursedMap.get(unitType));					
+								fundMap.get(unitType)+ compUnitsDimension.get(componentUnitName)*recursedMap.get(unitType));					
 					}				
 				}
 			}
@@ -81,7 +42,7 @@ public class Utility {
 					if(!fundMap.containsKey(componentUnit.getBaseUnit().getType())){
 						fundMap.put(componentUnit.getBaseUnit().getType(), 0.0);	
 					}				
-					fundMap.put(componentUnit.getBaseUnit().getType(), fundMap.get(componentUnit.getBaseUnit().getType()) + compUnitsDimensionMap.get(componentUnitName));
+					fundMap.put(componentUnit.getBaseUnit().getType(), fundMap.get(componentUnit.getBaseUnit().getType()) + compUnitsDimension.get(componentUnitName));
 				}
 				else{
 					for(Entry<UNIT_TYPE, Double> fundEntry:componentUnit.getBaseUnit().getFundamentalUnitTypesDimension().entrySet()){
@@ -89,7 +50,7 @@ public class Utility {
 							fundMap.put(fundEntry.getKey(), 0.0);	
 						}	
 						
-						fundMap.put(fundEntry.getKey(), fundMap.get(fundEntry.getKey()) +  fundEntry.getValue() * compUnitsDimensionMap.get(componentUnitName));
+						fundMap.put(fundEntry.getKey(), fundMap.get(fundEntry.getKey()) +  fundEntry.getValue() * compUnitsDimension.get(componentUnitName));
 					}
 				}
 			}
@@ -97,50 +58,33 @@ public class Utility {
 		
 		return fundMap;
 	}
-	public UNIT_TYPE determineUnitType(Unit unit){
-		UNIT_TYPE type;
-		
-		if(unit.getComponentUnitsDimension().size()>1){
-			type = UNIT_TYPE.DERIVED_MULTI_UNIT;
-		}
-		else if(unit.getComponentUnitsDimension().size() == 1 
-				&&(Math.abs(unit.getComponentUnitsDimension().entrySet().iterator().next().getValue()) > 1 
-					       || unit.getComponentUnitsDimension().entrySet().iterator().next().getValue() == -1
-					       || unit.getComponentUnitsDimension().entrySet().iterator().next().getValue() == 0)){
-			type = UNIT_TYPE.DERIVED_SINGLE_UNIT;
-		}
-		else if(unit.getBaseUnit() != null){
-			if(dataMaps.getFundamentalUnitsMap().keySet().contains(unit.getBaseUnit().getUnitSystem()) 
-			   && dataMaps.getFundamentalUnitsMap().get(unit.getBaseUnit().getUnitSystem()).containsKey(unit.getBaseUnit().getName())){
-				
-				type = dataMaps.getFundamentalUnitsMap().get(unit.getBaseUnit().getUnitSystem()).get(unit.getBaseUnit().getName());
-			}
-			else{
-				type = unit.getBaseUnit().getType();
-			}
-		}
-		else{
-			type = UNIT_TYPE.UNKNOWN;
-		}
-		
-		return type;
-	}
-	
-	public static Map<String, Double> getComponentUnitsDimensionFromString(String componentUnitsDimensionString){
-		return getDimensionFromString(componentUnitsDimensionString, Pattern.compile("(([a-zA-Z]+[\\-])?([a-zA-Z_]+))"), Pattern.compile("[-+]?(\\d*[.])?\\d+")
-                , Pattern.compile("([\\*|\\/]?[\\s]*)((([\\(]?[\\s]*(([a-zA-Z]+[\\-])?([a-zA-Z_]+))[\\s]*[\\)]?)([\\s]*\\^[\\s]*([\\(]?[\\s]*[-+]?(\\d*[.])?\\d+[\\s]*[\\)]?)))|(([a-zA-Z]+[\\-])?([a-zA-Z_]+)))")
+
+	///TODO: Modified version of the Command Design Pattern using generic programming. Need to upgrade from Java 7 to Java 8 in order to be make use of lambda functions for less verbosity when using methods as parameters to pass behavior.
+	public static Map<String, Double> getComponentUnitsDimensionFromString(String componentUnitsDimension){
+		//Format: a, prefix'a', (a)^(+-#.##) * or / (b)^(+-#.##), where 'a' and 'b' are word characters. Prefix can only alphabetical. Accounts for the optional presence of parenthesis and discounts the number of white space characters. 
+		return getDimensionFromString(componentUnitsDimension, Pattern.compile("(([a-zA-Z]+)?(\\w+))"), Pattern.compile("[-+]?(\\d*[.])?\\d+")
+                , Pattern.compile("([\\*|\\/]?[\\s]*)((([\\(]?[\\s]*(([a-zA-Z]+)?(\\w+))[\\s]*[\\)]?)([\\s]*\\^[\\s]*([\\(]?[\\s]*[-+]?(\\d*[.])?\\d+[\\s]*[\\)]?)))|(([a-zA-Z]+)?(\\w+)))")
+                , '/'
                 , new ComponentUnitsDimensionUpdater(), new HashMap<String, Double>());
 	}
 	public static Map<UNIT_TYPE, Double> getFundamentalUnitTypesDimensionFromString(String fundamentalUnitTypesDimension){
 		return getDimensionFromString(fundamentalUnitTypesDimension, Pattern.compile("[a-zA-Z]+"), Pattern.compile("[-+]?(\\d*[.])?\\d+")
 				                      , Pattern.compile("([\\*|\\/]?[\\s]*)((([\\(]?[\\s]*[a-zA-Z]+[\\s]*[\\)]?)([\\s]*\\^[\\s]*([\\(]?[\\s]*[-+]?(\\d*[.])?\\d+[\\s]*[\\)]?)))|[a-zA-Z]+)")
+				                      , '/'
 				                      , new FundamentalUnitTypesDimensionUpdater(), new HashMap<UNIT_TYPE, Double>());
 	}
 	
+	public static String getComponentUnitsDimensionAsString(Map<String, Double> componentUnitsDimension){
+		return getDimensionAsString(componentUnitsDimension, new ComponentUnitsDimensionUpdater());
+	}
+	public static String getFundamentalUnitTypesDimensionAsString(Map<UNIT_TYPE, Double> fundamentalUnitTypesDimension){
+		return getDimensionAsString(fundamentalUnitTypesDimension, new FundamentalUnitTypesDimensionUpdater());
+	}
+	
 	public static <T> Map<T, Double> getDimensionFromString(String dimensionString, Pattern typeRegExPattern, Pattern exponentRegExPattern, Pattern groupRegExPattern
-			      ,DimensionUpdater dimensionUpdater, Map<T, Double> dimensionMap){	
+			      ,char divisionSymbol, DimensionUpdater<T> dimensionUpdater, Map<T, Double> dimensionMap){	
 
-		//RegEx pattern to parse string into groups of unit type and exponents.
+		//RegEx pattern to parse string into groups of unit type and exponents. The pattern must account for the multiplication symbol being the first item in the group
 		Matcher groupRegExMatcher = groupRegExPattern.matcher(dimensionString);
 		
 		//Perform extraction using RegEx patterns
@@ -161,7 +105,7 @@ public class Utility {
 					exponent = "1.0"; //If the unit type is not raised by any number then it assumed to be raised by 1.
 				}
 
-			 	dimensionUpdater.updateDimension(type, exponent, group, dimensionMap);
+			 	dimensionUpdater.updateDimension(type, exponent, group, divisionSymbol, dimensionMap);
 			}while(groupRegExMatcher.find());
 		}
 		else{
@@ -169,42 +113,79 @@ public class Utility {
 		}
 		return dimensionMap;
 	}
-	
-	//TODO: Mini modified version of the Command Design Pattern. Upgrade from Java 7 to Java 8 in order to be make use of lambda functions for less verbosity when using methods a parameters to pass behavior.
-	private interface DimensionUpdater{
-		public <T> void updateDimension(String type, String exponent, String group, Map<T, Double> dimensionMap);
-		public <T> void updateWithUnknownDimension(Map<T, Double> dimensionMap);
+	public static <T> String getDimensionAsString(Map<T, Double> dimensionMap, DimensionUpdater<T> dimensionUpdater){
+		String dimensionString = "";
+		String dimensionEntryKeyName;
+
+		for(Entry<T, Double> dimensionEntry:dimensionMap.entrySet()){
+			dimensionString = dimensionString.equals("")? dimensionString:dimensionString+" * ";
+			
+			dimensionEntryKeyName = dimensionUpdater.dimensionToString(dimensionEntry.getKey());
+			
+			if(dimensionEntry.getValue() == 1){
+				dimensionString += dimensionEntryKeyName;
+			}
+			else if(Math.abs(dimensionEntry.getValue())>0){ //Remove calculated dimensions raised to zero. 
+				dimensionString += "("+dimensionEntryKeyName+")^"+"("+dimensionEntry.getValue()+")";
+			}
+		}
+		
+		return dimensionString;
 	}
-	public static class ComponentUnitsDimensionUpdater implements DimensionUpdater{
+	
+	private interface DimensionUpdater<T>{
+		public void updateDimension(String type, String exponent, String group, char divisionSymbol, Map<T, Double> dimensionMap);
+		public void updateWithUnknownDimension(Map<T, Double> dimensionMap);
+		public String dimensionToString(T dimensionItem);
+	}
+	public static class ComponentUnitsDimensionUpdater implements DimensionUpdater<String>{
 
 		@Override
-		public <T> void updateDimension(String componentUnitName, String exponent, String group,
-				Map<T, Double> componentUnitsDimensionMap) {
-			updateDimensionMap((T)componentUnitName, exponent, group, componentUnitsDimensionMap);
+		public void updateDimension(String componentUnitName, String exponent, String group, char divisionSymbol,
+				Map<String, Double> componentUnitsDimensionMap) {
+			updateDimensionMap(componentUnitName, exponent, group, divisionSymbol, componentUnitsDimensionMap);
 		}	
 		@Override
-		public <T> void updateWithUnknownDimension(Map<T, Double> dimensionMap){
-			dimensionMap.put((T) Unit.UNKNOWN_UNIT_NAME, 1.0);
+		public void updateWithUnknownDimension(Map<String, Double> dimensionMap){
+			dimensionMap.put(Unit.UNKNOWN_UNIT_NAME, 1.0);
+		}
+		@Override
+		public String dimensionToString(String dimensionItem){
+			return dimensionItem;
 		}
 	}
-	public static class FundamentalUnitTypesDimensionUpdater implements DimensionUpdater{
+	public static class FundamentalUnitTypesDimensionUpdater implements DimensionUpdater<UNIT_TYPE>{
 
 		@Override
-		public <T> void updateDimension(String fundamentalUnitType, String exponent, String group,
-				Map<T, Double> fundamentalUnitsDimensionMap) {
-			T unitType = (T) UNIT_TYPE.valueOf(fundamentalUnitType);					
-			updateDimensionMap(unitType, exponent, group, fundamentalUnitsDimensionMap);
+		public void updateDimension(String fundamentalUnitType, String exponent, String group, char divisionSymbol,
+				Map<UNIT_TYPE, Double> fundamentalUnitsDimensionMap) {					
+			updateDimensionMap(UNIT_TYPE.valueOf(fundamentalUnitType), exponent, group,divisionSymbol, fundamentalUnitsDimensionMap);
 		}		
 		@Override
-		public <T> void updateWithUnknownDimension(Map<T, Double> dimensionMap){
-			dimensionMap.put((T) UNIT_TYPE.UNKNOWN, 1.0);
+		public void updateWithUnknownDimension(Map<UNIT_TYPE, Double> dimensionMap){
+			dimensionMap.put(UNIT_TYPE.UNKNOWN, 1.0);
+		}
+		@Override
+		public String dimensionToString(UNIT_TYPE dimensionItem){
+			return dimensionItem.name();
 		}
 	}
-	private static <T> void updateDimensionMap(T type, String exponent, String group, Map<T, Double> dimensionMap){
+	
+	private static <T> void updateDimensionMap(T type, String exponent, String group, char divisionSymbol, Map<T, Double> dimensionMap){
 		if(dimensionMap.containsKey(type)){
-			dimensionMap.put(type, Double.valueOf(exponent) + ((group.charAt(0) == '/')?-dimensionMap.get(type):dimensionMap.get(type)));	
+			dimensionMap.put(type, Double.valueOf(exponent) + ((group.charAt(0) == divisionSymbol)?-dimensionMap.get(type):dimensionMap.get(type)));	
 		}else{
-			dimensionMap.put(type, (group.charAt(0) == '/'?-1:1)*Double.valueOf(exponent));						
+			dimensionMap.put(type, (group.charAt(0) == divisionSymbol?-1:1)*Double.valueOf(exponent));						
 		}
+	}
+	
+	///
+	public static boolean unitNameHasComplexDimensions(String unitName){
+		return unitName.contains("*") || unitName.contains("/") || unitName.contains("^");
+	}
+	
+	///
+	void setUnitManagerRef(UnitManager unitManagerRef){
+		this.unitManagerRef = unitManagerRef; 
 	}
 }

@@ -10,9 +10,7 @@ public class Converter {
 	UnitManager unitManagerRef;
 	
 	///
-	Converter(UnitManager unitManagerRef){
-		this.unitManagerRef = unitManagerRef;
-	}
+	Converter(){}
 	
 	///
 	public double[] getConversionFactorToTargetUnit(Unit sourceUnit, Unit targetUnit){
@@ -20,7 +18,7 @@ public class Converter {
 		
 		if(sourceUnit.getUnitManagerRef() == this.unitManagerRef && targetUnit.getUnitManagerRef() == this.unitManagerRef){
 			if(sourceUnit.equalsDimension(targetUnit) && targetUnit.getBaseUnit().getType() != UNIT_TYPE.UNKNOWN){
-				if(sourceUnit.getBaseConversionPolyCoeffs()[1]==0.0f && targetUnit.getBaseConversionPolyCoeffs()[1]==0.0){
+				if(sourceUnit.getBaseConversionPolyCoeffs()[1]==0.0 && targetUnit.getBaseConversionPolyCoeffs()[1]==0.0){
 					bCPC = new double[]{sourceUnit.getBaseConversionPolyCoeffs()[0] / targetUnit.getBaseConversionPolyCoeffs()[0], 0.0};				
 				}
 				else{
@@ -43,9 +41,9 @@ public class Converter {
 				conversionFactor = new double[]{1.0, 0.0}; 
 			}
 			else if(!sourceUnit.getUnitSystem().contains(targetUnitSystemString) && !sourceUnit.getUnitSystem().contains(" and ") && sourceUnit.getComponentUnitsDimension().size() == 1){
-				ArrayList<Unit> candidateUnitsWithProperUnitSystem = unitManagerRef.getQueryExecutor().getUnitsByUnitSystem(targetUnitSystemString);
+				ArrayList<Unit> candidateUnitsWithProperUnitSystem = unitManagerRef.getUnitsDataModel().getUnitsByUnitSystem(targetUnitSystemString);
 				
-				if(candidateUnitsWithProperUnitSystem.size() != 0){
+				if(!candidateUnitsWithProperUnitSystem.isEmpty()){
 					Unit matchingUnit = null;;
 					for(Unit candidateUnit:candidateUnitsWithProperUnitSystem){
 						if(sourceUnit.equalsFundamentalUnitsDimension(candidateUnit.getFundamentalUnitTypesDimension())){
@@ -66,8 +64,8 @@ public class Converter {
 					Unit componentUnit;
 					conversionFactor = new double[]{1.0, 0.0};					
 					for(Entry<String, Double> entry:sourceUnit.getComponentUnitsDimension().entrySet()){
-						componentUnit =  unitManagerRef.getQueryExecutor().getUnit(entry.getKey(), false);
-						conversionFactor = new double[]{ conversionFactor[0] * (double)Math.pow(getConversionFactorToUnitSystem(componentUnit, targetUnitSystemString)[0], entry.getValue()), 0.0f};
+						componentUnit =  unitManagerRef.getUnitsDataModel().getUnit(entry.getKey(), false);
+						conversionFactor = new double[]{ conversionFactor[0] * (double)Math.pow(getConversionFactorToUnitSystem(componentUnit, targetUnitSystemString)[0], entry.getValue()), 0.0};
 					}
 				}
 			}	
@@ -76,4 +74,8 @@ public class Converter {
 		return conversionFactor;
 	}
 	
+	///
+	void setUnitManagerRef(UnitManager unitManagerRef){
+		this.unitManagerRef = unitManagerRef;
+	}
 }

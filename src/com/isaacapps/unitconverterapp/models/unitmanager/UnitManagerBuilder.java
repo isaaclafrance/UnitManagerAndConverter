@@ -1,171 +1,212 @@
 package com.isaacapps.unitconverterapp.models.unitmanager;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
 
 import com.isaacapps.unitconverterapp.models.Unit;
-import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager.UNIT_TYPE;
+import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager.*;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.*;
 
 public class UnitManagerBuilder {
-	boolean[] componentStates; //Keeps track component has been added or removed. [0] -> base units maps, [1] -> non-base units map, [2] -> core prefixes map, [3] -> dynamic prefixes map, [4] -> fundamental units map
+	boolean[] componentStates; //Keeps track of components that have been added or removed. [0] -> base units maps, [1] -> non-base units map, [2] -> core prefixes map, [3] -> dynamic prefixes map, [4] -> fundamental units map
+	
 	private ArrayList<Unit> baseUnits;
 	private ArrayList<Unit> nonBaseUnits;
-	private Map<String, Double> corePrefixesNAbbreviationsMap;
-	private Map<String, Double> dynamicPrefixesNAbbreviationsMap;
-	private Map<String, Map<String, UNIT_TYPE>> fundUnitsMap;
+		
+	private PrefixesDataModel prefixesDataModel;
+	private UnitsDataModel unitsDataModel;
+	private FundamentalUnitsDataModel fundamentalUnitsDataModel;	
+	private UnitsClassifierDataModel unitsClassifierDataModel;
+	private ConversionFavoritesDataModel conversionFavoritesDataModel;
+	
+	private Converter converter;
+	private Utility utility;
 	
 	///
 	public UnitManagerBuilder(){
 		componentStates = new boolean[]{false, false, false, false, false};
+		
 		baseUnits = new ArrayList<Unit>();
 		nonBaseUnits = new ArrayList<Unit>();
-		fundUnitsMap = new HashMap<String, Map<String,UNIT_TYPE>>();
-		corePrefixesNAbbreviationsMap = new HashMap<String, Double>();
-		dynamicPrefixesNAbbreviationsMap = new HashMap<String, Double>();
-	}
-	
-	///
-	public UnitManagerBuilder setBaseUnitsComponent(ArrayList<Unit> unitMaps){	
-		if(unitMaps != null && !unitMaps.isEmpty()){
-			this.baseUnits = unitMaps;
-			componentStates[0] = true;
-		}
-		return this;
-	}
-	public UnitManagerBuilder setNonBaseUnitsComponent(ArrayList<Unit> unitMaps){	
-		if(unitMaps != null && !unitMaps.isEmpty()){
-			this.nonBaseUnits = unitMaps;
-			componentStates[1] = true;
-		}
-		return this;
-	}
-	public UnitManagerBuilder setCorePrefixesNAbbreviationsMapComponent(Map<String, Double> prefixesMap){
-		if(!prefixesMap.isEmpty()){
-			this.corePrefixesNAbbreviationsMap = prefixesMap;
-			componentStates[2] = true;
-		}
-		return this;
-	}
-	public UnitManagerBuilder setDynamicPrefixesNAbbreviationsMapComponent(Map<String, Double> prefixesMap){
-		if(prefixesMap != null && !prefixesMap.isEmpty()){
-			this.dynamicPrefixesNAbbreviationsMap = prefixesMap;
-			componentStates[3] = true;
-		}
-		return this;
-	}
-	public UnitManagerBuilder setFundUnitsMapComponent(Map<String, Map<String, UNIT_TYPE>> fundUnitsMap){
-		if(fundUnitsMap != null && !fundUnitsMap.isEmpty()){
-			this.fundUnitsMap = fundUnitsMap;
-			componentStates[4] = true;	
-		}
-		return this;
-	}
-	
-	public boolean areMinComponentsForCreationAvailable(){
-		//Determines if the minimum needed components are available to create an adequately functional unit manager. 
-		return (componentStates[0] && componentStates[2] && componentStates[4]);
-	}
-	
-	///
-	public UnitManagerBuilder combineWith(UnitManagerBuilder builder2){
-		UnitManagerBuilder combinedBuilder = new UnitManagerBuilder();
 		
-		ArrayList<Unit> combinedBaseUnits = this.baseUnits; combinedBaseUnits.addAll(builder2.baseUnits);
-		combinedBuilder.setBaseUnitsComponent(combinedBaseUnits);
+		prefixesDataModel = new PrefixesDataModel();
+		unitsDataModel = new UnitsDataModel();
+		fundamentalUnitsDataModel = new FundamentalUnitsDataModel();
+		unitsClassifierDataModel = new UnitsClassifierDataModel();
+		conversionFavoritesDataModel = new ConversionFavoritesDataModel();
 
-		ArrayList<Unit> combinedNonBaseUnits = this.nonBaseUnits; combinedNonBaseUnits.addAll(builder2.nonBaseUnits);
-		combinedBuilder.setNonBaseUnitsComponent(combinedNonBaseUnits);
-		
-		Map<String, Double> combinedCorePrefixMap = this.corePrefixesNAbbreviationsMap; combinedCorePrefixMap.putAll(builder2.corePrefixesNAbbreviationsMap);
-		combinedBuilder.setCorePrefixesNAbbreviationsMapComponent(combinedCorePrefixMap);
-		 
-		Map<String, Double> combinedDynamicPrefixMap = this.dynamicPrefixesNAbbreviationsMap; combinedDynamicPrefixMap.putAll(builder2.dynamicPrefixesNAbbreviationsMap);
-		combinedBuilder.setDynamicPrefixesNAbbreviationsMapComponent(combinedDynamicPrefixMap); 
-		
-		Map<String, Map<String, UNIT_TYPE>> combinedFundUnitsMap = this.fundUnitsMap; combinedFundUnitsMap.putAll(builder2.fundUnitsMap);
-		combinedBuilder.setFundUnitsMapComponent(combinedFundUnitsMap);
-
-		return combinedBuilder;
+		converter = new Converter();
+		utility = new Utility();
 	}
 	
 	///
-	public UnitManagerBuilder clearBaseUnitComponent(){
+	public UnitManagerBuilder addBaseUnits(ArrayList<Unit> baseUnits){	
+		if(baseUnits != null){
+			for(Unit baseUnit:baseUnits){
+				addBaseUnit(baseUnit);
+			}
+		}
+		return this;
+	}
+	public UnitManagerBuilder addBaseUnit(Unit baseUnit){
+		if(baseUnit != null && baseUnit.isBaseUnit()){
+			baseUnits.add(baseUnit);
+			componentStates[0] = true; 
+		}
+		return this;
+	}
+	public UnitManagerBuilder clearBaseUnits(){
 		baseUnits.clear();
 		componentStates[0] = false;
 		return this;
 	}
-	public UnitManagerBuilder clearNonBaseUnitsComponent(){
+	
+	public UnitManagerBuilder addNonBaseUnits(ArrayList<Unit> nonBaseUnits){	
+		if(nonBaseUnits != null){
+			for(Unit nonBaseUnit:nonBaseUnits){
+				addNonBaseUnit(nonBaseUnit);
+			}
+		}
+		return this;
+	}
+	public UnitManagerBuilder addNonBaseUnit(Unit nonBaseUnit){
+		if(nonBaseUnit != null && !nonBaseUnit.isBaseUnit()){
+			nonBaseUnits.add(nonBaseUnit);
+			componentStates[1] = true; 
+		}
+		return this;
+	}
+	public UnitManagerBuilder clearNonBaseUnits(){
 		nonBaseUnits.clear();
 		componentStates[1] = false;
 		return this;
 	}
-	public UnitManagerBuilder clearCorePrefixesMapComponent(){
-		corePrefixesNAbbreviationsMap.clear();
+	
+	///
+	public UnitManagerBuilder addPrefixDataModel(PrefixesDataModel prefixesDataModel){
+		this.prefixesDataModel.combineWith(prefixesDataModel);
+		componentStates[2] = this.prefixesDataModel.hasCorePrefxes();
+		componentStates[3] = this.prefixesDataModel.hasDynamicPrefxes();
+		return this;
+	}
+	
+	public UnitManagerBuilder addCorePrefix(String prefixFullName, String prefixAbbreviation, Double prefixValue){
+		prefixesDataModel.addCorePrefix(prefixFullName, prefixAbbreviation, prefixValue);
+		componentStates[2] = true;
+		return this;
+	}
+	public UnitManagerBuilder clearCorePrefixes(){
+		prefixesDataModel.removeAllCorePrefixes();;
 		componentStates[2] = false;
 		return this;
 	}
-	public UnitManagerBuilder clearDynamicPrefixesMapComponent(){
-		dynamicPrefixesNAbbreviationsMap.clear();
+	
+	public UnitManagerBuilder addDynamicPrefix(String prefixFullName, String prefixAbbreviation, Double prefixValue){
+		prefixesDataModel.addDynamicPrefix(prefixFullName, prefixAbbreviation, prefixValue);
+		componentStates[3] = true;
+		return this;
+	}
+	public UnitManagerBuilder cleaDynamicPrefixesNAbbreviations(){
+		prefixesDataModel.removeAllDynamicPrefixes();;
 		componentStates[3] = false;
 		return this;
 	}
-	public UnitManagerBuilder clearFundUnitsMapComponent(){
-		fundUnitsMap.clear();
+	
+	///
+	public UnitManagerBuilder addFundamentalUnitsDataModel(FundamentalUnitsDataModel fundamentalUnitsDataModel){
+		this.fundamentalUnitsDataModel.combineWith(fundamentalUnitsDataModel);
+		componentStates[4] = true;
+		return this;
+	}
+	public UnitManagerBuilder addFundamentalUnit(String unitSystem, String unitName, UNIT_TYPE unitType){
+		fundamentalUnitsDataModel.addFundamentalUnit(unitSystem, unitName, unitType);
+		componentStates[4] = true;
+		return this;	
+	}
+	public UnitManagerBuilder clearFundUnits(){
+		fundamentalUnitsDataModel.removeAllItems();
 		componentStates[4] = false;
 		return this;
 	}
+	
+	///
 	public UnitManagerBuilder clearAll(){
-		clearBaseUnitComponent();
-		clearCorePrefixesMapComponent();
-		clearDynamicPrefixesMapComponent();
-		clearFundUnitsMapComponent();
-		return clearNonBaseUnitsComponent();
+		clearBaseUnits();
+		clearNonBaseUnits();
+		clearCorePrefixes();
+		cleaDynamicPrefixesNAbbreviations();
+		return clearFundUnits();
+	}
+		
+	///
+	public UnitManagerBuilder combineWith(UnitManagerBuilder otherBuilder){
+		this.addBaseUnits(otherBuilder.baseUnits);
+		this.addNonBaseUnits(otherBuilder.nonBaseUnits);
+
+		this.addPrefixDataModel(otherBuilder.prefixesDataModel);
+		
+		this.addFundamentalUnitsDataModel(otherBuilder.fundamentalUnitsDataModel);
+
+		return this;
 	}
 	
 	///
-	public UnitManager createUnitManager(){
+	public boolean areMinComponentsForCreationAvailable(){
+		//Determines if the minimum needed components are available to create an adequately functional unit manager. 
+		return componentStates[0] && componentStates[2] && componentStates[4] && someFundamentalUnitsAreImplemented();
+	}
+	private boolean someFundamentalUnitsAreImplemented(){
+		//Assumption is that only base units can be be defined as fundamental units.
+		for(Unit baseUnit:baseUnits){
+			if(fundamentalUnitsDataModel.containsUnitName(baseUnit.getName()))
+				return true;
+		}
+		return false;
+	}
+	public boolean areAnyComponentsAvailable(){
+		for(int i=0;i<componentStates.length;i++){
+			if(componentStates[i])
+				return true;
+		}
+		return false;
+	}
+	
+	public UnitManager build(){
 		UnitManager unitManager = new UnitManager();
-
+		
 		//Inject dependencies
-		unitManager.setDataMaps(new DataMaps());		
-		unitManager.setUnitsClassifier(new UnitsClassifier());
-		unitManager.setContentModifiers(new ContentModifier(unitManager));
-		unitManager.setQueryExecutor(new QueryExecutor(unitManager));
-		unitManager.setConverter(new Converter(unitManager));
-		unitManager.setUtility(new Utility(unitManager.getDataMaps(), unitManager.getQueryExecutor()));
+		unitManager.setUnitsModelData(unitsDataModel);		
+		unitManager.setPrefixesModelData(prefixesDataModel);
+		unitManager.setFundamentalUnitsModelData(fundamentalUnitsDataModel);
+		unitManager.setUnitsClassifierDataModel(unitsClassifierDataModel);
+		unitManager.setConversionFavoritesDataModel(conversionFavoritesDataModel);
+		
+		unitManager.setConverter(converter);
+		unitManager.setUtility(utility);
 		
 		//Set an unknown base unit to be return when no other unit in manager matches a query.
 		Unit unit = new Unit();
 		unit.setCoreUnitState(true);
-		unitManager.getContentModifier().addUnit(unit);
+		unitsDataModel.addUnit(unit);
 		
-		updateManager(unitManager);
+		update(unitManager);
 	
 		return unitManager;
 	}
-	public boolean updateManager(UnitManager unitManager){
-		if(areMinComponentsForCreationAvailable()){
-			for(Entry<String, Double> prefixEntry:corePrefixesNAbbreviationsMap.entrySet()){
-				unitManager.getContentModifier().addCorePrefix(prefixEntry.getKey().split("::")[0], 
-						                  prefixEntry.getKey().split("::")[1], prefixEntry.getValue());
-			}
-				
-			if(componentStates[3]){
-				for(Entry<String, Double> prefixEntry:dynamicPrefixesNAbbreviationsMap.entrySet()){
-					unitManager.getContentModifier().addDynamicPrefix(prefixEntry.getKey().split("::")[0], 
-												 prefixEntry.getKey().split("::")[1], prefixEntry.getValue());
-				}
-			}	
+	public boolean update(UnitManager unitManager){ //Updates any existing unit manager with the content of this unit manager builder.
+		if(areAnyComponentsAvailable()){
+			if(componentStates[2] || componentStates[3])
+				unitManager.getPrefixesDataModel().combineWith(prefixesDataModel);
 			
-			unitManager.getContentModifier().setFundamentalUnitsMap(fundUnitsMap);
+			if(componentStates[4])
+				unitManager.getFundamentalUnitsDataModel().combineWith(fundamentalUnitsDataModel);
 			
-			unitManager.getContentModifier().addUnits(baseUnits);
+			//Base units depend on the fundamental units map being set first in order to ensure that their types can be determined.
+			if(componentStates[0])
+				unitManager.getUnitsDataModel().addUnits(baseUnits);
 			
-			if(componentStates[1]){
-				unitManager.getContentModifier().addUnits(nonBaseUnits);
-			}
+			//Non base units depend on the base units being set first in order to ensure dimensions and types are properly determined.
+			if(componentStates[1])
+				unitManager.getUnitsDataModel().addUnits(nonBaseUnits);
 			
 			return true;
 		}
