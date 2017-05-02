@@ -6,40 +6,53 @@ import java.util.Map.*;
 import com.isaacapps.unitconverterapp.models.*;
 import com.isaacapps.unitconverterapp.models.unitmanager.*;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager.*;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.FundamentalUnitsDataModel.*;
 
-//Provides a centralized and encapsulated hub from retrieving unit 
+//Provides a centralized and encapsulated hub for storing and retrieving units
 public class UnitsDataModel extends AbstractDataModelWithDualKeyNCategory<String, Unit, DATA_MODEL_CATEGORY> {	
 	private UnitManager unitManagerRef; 
 	
 	///
 	public UnitsDataModel(){
 		super(true);
+		
+		//Set an unknown base unit to be return when no other unit in data model matches a query.
+		Unit unit = new Unit();
+		unit.setCoreUnitState(true);
+		addUnit(unit);
 	}
 	
 	///Modify Content
-	public void addUnits(ArrayList<Unit> units){
-		for(Unit unit:units){
+	public void addUnits(List<Unit> units){
+		for(Unit unit:units)
 			addUnit(unit);
-		}
 	}
 	public Unit addUnit(Unit unit){	
 		/////////////////////////
 		System.out.println(unit.getName());
 		//////////////
 		
-		if(unit.getUnitManagerRef() != this.unitManagerRef || unit.getBaseUnit().getType() == UNIT_TYPE.UNKNOWN || unit.getFundamentalUnitTypesDimension().containsKey(UNIT_TYPE.UNKNOWN)){			
-			//Needs to be put in data structure first even if its unknown because referential execution paths in the setUnitManagerRef injector will require the unit to be present in a unknown classification.
-			addUnitToDataStructure(unit);
+		///////////////////////
+		if(unit.getName().equals("radian")){
+			int a = 1;
+			a++;
 		}
+		///////////////////////////
+		
+		
+		//Needs to be put in data structure first even if its unknown because referential execution paths in the setUnitManagerRef injector will require the unit to be present in a unknown classification.
+		addUnitToDataStructure(unit);
+		
 		unit.setUnitManagerRef(this.unitManagerRef);
 
 		//Assess the characteristics(type, dimension, etc) of the unit again after associating it with this unit manager.
-		if(!unit.getFundamentalUnitTypesDimension().containsKey(UNIT_TYPE.UNKNOWN) && unit.getBaseUnit().getType() != UNIT_TYPE.UNKNOWN ){
-			ArrayList<Unit> allUnitMatches = getUnitsByFundamentalUnitTypeDimension(unit.getFundamentalUnitTypesDimension());
-			if((allUnitMatches.isEmpty() ||  allUnitMatches.size() == 1 && allUnitMatches.get(0) == unit)&& !unit.isBaseUnit() //Make the unit to be added a base unit if its the only one of its kind in the unit manager.
-			   && !unitManagerRef.getFundamentalUnitsDataModel().containsUnitName(unit.getBaseUnit().getName())){ //Account for edge case where fundamental based unit had been added yet
+		if(UnitsDataModel.getDataModelCategory(unit) != DATA_MODEL_CATEGORY.UNKNOWN){
+			Collection<Unit> allUnitMatches = getUnitsByFundamentalUnitTypeDimension(unit.getFundamentalUnitTypesDimension());
+			boolean unitIsOneOfAKind = allUnitMatches.isEmpty() ||  allUnitMatches.size() == 1 && allUnitMatches.iterator().next() == unit; //Make the unit to be added a base unit if its the only one of its kind in the unit manager.
+			boolean fundamentalBaseUnitNotYetAdded = !unitManagerRef.getFundamentalUnitsDataModel().containsUnitName(unit.getBaseUnit().getName()); //Account for edge case where fundamental based unit had been added yet
+			
+			if(unitIsOneOfAKind && !unit.isBaseUnit() && fundamentalBaseUnitNotYetAdded)
 				unit.setBaseUnit(unit);
-			}
 			
 			if(unit.isBaseUnit()){ 
 				//Move any other instances of base units with same dimension to non base unit dictionary, if core units states are compatible
@@ -49,18 +62,18 @@ public class UnitsDataModel extends AbstractDataModelWithDualKeyNCategory<String
 													  && !unitMatch.getName().equalsIgnoreCase(unit.getName());
 					if(existingBaseUnitAbleTobeRemoved){	
 						//Makes sure that all units have proper base unit associations after replacement	
-						ArrayList<Unit> dependentUnits = new ArrayList<Unit>(unitMatch.getConversionsOfDescendents().keySet()); //Prevent concurrent modification exceptions since 'conversionOfDescendents' can be cleared in setBaseUnit.
-						for(Unit dependentUnit:dependentUnits){
+						List<Unit> dependentUnits = new ArrayList<Unit>(unitMatch.getConversionsOfDescendents().keySet()); //Prevent concurrent modification exceptions since 'conversionOfDescendents' can be cleared in setBaseUnit.
+						for(Unit dependentUnit:dependentUnits)
 							dependentUnit.setBaseUnit(unit);
-						}	
+
 						unitMatch.setBaseUnit(unit);		
 						addUnitToDataStructure(unitMatch); //Readd unit match to that is it reorganized within data model as a non base unit now. 
 							
-						break; //Ideally if the unit manager is consistent, there should have only been one valid existing base unit.
+						break; //Ideally if the data model is consistent, there should have only been one valid existing base unit.
 					}
 				}
 			}
-			addUnitToDataStructure(unit); //Since the unit has been clearly identified by this, re-add it to the data structure so that it can associated with a more specific category, ie. CORE or DYNAMIC
+			addUnitToDataStructure(unit); //Since the unit has been clearly identified by this point, re-add it to the data structure so that it can associated with a more specific category, ie. CORE or DYNAMIC
 			
 			updateAssociationsOfUnknownUnits();//Determines if this base unit can be associated with units that currently do not have base units.			
 		}
@@ -68,7 +81,7 @@ public class UnitsDataModel extends AbstractDataModelWithDualKeyNCategory<String
 		return unit;
 	}
 	private Unit addUnitToDataStructure(Unit unit){
-		return addItem( getModelDataType(unit), unit.getName(), unit.getAbbreviation(), unit, true);
+		return addItem( getDataModelCategory(unit), unit.getName(), unit.getAbbreviation(), unit, true);
 	}
 	
 	public Unit removeDynamicUnit(String unitName){
@@ -77,7 +90,7 @@ public class UnitsDataModel extends AbstractDataModelWithDualKeyNCategory<String
 		unitManagerRef.getUnitsClassifierDataModel().removeFromHierarchy(removedUnit);
 		if(removedUnit.isBaseUnit()){
 			for(Unit dependentUnit: removedUnit.getConversionsOfDescendents().keySet()){
-				dependentUnit.setBaseUnit(getUnit(Unit.UNKNOWN_UNIT_NAME));
+				dependentUnit.setBaseUnit(getUnknownUnit());
 			}
 			removedUnit.clearConversions();
 			removedUnit.setUnitManagerRef(null);
@@ -89,6 +102,9 @@ public class UnitsDataModel extends AbstractDataModelWithDualKeyNCategory<String
 		
 		updateFundamentalUnitsDimensionOfKnownUnits();	
 		
+		//Remove any conversion favorites that may be associated with this unit as well update the significance rankings
+		unitManagerRef.getConversionFavoritesDataModel().removeConversionByUnit(removedUnit);
+		
 		return removedUnit;
 	}
 	public Unit removeDynamicUnit(Unit unit){
@@ -97,14 +113,18 @@ public class UnitsDataModel extends AbstractDataModelWithDualKeyNCategory<String
 	public void removeAllDynamicUnits(){
 		//Also removes all UNKNOWN units since they would have been classified as DYNAMIC is some of their properties were known
 		
-		for(Unit unit:getItemsByCategory(DATA_MODEL_CATEGORY.DYNAMIC))
-			unitManagerRef.getUnitsClassifierDataModel().removeFromHierarchy(unit);
-		
-		for(Unit unit:getItemsByCategory(DATA_MODEL_CATEGORY.UNKNOWN))
-			unitManagerRef.getUnitsClassifierDataModel().removeFromHierarchy(unit);
+		for(Unit unitToBeRemoved:getItemsByCategory(DATA_MODEL_CATEGORY.DYNAMIC)){
+			unitManagerRef.getUnitsClassifierDataModel().removeFromHierarchy(unitToBeRemoved);
+			unitManagerRef.getConversionFavoritesDataModel().removeConversionByUnit(unitToBeRemoved);
+		}
+			
+		for(Unit unitToBeRemoved:getItemsByCategory(DATA_MODEL_CATEGORY.UNKNOWN)){ 
+			unitManagerRef.getUnitsClassifierDataModel().removeFromHierarchy(unitToBeRemoved);
+			//Unknown units do not have conversions therefore there is no need to remove them from the conversion favorites
+		}
 	
 		removeCategory(DATA_MODEL_CATEGORY.DYNAMIC);
-		removeCategory(DATA_MODEL_CATEGORY.DYNAMIC);
+		removeCategory(DATA_MODEL_CATEGORY.UNKNOWN);
 	}
 	
 	///Retrieve Content
@@ -114,77 +134,86 @@ public class UnitsDataModel extends AbstractDataModelWithDualKeyNCategory<String
 	public Unit getUnit(String unitName, boolean createMissingUnits){
 		unitName = unitName.toLowerCase();
 
+		
+		///////////////////////
+		if(unitName.equals("drachm")){
+			int a = 1;
+			a++;
+		}
+		///////////////////////////
+		
 		Unit unit = getItemByAnyKey(unitName); //Search by full unit name and abbreviations
 		if(unit != null)
 			return unit;	
 		if(Utility.unitNameHasComplexDimensions(unitName)&& createMissingUnits){
 			//Fly Weight design pattern.
-			//If unit manager does not already contain unit with similar complex dimension specified by unit name, 
+			//If unit manager does not already contain unit with exact complex component dimension specified by unit name, 
 			//then added a newly created version of such unit and store it in the unit manager for easy future access
 			
-			ArrayList<Unit> complexUnitMatches = getUnitsByComponentUnitsDimension(unitName, false);
+			Collection<Unit> complexUnitMatches = getUnitsByComponentUnitsDimension(unitName, false);
 			
 			if(complexUnitMatches.isEmpty())
 				complexUnitMatches.add(new Unit(unitName, false));
 			
-			return addUnit(complexUnitMatches.get(0));
+			return addUnit(complexUnitMatches.iterator().next());
 		}
 		
-		ArrayList<String[]> prefixMatches = unitManagerRef.getPrefixesDataModel().getPrefixMatches(unitName, true);
+		List<String[]> prefixMatches = unitManagerRef.getPrefixesDataModel().getPrefixMatches(unitName, true);
 		if(!prefixMatches.isEmpty()){
 			return addUnit(new PrefixedUnit(prefixMatches.get(0)[0], prefixMatches.get(0)[1]
 					 				, unitManagerRef.getPrefixesDataModel().getPrefixValue(prefixMatches.get(0)[1])
 					 				, getUnit(unitName.indexOf(prefixMatches.get(0)[0])==0? 
-					 						  unitName.replace(prefixMatches.get(0)[0], "")
+					 						   unitName.replace(prefixMatches.get(0)[0], "")
 					 						  :unitName.replace(prefixMatches.get(0)[1], "")),false));
 		}
 		else{
 			return getItemByAnyKey(Unit.UNKNOWN_UNIT_NAME);
 		}	
 	}	
-		
-	public ArrayList<Unit> getCoreUnits(){
+	public Unit getUnknownUnit(){
+		return getUnit(Unit.UNKNOWN_UNIT_NAME);
+	}
+	
+	public Collection<Unit> getCoreUnits(){
 		return getItemsByCategory(DATA_MODEL_CATEGORY.CORE);	
 	}
-	public ArrayList<Unit> getDynamicUnits(){
+	public Collection<Unit> getDynamicUnits(){
 		return getItemsByCategory(DATA_MODEL_CATEGORY.DYNAMIC);				
 	}
 		
 	///Query for Content That Match Particular Conditions
-	public ArrayList<Unit> getUnitsByComponentUnitsDimension(Map<String, Double> componentUnitsDimension, boolean overrideToFundamentalUnitsMap){		
-		ArrayList<Unit> unitsMatched = new ArrayList<Unit>();
+	public Collection<Unit> getUnitsByComponentUnitsDimension(Map<String, Double> componentUnitsDimension, boolean overrideToFundamentalUnitsMap){		
+		List<Unit> unitsMatched = new ArrayList<Unit>();
 		
 		for(Unit unit:getAllItems()){
-			if(unit.equalsComponentUnitsDimension(componentUnitsDimension, overrideToFundamentalUnitsMap)){
+			if(unit.equalsComponentUnitsDimension(componentUnitsDimension, overrideToFundamentalUnitsMap))
 				unitsMatched.add(unit);
-			}
 		}
 				
 		return unitsMatched;
 	}	
-	public ArrayList<Unit> getUnitsByComponentUnitsDimension(String componentUnitsDimensionString, boolean overrideToFundamentalUnitsMap){
-		return getUnitsByComponentUnitsDimension(unitManagerRef.getUtility().getComponentUnitsDimensionFromString(componentUnitsDimensionString), overrideToFundamentalUnitsMap);
+	public Collection<Unit> getUnitsByComponentUnitsDimension(String componentUnitsDimensionString, boolean overrideToFundamentalUnitsMap){
+		return getUnitsByComponentUnitsDimension(Utility.getComponentUnitsDimensionFromString(componentUnitsDimensionString), overrideToFundamentalUnitsMap);
 	}
 	
- 	public ArrayList<Unit> getUnitsByFundamentalUnitTypeDimension(Map<UNIT_TYPE, Double> fundamentalUnitsDimension){
-		ArrayList<Unit> units = new ArrayList<Unit>();
+ 	public Collection<Unit> getUnitsByFundamentalUnitTypeDimension(Map<UNIT_TYPE, Double> fundamentalUnitsDimension){
+		List<Unit> units = new ArrayList<Unit>();
 		
 		for(Unit unit:getAllItems()){
-			if(unit.equalsFundamentalUnitsDimension(fundamentalUnitsDimension)){
+			if(unit.equalsFundamentalUnitsDimension(fundamentalUnitsDimension))
 				units.add(unit);
-			}
 		}
 		
 		return units;
 	}
-	public ArrayList<Unit> getUnitsByFundamentalUnitsDimension(String fundamentalUnitsDimensionString){
-		return getUnitsByFundamentalUnitTypeDimension(unitManagerRef.getUtility().getFundamentalUnitTypesDimensionFromString(fundamentalUnitsDimensionString));
+	public Collection<Unit> getUnitsByFundamentalUnitsDimension(String fundamentalUnitsDimensionString){
+		return getUnitsByFundamentalUnitTypeDimension(Utility.getFundamentalUnitTypesDimensionFromString(fundamentalUnitsDimensionString));
 	}
-	public ArrayList<Unit> getUnitsWithMatchingFundamentalUnitDimension(Unit unit){
-		ArrayList<Unit> matchUnits = new ArrayList<Unit>(); 		
+	public Collection<Unit> getUnitsWithMatchingFundamentalUnitDimension(Unit unit){
+		List<Unit> matchUnits = new ArrayList<Unit>(); 		
 		
 		if(unit.getUnitManagerRef() == this.unitManagerRef){
-			if(unit.getBaseUnit().isBaseUnit() && !unit.getBaseUnit().getName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME)){
+			if(unit.getBaseUnit().isBaseUnit() && UnitsDataModel.getDataModelCategory(unit.getBaseUnit()) != DATA_MODEL_CATEGORY.UNKNOWN){
 				matchUnits.addAll(unit.getBaseUnit().getConversionsOfDescendents().keySet());
 			}else{
 				matchUnits.addAll(getUnitsByFundamentalUnitTypeDimension(unit.getFundamentalUnitTypesDimension()));			
@@ -194,45 +223,43 @@ public class UnitsDataModel extends AbstractDataModelWithDualKeyNCategory<String
 		return matchUnits;
 	}
 	
-	public ArrayList<Unit> getUnitsByUnitSystem(String unitSystem){
-		ArrayList<Unit> unitMatches = new ArrayList<Unit>();
+	public Collection<Unit> getUnitsByUnitSystem(String unitSystem){
+		List<Unit> unitMatches = new ArrayList<Unit>();
 	
 		for(String unitName:unitManagerRef.getUnitsClassifierDataModel().getUnitNamesByUnitSystem(unitSystem))
 			unitMatches.add(getUnit(unitName, false));
 		
 		return unitMatches;
 	}
-	public ArrayList<Unit> getCorrespondingUnitsWithUnitSystem(Unit sourceUnit, String targetUnitSystemString){
-		ArrayList<Unit> correspondingUnits = new ArrayList<Unit>();		
+	public Collection<Unit> getCorrespondingUnitsWithUnitSystem(Unit sourceUnit, String targetUnitSystemString){
+		List<Unit> correspondingUnits = new ArrayList<Unit>();		
 		
 		if(sourceUnit.getUnitManagerRef() == this.unitManagerRef){	
 			//Find a way to convert every component unit to one unit system. Then return resulting unit.
-			if(!sourceUnit.getUnitSystem().contains(targetUnitSystemString) && !sourceUnit.getUnitSystem().contains(" and ") && sourceUnit.getComponentUnitsDimension().size() == 1){
-				ArrayList<Unit> matchCandidates = getUnitsByComponentUnitsDimension(sourceUnit.getComponentUnitsDimension(), true);
-				if(matchCandidates.size() != 0){
+			if(!sourceUnit.getUnitSystem().contains(targetUnitSystemString) && !sourceUnit.getUnitSystem().contains(Unit.UNIT_SYSTEM_DELIMITER) && sourceUnit.getComponentUnitsDimension().size() == 1){
+				Collection<Unit> matchCandidates = getUnitsByComponentUnitsDimension(sourceUnit.getComponentUnitsDimension(), true);
+				if(!matchCandidates.isEmpty()){
 					for(Unit candidate:matchCandidates){
-					    if(sourceUnit.getUnitSystem().equalsIgnoreCase(candidate.getUnitSystem())){
+					    if(sourceUnit.getUnitSystem().equalsIgnoreCase(candidate.getUnitSystem()))
 					    	correspondingUnits.add(candidate);
-					    }
 					}
 				}
 			}else{
-				if(!sourceUnit.getFundamentalUnitTypesDimension().containsKey(UNIT_TYPE.UNKNOWN)){
+				if(UnitsDataModel.getDataModelCategory(sourceUnit) != DATA_MODEL_CATEGORY.UNKNOWN){
 					//Find replacement componentUnits in order to determine proper unit dimension associated with proper unitSystem.
 					Unit replacementUnit = null;
 					Map<String, Double> properComponentUnitDimension = new HashMap<String, Double>();
 					
 					for(Entry<String, Double> componentUnitEntry:sourceUnit.getComponentUnitsDimension().entrySet()){				
-						replacementUnit = getCorrespondingUnitsWithUnitSystem(getUnit(componentUnitEntry.getKey(), false), targetUnitSystemString).get(0);
+						replacementUnit = getCorrespondingUnitsWithUnitSystem(getUnit(componentUnitEntry.getKey(), false), targetUnitSystemString).iterator().next();
 						properComponentUnitDimension.put(replacementUnit.getName(), componentUnitEntry.getValue());
 					}
 					
 					//See if unitManager already contains unit with proper dimension and return that unit. Otherwise return a new unit with proper dimensions and add this unit manager.
-					ArrayList<Unit> matchCandidates = getUnitsByComponentUnitsDimension(properComponentUnitDimension, true);
+					 Collection<Unit> matchCandidates = getUnitsByComponentUnitsDimension(properComponentUnitDimension, true);
 					if(matchCandidates.size() != 0){
 						correspondingUnits.addAll(matchCandidates);
-					}
-					else{
+					}else{
 						replacementUnit = new Unit(properComponentUnitDimension, false);
 						addUnit(replacementUnit);
 						correspondingUnits.add(replacementUnit);
@@ -257,6 +284,7 @@ public class UnitsDataModel extends AbstractDataModelWithDualKeyNCategory<String
 				Double rhsUnitFullNameSignificance = (double)providedName.length()/lhsUnit.getName().length();
 				Double rhsUnitAbbreviationSignificance = (double)providedName.length()/lhsUnit.getAbbreviation().length();
 				
+				//Onyl se
 				Double preferedLhsSignificance = (lhsUnitAbbreviationSignificance<1)?lhsUnitAbbreviationSignificance:lhsUnitFullNameSignificance;
 				Double preferedRhsSignificance = (rhsUnitAbbreviationSignificance<1)?rhsUnitAbbreviationSignificance:rhsUnitFullNameSignificance;
 				
@@ -273,33 +301,31 @@ public class UnitsDataModel extends AbstractDataModelWithDualKeyNCategory<String
 	
 	///
 	public Unit getBaseUnitMatch(Unit unit){
-	    //Tries to match the fundamental unit with one unit in the dictionary. Only one unit match will ever be needed.
-		ArrayList<Unit> unitMatches = getUnitsWithMatchingFundamentalUnitDimension(unit);			
+	    /*Tries to match the fundamental unit with one unit in the dictionary. Only one unit match will ever be needed,
+	     *since if the data model is logically consistent all similar units will have the same base unit */ 
+		Collection<Unit> unitMatches = getUnitsWithMatchingFundamentalUnitDimension(unit);			
 		if(unitMatches.size() > 0){
 			for(Unit unitMatch:unitMatches){
-				if(unitMatch.isBaseUnit() && !unitMatch.getName().equalsIgnoreCase(unit.getName())){
+				if(unitMatch.isBaseUnit() && !unitMatch.getName().equalsIgnoreCase(unit.getName()))
 					return unitMatch;
-				}
 			}
 		}	
-		return getUnit(Unit.UNKNOWN_UNIT_NAME);
+		return getUnknownUnit();
 	}
 	public Unit getReducedUnitMatch(Unit unit){
-		ArrayList<Unit> matchingUnits = getUnitsByFundamentalUnitTypeDimension(unit.getFundamentalUnitTypesDimension());
-		
 		//If result set is large enough sort from least to greatest by component unit size, then get the unit with the smallest dimension
-		if(matchingUnits.size() > 0){
-			Collections.sort(matchingUnits, new Comparator<Unit>() {
-				@Override
-				public int compare(Unit lhsUnit, Unit rhsUnit) {
-					return Double.compare(lhsUnit.getComponentUnitsDimension().size(), rhsUnit.getComponentUnitsDimension().size());
-				}
-			});
-			
-			return matchingUnits.get(0);
+		TreeSet<Unit> matchingUnits = new TreeSet<Unit>(new Comparator<Unit>() {
+			@Override
+			public int compare(Unit lhsUnit, Unit rhsUnit) {
+				return Double.compare(lhsUnit.getComponentUnitsDimension().size(), rhsUnit.getComponentUnitsDimension().size());
+			}
+		});
+		matchingUnits.addAll(getUnitsByFundamentalUnitTypeDimension(unit.getFundamentalUnitTypesDimension()));
+		if(!matchingUnits.isEmpty()){
+			return matchingUnits.first();
 		}
 		else{
-			return getUnit(Unit.UNKNOWN_UNIT_NAME);
+			return getUnknownUnit();
 		}
 	}
 	
@@ -315,12 +341,8 @@ public class UnitsDataModel extends AbstractDataModelWithDualKeyNCategory<String
 	
 	///Update Content
 	public void updateAssociationsOfUnknownUnits(){		
-		Unit unit;
-		//Need to do this to prevent java.util.ConcurrentModificationException. Even using an instance of the iterator does not work.
-		ArrayList<Unit>  unknList = new ArrayList<Unit>(getItemsByCategory(DATA_MODEL_CATEGORY.UNKNOWN));
-
-		for(int i=0;i<unknList.size();i++){
-			unit = unknList.get(i); 
+		//TODO: Need to create a new list instance to prevent java.util.ConcurrentModificationException. Even using an instance of the iterator does not work.
+		for(Unit unit:new ArrayList<Unit>(getItemsByCategory(DATA_MODEL_CATEGORY.UNKNOWN))){
 			
 			unit.setAutomaticUnitTypeNFundmtTypesDim();
 			unit.setAutomaticBaseUnit();
@@ -333,7 +355,7 @@ public class UnitsDataModel extends AbstractDataModelWithDualKeyNCategory<String
 				
 				addUnit(unit);	
 			}
-			
+	
 			unit.setAutomaticUnitSystem();
 		}
 	
@@ -343,15 +365,13 @@ public class UnitsDataModel extends AbstractDataModelWithDualKeyNCategory<String
 			unit.setAutomaticUnitSystem();
 			unit.setAutomaticUnitTypeNFundmtTypesDim();
 			 
-			if(unit.getBaseUnit() == getUnit(Unit.UNKNOWN_UNIT_NAME) || unit.getFundamentalUnitTypesDimension().containsKey(UNIT_TYPE.UNKNOWN)){
-				//Readd unit so that it is recategorized as unknown in the data model.
-				addUnit(unit);
-			}
+			if(unit.getBaseUnit() == getUnknownUnit() || unit.getFundamentalUnitTypesDimension().containsKey(UNIT_TYPE.UNKNOWN))	
+				addUnit(unit);//Readd unit so that it is recategorized as unknown in the data model.
 		}
 	}
 	
 	///
-	public static DATA_MODEL_CATEGORY getModelDataType(Unit unit){
+	public static DATA_MODEL_CATEGORY getDataModelCategory(Unit unit){
 		if(unit.getBaseUnit().getType() == UNIT_TYPE.UNKNOWN || unit.getFundamentalUnitTypesDimension().containsKey(UNIT_TYPE.UNKNOWN)){
 			return DATA_MODEL_CATEGORY.UNKNOWN;
 		}
@@ -382,7 +402,7 @@ public class UnitsDataModel extends AbstractDataModelWithDualKeyNCategory<String
 				type = unit.getBaseUnit().getType();
 			}
 			
-			if(type == UNIT_TYPE.UNKNOWN) //If still unknown, then component unit which is assumed to be singular at this point in the logic 
+			if(type == UNIT_TYPE.UNKNOWN) //If still unknown, then use component unit.
 				type = getUnit(unit.getComponentUnitsDimension().keySet().iterator().next()).getType();
 		}
 		

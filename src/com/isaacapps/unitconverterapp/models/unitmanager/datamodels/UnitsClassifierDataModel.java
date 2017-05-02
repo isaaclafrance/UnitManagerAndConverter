@@ -4,104 +4,91 @@ import java.util.*;
 
 import com.isaacapps.unitconverterapp.models.Unit;
 
-//TODO: Use a more efficient data structure
 //Classification Map of Unit Groups Based on Their Unit Systems and Categories
-public class UnitsClassifierDataModel {
-	private Map<String, Map<String,ArrayList<String>>> unitsClassificationHierarchy;	
+//In this modified and transposed implementation, Unit System is category, Units category is both key1 and key2.
+public class UnitsClassifierDataModel extends AbstractDataModelWithDualKeyNCategory<String, Collection<String>, String>{
 
 	///
 	public UnitsClassifierDataModel(){
-		unitsClassificationHierarchy = new HashMap<String, Map<String,ArrayList<String>>>();
+		super(true);
 	}
 		
 	///
-	public void addToHierarchy(Unit unit){
-		boolean doesUnitSystemExist;
-		
-		if(unitsClassificationHierarchy.containsKey(unit.getUnitSystem())){
-			doesUnitSystemExist = true;
+	public Collection<String> addToHierarchy(Unit unit){
+		Collection<String> unitsGroup = getItem(unit.getUnitSystem(), unit.getCategory());
+		if(unitsGroup!=null){
+			unitsGroup.add(unit.getName()); 
 		}
 		else{
-			doesUnitSystemExist = false;
+			//Save as a Set in order to ignore duplicate names
+			return addItem(unit.getUnitSystem(), unit.getCategory(), unit.getCategory(), new HashSet<String>(Arrays.asList(unit.getName())), false);
 		}
-		
-		addUnitToUnitSystem(unit, unit.getUnitSystem(), doesUnitSystemExist);
+		return unitsGroup;
 	}	
-	private void addUnitToUnitSystem(Unit unit, String unitSystem, boolean doesUnitSystemExist){
-		boolean doesUnitCategoryExist;
-		
-		if(!doesUnitSystemExist){
-			unitsClassificationHierarchy.put(unitSystem, new HashMap<String, ArrayList<String>>());
-		}
-		
-		if(unitsClassificationHierarchy.get(unitSystem).containsKey(unit.getCategory())){
-			doesUnitCategoryExist = true;
-		}
-		else{
-			doesUnitCategoryExist = false;
-		}
-		
-		addUnitToUnitCategory(unit, unitSystem, unit.getCategory(), doesUnitCategoryExist);		
-	}
-	private void addUnitToUnitCategory(Unit unit, String unitSystem, String category, boolean doesUnitCategoryExist){
-		
-		if(!doesUnitCategoryExist){
-			unitsClassificationHierarchy.get(unitSystem).put(category, new ArrayList<String>());
-		}
-		
-		unitsClassificationHierarchy.get(unitSystem).get(category).add(unit.getName());
-	}
 	
-	public void removeFromHierarchy(Unit unit){
-		if(unitsClassificationHierarchy.containsKey(unit.getUnitSystem())){
-			if(unitsClassificationHierarchy.get(unit.getUnitSystem()).containsKey(unit.getCategory())){
-				unitsClassificationHierarchy.get(unit.getUnitSystem()).get(unit.getCategory()).remove(unit.getName());
-				if(unitsClassificationHierarchy.get(unit.getUnitSystem()).get(unit.getCategory()).size() == 0){
-					unitsClassificationHierarchy.get(unit.getUnitSystem()).remove(unit.getCategory());
-				}
-			}
-			if(unitsClassificationHierarchy.get(unit.getUnitSystem()).size() == 0){
-				unitsClassificationHierarchy.remove(unit.getUnitSystem());
-			}
+	///
+	public boolean removeFromHierarchy(Unit unit){
+		Collection<String> unitsGroup = getItem(unit.getUnitSystem(), unit.getCategory());
+		if(unitsGroup != null && unitsGroup.remove(unit.getName())){
+			if(unitsGroup.isEmpty())
+				removeCategory(unit )
+			return true;
 		}
+		return false;
+	}
+	public void clearHierarchy(){
+		removeAllItems();
 	}
 	
 	///
-	public boolean containsCategoryInUnitSystem(String unitSystem, String category){
-		if(!unitsClassificationHierarchy.containsKey(unitSystem))
-			return false;
+	public Collection<String> getUnitNamesByUnitSystem(String unitSystem){
+		Collection<String> allUnitNames = new HashSet<String>();
 		
-		return unitsClassificationHierarchy.get(unitSystem).containsKey(category);
-	}
-	
-	///
-	public ArrayList<String> getUnitNamesByUnitSystem(String unitSystem){
-		if(!unitsClassificationHierarchy.containsKey(unitSystem))
-			return new ArrayList<String>();
-		
-		ArrayList<String> allUnitNames = new ArrayList<String>();
-		for(String category:unitsClassificationHierarchy.get(unitSystem).keySet())
-			allUnitNames.addAll(getUnitNamesByUnitSystemNCategory(unitSystem, category));
+		for(String unitCategory:getUnitCategoriesInUnitSystem(unitSystem))
+			allUnitNames.addAll(getUnitNamesByUnitSystemNCategory(unitSystem, unitCategory));
 		
 		return allUnitNames;
 	}	
-	public ArrayList<String> getUnitNamesByUnitSystemNCategory(String unitSystem, String category){
-		if(!unitsClassificationHierarchy.containsKey(unitSystem))
-			return new ArrayList<String>();
+	public Collection<String> getUnitNamesByUnitSystemNCategory(String unitSystem, String unitCategory){
+		if(!containsUnitCategoryInUnitSystem(unitSystem, unitCategory, false))
+			return new HashSet<String>();
 		
-		if(!unitsClassificationHierarchy.get(unitSystem).containsKey(category))
-			return new ArrayList<String>();
-		
-		return unitsClassificationHierarchy.get(unitSystem).get(category);
+		return getItem(unitSystem, unitCategory);
 	}
 	
-	public ArrayList<String> getAllUnitSystems(){		
-		return new ArrayList<String>(unitsClassificationHierarchy.keySet());
+	public Collection<String> getAllUnitSystems(){		
+		return getAllAssignedCategories();
 	}	
-	public ArrayList<String> getCategoriesInUnitSystem(String unitSystem){	
-		if(!unitsClassificationHierarchy.containsKey(unitSystem))
-			return new ArrayList<String>();
-		
-		return new ArrayList<String>(unitsClassificationHierarchy.get(unitSystem).keySet());
+	public Collection<String> getUnitCategoriesInUnitSystem(String unitSystem){	
+		return getKey1sbyCategory(unitSystem);
+	}
+	
+	///
+	public boolean containUnitSystem(String unitSystem, boolean fuzzyMatch){
+		if(fuzzyMatch){
+			for(String unitSystemCandidate:getAllAssignedCategories()){
+				if(unitSystemCandidate.contains(unitSystem))
+					return true;
+			}
+		}
+		return containsCategory(unitSystem);
+	}
+	public boolean containsUnitCategoryInUnitSystem(String unitSystem, String unitCategory, boolean fuzzyMatch){
+		if(fuzzyMatch){
+			for( String unitCategoryCandidate:getKey1sbyCategory(unitSystem)){
+				if(unitCategoryCandidate.contains(unitCategory))
+					return true;
+			}
+		}
+		return containsKeyInCategory(unitSystem, unitCategory);
+	}
+	public boolean containsUnitInUnitCategoryNUnitSystem(String unitSystem, String unitCategory, String unitName, boolean fuzzyMatch){
+		if(fuzzyMatch){
+			for( String unitNameCandidate:getItem(unitSystem, unitCategory)){
+				if(unitNameCandidate.contains(unitName))
+					return true;
+			}
+		}
+		return getUnitNamesByUnitSystemNCategory(unitSystem, unitCategory).contains(unitName);
 	}
 }

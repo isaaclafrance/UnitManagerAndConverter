@@ -3,7 +3,7 @@ package com.isaacapps.unitconverterapp.models.unitmanager.datamodels;
 import java.util.*;
 import java.util.Map.Entry;
 
-//Generic template for a custom categorized data structure that associates two keys of identical types to each other and one item.  
+//Generic template for a custom categorized data structure that associates two keys of identical types to each other and individually to an item.  
 public abstract class AbstractDataModelWithDualKeyNCategory<T, U, V> {
 	private Map<V,Map<T, U>> key2ToItemMapsByCategory;
 	private Map<T, T> key1ToKey2Map;
@@ -19,23 +19,15 @@ public abstract class AbstractDataModelWithDualKeyNCategory<T, U, V> {
 	}
 	
 	///
-	protected U addItem(V category,  T key1, T key2, U item, boolean removeDuplicateItems){
+	protected U addItem(V category, T key1, T key2, U item, boolean removeDuplicateItems){
 		U addedItem = null;
 		
-		if(key1ToKey2Map.get(key1) == null || key2ToKey1Map.get(key2) == null){
-			int a = 3;
-			a++;
-			System.out.println(key1);
-			System.out.println(key2);
-		}
-		
 		//Ensure bijective relationship of keys if required
-		if(keysMustHaveBijectiveRelation
-				&& (!key1ToKey2Map.containsValue(key1) && !key2ToKey1Map.containsValue(key2) 
-		            || key1ToKey2Map.get(key1) != null &&  key1ToKey2Map.get(key1).equals(key2ToKey1Map.get(key2)) ) //Allows an identity key relation to be replaced despite bijection restriction                
-			  
-		   || !keysMustHaveBijectiveRelation){	
-			
+		boolean isBijective = !key1ToKey2Map.containsValue(key1) && !key2ToKey1Map.containsValue(key2),
+				hasIdenticalKeys = key1ToKey2Map.get(key1) != null &&  key1ToKey2Map.get(key1).equals(key2ToKey1Map.get(key2)); //Allows an identity key relation to be replaced despite bijection restriction 
+		
+		if(keysMustHaveBijectiveRelation && (isBijective || hasIdenticalKeys) || !keysMustHaveBijectiveRelation)
+		{			
 			//If state is selected, then there can not be duplicates of item anywhere in this data structure.
 			if(removeDuplicateItems)
 				removeItem(item);
@@ -87,13 +79,14 @@ public abstract class AbstractDataModelWithDualKeyNCategory<T, U, V> {
 	}
 	private U removeItemFromCategory(V category, T key2){
 		U removedItem = null;
-		if(key2ToItemMapsByCategory.containsKey(category)){
+		if(containsCategory(category)){
 			removedItem = key2ToItemMapsByCategory.get(category).remove(key2);
 			if(key2ToItemMapsByCategory.get(category).isEmpty())
 				key2ToItemMapsByCategory.remove(category); //remove category if nothing associated with it anymore.
 		}
 		return removedItem;
 	}
+	
 	protected boolean removeItem(U item){ //Remove item by its object reference from any category. Since searching done by value rather by keys, the Big O runtime is O(n).
 		boolean somethingRemoved = false;
 		for (V category:getAllAssignedCategories()) {
@@ -110,7 +103,6 @@ public abstract class AbstractDataModelWithDualKeyNCategory<T, U, V> {
 		}
 		return somethingRemoved;
 	}
-	
 	protected boolean removeCategory(V category){
 		boolean somethingRemoved = false;
 		for(T key2:getKey2sByCategory(category)){
@@ -137,13 +129,18 @@ public abstract class AbstractDataModelWithDualKeyNCategory<T, U, V> {
 		return item;
 	}
 	protected U getItem(V category, T key){	
-		U item = key2ToItemMapsByCategory.get(category).get(key);
-		if(item == null ){
-			T key2 = getKey2FromKey1(key);
-			if(key2 != null)
-				item = key2ToItemMapsByCategory.get(category).get(key2);
+		if(containsCategory(category)){
+			U item = key2ToItemMapsByCategory.get(category).get(key);
+			if(item == null ){
+				T key2 = getKey2FromKey1(key);
+				if(key2 != null)
+					item = key2ToItemMapsByCategory.get(category).get(key2);
+			}	
+			return item;
+		}
+		else{
+			return null;
 		}	
-		return item;
 	}
 	
 	protected V getCategoryOfKey(T key){
@@ -156,73 +153,57 @@ public abstract class AbstractDataModelWithDualKeyNCategory<T, U, V> {
 		return null;
 	}
 		
-	protected ArrayList<U> getItemsByCategory(V category){
-		ArrayList<U> items = new ArrayList<U>();
+	protected Collection<U> getItemsByCategory(V category){
+		Collection<U> items = new ArrayList<U>();
 		if(key2ToItemMapsByCategory.containsKey(category)){
 			items = new ArrayList<U>(key2ToItemMapsByCategory.get(category).values());
 		}
 		return items;
 	}
-	protected ArrayList<U> getAllItems(){
-		ArrayList<U> items = new ArrayList<U>();
+	protected Collection<U> getAllItems(){
+		Collection<U> items = new ArrayList<U>();
 		for(V category:key2ToItemMapsByCategory.keySet()){
 			items.addAll(getItemsByCategory(category));
 		}
 		return items;
 	}
 	
-	protected ArrayList<T> getKey2sByCategory(V category){
-		ArrayList<T> keys = new ArrayList<T>();
-		if(key2ToItemMapsByCategory.containsKey(category)){
-			keys.addAll(key2ToItemMapsByCategory.get(category).keySet());
-		}
-		return keys;
+	protected Collection<T> getKey2sByCategory(V category){
+		if(!containsCategory(category))
+			return new HashSet<T>();
+			
+		return key2ToItemMapsByCategory.get(category).keySet();
 	}
-	protected ArrayList<T> getKey1sbyCategory(V category){
-		ArrayList<T> keys = new ArrayList<T>();
+	protected Collection<T> getKey1sbyCategory(V category){
+		Collection<T> keys = new HashSet<T>();
 		for(T key2:getKey2sByCategory(category)){
 			keys.add(getKey1FromKey2(key2));
 		}
 		return keys;
 	}	
 	
-	protected ArrayList<T> getAllKey1s(){
-		ArrayList<T> keys = new ArrayList<T>();
+	protected Collection<T> getAllKey1s(){
+		Collection<T> keys = new ArrayList<T>();
 		for(V category:getAllAssignedCategories()){
 			keys.addAll(getKey1sbyCategory(category));
 		}
 		return keys;
 	}
-	protected ArrayList<T> getAllKey2s(){
-		ArrayList<T> keys = new ArrayList<T>();
+	protected Collection<T> getAllKey2s(){
+		Collection<T> keys = new ArrayList<T>();
 		for(V category:getAllAssignedCategories()){
 			keys.addAll(getKey2sByCategory(category));
 		}
 		return keys;
 	}
-	protected ArrayList<T> getAllKeys(){
-		ArrayList<T> allKeys = getAllKey1s();
+	protected Collection<T> getAllKeys(){
+		Collection<T> allKeys = getAllKey1s();
 		allKeys.addAll(getAllKey2s());
 		return allKeys;
 	}
 	
-	protected Set<V> getAllAssignedCategories(){
+	protected Collection<V> getAllAssignedCategories(){
 		return key2ToItemMapsByCategory.keySet();
-	}
-	
-	///
-	protected boolean containsItem(U item){
-		for(V category:getAllAssignedCategories()){
-			if(key2ToItemMapsByCategory.get(category).values().contains(item))
-				return true;
-		}
-		return false;
-	}
-	protected boolean containsKey(T key){
-		return key1ToKey2Map.containsKey(key)||key2ToKey1Map.containsKey(key);
-	}
-	protected boolean isKey2(T key){
-		return key2ToKey1Map.containsKey(key);
 	}
 	
 	///
@@ -236,9 +217,42 @@ public abstract class AbstractDataModelWithDualKeyNCategory<T, U, V> {
 	}
 	
 	///
+	protected boolean containsItem(U item){
+		for(V category:getAllAssignedCategories()){
+			if(key2ToItemMapsByCategory.get(category).values().contains(item))
+				return true;
+		}
+		return false;
+	}
+	protected boolean containsKey(T key){
+		return key1ToKey2Map.containsKey(key)||key2ToKey1Map.containsKey(key);
+	}
+	protected boolean containsCategory(V category){
+		return key2ToItemMapsByCategory.containsKey(category);
+	}
+	protected boolean containsKeyInCategory(V category, T key){
+		if(!containsCategory(category))
+			return false;
+		
+		if(containsKey(key) && isKey1(key))
+			key = getKey2FromKey1(key);
+		
+		return getKey2sByCategory(category).contains(key);		
+	}
+	
+	protected boolean isKey2(T key){
+		return key2ToKey1Map.containsKey(key);
+	}
+	protected boolean isKey1(T key){
+		return key1ToKey2Map.containsKey(key);
+	}
+	
+	///
 	public void combineWith(AbstractDataModelWithDualKeyNCategory<T, U, V> otherDataModel){
-		this.key2ToItemMapsByCategory.putAll(otherDataModel.key2ToItemMapsByCategory);
-		this.key1ToKey2Map.putAll(otherDataModel.key1ToKey2Map);
-		this.key2ToKey1Map.putAll(otherDataModel.key2ToKey1Map);	
+		if(otherDataModel != null){
+			this.key2ToItemMapsByCategory.putAll(otherDataModel.key2ToItemMapsByCategory);
+			this.key1ToKey2Map.putAll(otherDataModel.key1ToKey2Map);
+			this.key2ToKey1Map.putAll(otherDataModel.key2ToKey1Map);
+		}
 	}
 }
