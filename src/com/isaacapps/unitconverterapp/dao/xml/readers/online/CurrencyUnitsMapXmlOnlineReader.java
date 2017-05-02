@@ -13,16 +13,18 @@ import android.content.Context;
 
 //Completely ignores XML namespaces.
 ///According to official Google Android documentation, the XmlPullParser that reads one tag at a time is the most efficient way of parsing especially in situations where there are a large number of tags.
-public class CurrencyUnitsMapXmlOnlineReader extends AsyncXmlReader<ArrayList<ArrayList<Unit>>,UnitManagerBuilder>{
-
+public class CurrencyUnitsMapXmlOnlineReader extends AsyncXmlReader<List<List<Unit>>,UnitManagerBuilder>{
+	Map<String, String> currencyAbbreviationNameMap;
+	
 	///
 	public CurrencyUnitsMapXmlOnlineReader(Context context){
 		super(context);	
+		setCurrencyAbbreviationNameMap();
 	}
 		
 	///
 	@Override
-	protected ArrayList<ArrayList<Unit>> readEntity(XmlPullParser parser) throws XmlPullParserException, IOException{
+	protected List<List<Unit>> readEntity(XmlPullParser parser) throws XmlPullParserException, IOException{
 		Map<String, Unit> unitsMap = new HashMap<String, Unit>();
 		
 		String unitName = "", unitSystem = "si", abbreviation = "", unitCategory = "currency_unit", tagName = "";	
@@ -82,7 +84,7 @@ public class CurrencyUnitsMapXmlOnlineReader extends AsyncXmlReader<ArrayList<Ar
 		}
 			
 		//
-		ArrayList<ArrayList<Unit>> unitLists = new ArrayList<ArrayList<Unit>>(2);
+		List<List<Unit>> unitLists = new ArrayList<List<Unit>>(2);
 		unitLists.add(new ArrayList<Unit>()); unitLists.get(0).add(baseUnit);
 		unitLists.add(new ArrayList<Unit>(unitsMap.values()));
 		
@@ -94,9 +96,8 @@ public class CurrencyUnitsMapXmlOnlineReader extends AsyncXmlReader<ArrayList<Ar
 		parser.require(XmlPullParser.START_TAG, null, "Cube");
 		
 		Map<String, Double> componentUnitsDimension = new HashMap<String, Double>();
-		Map<String, String> currencyAbbreviationNameMap = getCurrencyAbbreviationNameMap();
 				
-		unitName = readUnitName(parser, currencyAbbreviationNameMap);
+		unitName = readUnitName(parser);
 		abbreviation = readAbbreviation(parser);
 		
 		componentUnitsDimension = new HashMap<String, Double>();
@@ -111,7 +112,7 @@ public class CurrencyUnitsMapXmlOnlineReader extends AsyncXmlReader<ArrayList<Ar
 	private String readAbbreviation(XmlPullParser parser) throws XmlPullParserException, IOException{
 		return readAttribute(parser, "currency");
 	}
-	private String readUnitName(XmlPullParser parser, Map<String, String> currencyAbbreviationNameMap) throws XmlPullParserException, IOException{
+	private String readUnitName(XmlPullParser parser) throws XmlPullParserException, IOException{
 		String abrv = readAbbreviation(parser);
 		String name = currencyAbbreviationNameMap.get(abrv);
 		
@@ -125,8 +126,8 @@ public class CurrencyUnitsMapXmlOnlineReader extends AsyncXmlReader<ArrayList<Ar
 	}
 	
 	///
-	private Map<String, String> getCurrencyAbbreviationNameMap(){
-		Map<String, String> currencyAbbreviationNameMap = new HashMap<String, String>();
+	private void setCurrencyAbbreviationNameMap(){
+		currencyAbbreviationNameMap = new HashMap<String, String>();
 		
 		currencyAbbreviationNameMap.put("usd", "U.S Dollar");currencyAbbreviationNameMap.put("gbp", "U.K. Pound Sterling");
 		currencyAbbreviationNameMap.put("cad", "Canadian Dollar");currencyAbbreviationNameMap.put("aud", "Australian Dollar");
@@ -144,14 +145,12 @@ public class CurrencyUnitsMapXmlOnlineReader extends AsyncXmlReader<ArrayList<Ar
 		currencyAbbreviationNameMap.put("nzd", "New Zealand Dollar");currencyAbbreviationNameMap.put("php", "Philippine Peso");
 		currencyAbbreviationNameMap.put("sgd", "Singapore Dollar");currencyAbbreviationNameMap.put("thb", "Thai Baht");
 		currencyAbbreviationNameMap.put("zar", "South African Rand");
-		
-		return currencyAbbreviationNameMap;	
 	}
 	
 	//// Loader Methods
 	@Override
 	public UnitManagerBuilder loadInBackground() {
-		ArrayList<ArrayList<Unit>> currencyUnitsGroup = new ArrayList<ArrayList<Unit>>();
+		List<List<Unit>> currencyUnitsGroup = new ArrayList<List<Unit>>();
 		try {
 			currencyUnitsGroup = parseXML(openXmlFile("http://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml", true));
 		} catch (Exception e){

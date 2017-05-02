@@ -107,7 +107,13 @@ public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<U
 			}
 		}
 		
-		return new Unit(unitName, unitCategory, unitDescription, unitSystem, abbreviation, componentUnitsExponentsMap, new Unit(baseConversionPolyCoeffs.keySet().iterator().next(), new HashMap<String, Double>(), true ), baseConversionPolyCoeffs.values().iterator().next());
+		Unit createdUnit = new Unit(unitName, unitCategory, unitDescription, unitSystem, abbreviation, componentUnitsExponentsMap, new Unit(baseConversionPolyCoeffs.keySet().iterator().next(), new HashMap<String, Double>(), true ), baseConversionPolyCoeffs.values().iterator().next());
+		
+		if(createdUnit.getBaseUnit().getName().equalsIgnoreCase(createdUnit.getName())){
+			createdUnit.setBaseUnit(createdUnit);
+		}
+		
+		return createdUnit;
 	}
 	
 	///
@@ -212,7 +218,7 @@ public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<U
 		ArrayList<ArrayList<Unit>> dynamicUnitsGroup = new ArrayList<ArrayList<Unit>>();
 		try {
 			coreUnitsGroup = parseXML(openAssetFile("StandardCoreUnits.xml"));
-			dynamicUnitsGroup = parseXML(openXmlFile(getContext().getFilesDir().getPath().toString() + "DynamicUnits.xml", false));
+			//dynamicUnitsGroup = parseXML(openXmlFile(getContext().getFilesDir().getPath().toString() + "DynamicUnits.xml", false));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -226,10 +232,10 @@ public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<U
 		ArrayList<Unit> combinedUnits = coreUnitsGroup.get(0);
 		combinedUnits.addAll(coreUnitsGroup.get(1));
 		
-		if(dynamicUnitsGroup != null){
-			combinedUnits.addAll(dynamicUnitsGroup.get(0));
-			combinedUnits.addAll(dynamicUnitsGroup.get(1));
-		}
+		//if(dynamicUnitsGroup != null){
+			//combinedUnits.addAll(dynamicUnitsGroup.get(0));
+			//combinedUnits.addAll(dynamicUnitsGroup.get(1));
+		//}
 			
 		return new UnitManagerBuilder().addBaseUnits(combinedUnits)
 									   .addNonBaseUnits(combinedUnits);

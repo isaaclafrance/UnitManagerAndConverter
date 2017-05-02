@@ -8,8 +8,8 @@ import android.content.Context;
 
 import com.isaacapps.unitconverterapp.dao.xml.readers.AsyncXmlReader;
 import com.isaacapps.unitconverterapp.models.unitmanager.*;
-import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager.UNIT_TYPE;
-import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.FundamentalUnitsDataModel;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.*;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.FundamentalUnitsDataModel.*;
 
 ///According to official Google Android documentation, the XmlPullParser that reads one tag at a time is the most efficient way of parsing especially in situations where there are a large number of tags.
 public class FundamentalUnitsMapXmlLocalReader extends AsyncXmlReader<FundamentalUnitsDataModel, UnitManagerBuilder>{

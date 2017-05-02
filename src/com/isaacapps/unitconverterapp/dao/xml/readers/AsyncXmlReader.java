@@ -20,11 +20,16 @@ public abstract class AsyncXmlReader<S, T> extends AsyncTaskLoader<T> {
 	///According to official Google Android documentation, the XmlPullParser that reads one tag at a time is the most efficient way of parsing especially in situations where there are a large number of tags.
 	public S parseXML(InputStream in) {
 		try{
-			XmlPullParser parser = Xml.newPullParser();
-			parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);			
-			parser.setInput(in, null);
-			parser.nextTag();
-			return readEntity(parser);
+			if(in != null){
+				XmlPullParser parser = Xml.newPullParser();
+				parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);			
+				parser.setInput(in, null);
+				parser.nextTag();
+				return readEntity(parser);
+			}
+			else{
+				return null;
+			}
 		} catch (XmlPullParserException e) {		
 			e.printStackTrace();
 			return null;
@@ -34,10 +39,10 @@ public abstract class AsyncXmlReader<S, T> extends AsyncTaskLoader<T> {
 		}
 		finally{
 			try {
-				in.close();
+				if(in != null)
+					in.close();
 			} catch (IOException e) {
 				e.printStackTrace();
-				return null;
 			}
 		}
 	}
@@ -52,11 +57,12 @@ public abstract class AsyncXmlReader<S, T> extends AsyncTaskLoader<T> {
 		}
 		else{
 			File xmlFile = new File(fileLocation);		
-			if(!xmlFile.exists()){
-				xmlFile.createNewFile();
+			if(xmlFile.exists()){
+				return new FileInputStream(xmlFile);
 			}
-			
-			return new FileInputStream(xmlFile);
+			else{
+				return null;
+			}	
 		}
 	}
 	

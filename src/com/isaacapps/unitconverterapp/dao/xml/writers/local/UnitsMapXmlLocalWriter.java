@@ -1,7 +1,7 @@
 package com.isaacapps.unitconverterapp.dao.xml.writers.local;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Map.Entry;
 
 import org.xmlpull.v1.XmlSerializer;
@@ -11,7 +11,7 @@ import com.isaacapps.unitconverterapp.models.Unit;
 
 import android.content.Context;
 
-public class UnitsMapXmlLocalWriter extends XmlWriter<ArrayList<Unit>> {
+public class UnitsMapXmlLocalWriter extends XmlWriter<Collection<Unit>> {
 
 	///
 	public UnitsMapXmlLocalWriter(Context context){
@@ -21,7 +21,7 @@ public class UnitsMapXmlLocalWriter extends XmlWriter<ArrayList<Unit>> {
 	
 	///
 	@Override
-	protected void writeEntity(XmlSerializer serializer, String namespace, ArrayList<Unit> units) throws IllegalArgumentException, IllegalStateException, IOException{
+	protected void writeEntity(XmlSerializer serializer, String namespace, Collection<Unit> units) throws IllegalArgumentException, IllegalStateException, IOException{
 		for(Unit unit:units){
 			serializer.startTag(namespace, "unit");
 
