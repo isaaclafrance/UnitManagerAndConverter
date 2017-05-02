@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item android:id="@+id/delete_all_dynamic_units" android:titleCondensed="Del Dyn Units" android:visible="true" android:title="Delete Dynamics Units" android:showAsAction="always" android:checkable="false" android:enabled="true"></item>
+    
+
+</menu>

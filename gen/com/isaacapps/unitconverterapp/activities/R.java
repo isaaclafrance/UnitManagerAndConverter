@@ -69,7 +69,7 @@ public final class R {
         public static final int value_text_background=0x7f02000b;
     }
     public static final class id {
-        public static final int addToFavoritesItem=0x7f09002e;
+        public static final int addToFavoritesItem=0x7f090031;
         public static final int buttonsLinearLayout=0x7f090004;
         public static final int cancelUnitButton=0x7f090007;
         public static final int categoryLinearLayout=0x7f090027;
@@ -80,8 +80,10 @@ public final class R {
         public static final int conversionListView=0x7f090003;
         public static final int conversionValueLabel=0x7f09001d;
         public static final int conversionValueTextView=0x7f09001f;
+        public static final int conversion_faves_list=0x7f09002e;
         public static final int convertButton=0x7f090015;
         public static final int deleteUnitButton=0x7f09002d;
+        public static final int delete_all_dynamic_units=0x7f090034;
         public static final int dimFilterSpinner=0x7f090023;
         public static final int dimFilterSpinnerLabel=0x7f090022;
         public static final int dimensionFilterLinearLayout=0x7f090021;
@@ -96,6 +98,7 @@ public final class R {
         public static final int fromValueLabel=0x7f090012;
         public static final int fromValueTextView=0x7f090013;
         public static final int mainLinearLayout=0x7f090008;
+        public static final int multiUnitModeItem=0x7f090033;
         public static final int prefUnitNameLinearLayout=0x7f09002a;
         public static final int prefixNUnitSelectionViewLabel=0x7f090002;
         public static final int prefixSpinner=0x7f09002b;
@@ -117,7 +120,8 @@ public final class R {
         public static final int unitSystemLinearLayout=0x7f090024;
         public static final int unitSystemSpinner=0x7f090026;
         public static final int unitSystemSpinnerLabel=0x7f090025;
-        public static final int viewFavoritesItem=0x7f09002f;
+        public static final int unit_browser_spinner_item=0x7f09002f;
+        public static final int viewFavoritesItem=0x7f090032;
     }
     public static final class layout {
         public static final int activity_conversion_favorites=0x7f030000;
@@ -128,6 +132,7 @@ public final class R {
     }
     public static final class menu {
         public static final int main=0x7f080000;
+        public static final int unitbrowser=0x7f080001;
     }
     public static final class string {
         public static final int action_settings=0x7f050002;

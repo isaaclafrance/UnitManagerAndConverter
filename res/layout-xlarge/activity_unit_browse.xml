@@ -131,6 +131,7 @@
                 android:layout_weight="1"
                 android:paddingLeft="10dp"
                 android:paddingRight="10dp"
+                android:scrollbars="horizontal|vertical|none"
                 android:textAlignment="center" />
 
             <Spinner
@@ -140,6 +141,7 @@
                 android:layout_weight="1"
                 android:paddingLeft="10dp"
                 android:paddingRight="10dp"
+                android:scrollbars="horizontal|vertical|none"
                 android:textAlignment="center" />
         </LinearLayout>
 

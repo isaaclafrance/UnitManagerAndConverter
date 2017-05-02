@@ -28,19 +28,17 @@
 	            <unit>candela</unit>
 	        </dimension>	          
 	        <dimension>
-	            <type>CURRENT</type>
-	            <unit>ampere</unit>
+	            <type>CHARGE</type>
+	            <unit>coulomb</unit>
 	        </dimension>	
 	        <dimension>
 	            <type>CURRENCY</type>
 	            <unit>euro</unit>
-	        </dimension>                                 
+	        </dimension>    
+	        <dimension>
+	            <type>ANGLE</type>
+	            <unit>radian</unit>
+	        </dimension>                             
         </dimensions>
-    </unitSystem>
-    <unitSystem>
-    	<name>British Imperial</name>
-    	<dimensions>
-    	    
-    	</dimensions>
     </unitSystem>
 </main>
