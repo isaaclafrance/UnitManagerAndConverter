@@ -4,6 +4,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import com.isaacapps.unitconverterapp.activities.R;
 import com.isaacapps.unitconverterapp.dao.xml.readers.local.ConversionFavoritesListXmlLocalReader;
@@ -20,9 +21,7 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
 	PersistentSharablesApplication pSharablesApplication;	
 
 	ListView conversionsListView;
-	Button selectButton; //Sets up selected conversion when clicked
-	Button removeButton; //Removes selected conversion from list when clicked
-	Button cancelButton; //Exits activity when clicked
+	Button selectButton, removeButton, cancelButton;
 	ArrayAdapter<String> conversionsListAdapter;
 	String selectedConversion;
 	int pastSelectedConversionPosition;
@@ -96,12 +95,14 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
 		selectButton.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View view){
-				pSharablesApplication.getFromQuantity().setUnit(pSharablesApplication.getUnitManager().getUnitsDataModel()
-						                                        .getUnit(ConversionFavoritesDataModel.getSourceUnitNameFromConversion(selectedConversion)));
-				pSharablesApplication.getToQuantity().setUnit(pSharablesApplication.getUnitManager().getUnitsDataModel()
-						                                      .getUnit(ConversionFavoritesDataModel.getTargetUnitNameFromConversion(selectedConversion)));
+				pSharablesApplication.getFromQuantity().setUnits(Arrays.asList(pSharablesApplication.getUnitManager().getUnitsDataModel()
+						                                        		       .getUnit(ConversionFavoritesDataModel
+						                                        		    		   .getSourceUnitNameFromConversion(selectedConversion))));
+				pSharablesApplication.getToQuantity().setUnits(Arrays.asList(pSharablesApplication.getUnitManager().getUnitsDataModel()
+						                                                     .getUnit(ConversionFavoritesDataModel
+						                                                    		  .getTargetUnitNameFromConversion(selectedConversion))));
 				pSharablesApplication.getUnitManager().getConversionFavoritesDataModel()
-				                                      .modifySignificanceRankOfConversions(ConversionFavoritesDataModel
+				                                      .modifySignificanceRankOfMultipleConversions(ConversionFavoritesDataModel
 				                                    		                            .getUnitCategoryFromFormattedConversion(selectedConversion), true);
 				//
 				finish();
@@ -112,20 +113,21 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
 		removeButton.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View view){
-				pSharablesApplication.getUnitManager().getConversionFavoritesDataModel().removeFormattedConversion(selectedConversion);
-				pastSelectedConversionPosition = -1;
-				repopulateList();	
-				
-				showSelectButtonIfAppropriate();
-				showRemoveButtonIfAppropriate();
+				if(pSharablesApplication.getUnitManager().getConversionFavoritesDataModel().removeFormattedConversion(selectedConversion)){
+					pastSelectedConversionPosition = -1;
+					repopulateList();	
+					
+					showSelectButtonIfAppropriate();
+					showRemoveButtonIfAppropriate();
+				}
 			}
 		});
 		
 		cancelButton.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View view){
-				finish();
 				pSharablesApplication.saveConversionFavorites();
+				finish();
 			}
 				
 		});		
@@ -162,9 +164,8 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
 		selectedConversion = conversionString;
 		
 		 //ensures that only one item at a time can be selected, by deselecting a previously selected alternate position.
-		if(pastSelectedConversionPosition != -1){
+		if(pastSelectedConversionPosition != -1)
 			listView.getChildAt(pastSelectedConversionPosition).setBackgroundColor(Color.TRANSPARENT);
-		}
 		
 		pastSelectedConversionPosition = currentSelectedConversionPosition;
 	}
@@ -173,7 +174,7 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
 	private void populateList(boolean loaderFinished){
 		ArrayList<String> conversionList;
 		if(loaderFinished){
-			conversionList = new ArrayList<String>(pSharablesApplication.getUnitManager().getConversionFavoritesDataModel().getAllFormattedConversions());
+			conversionList = new ArrayList<String>(pSharablesApplication.getUnitManager().getConversionFavoritesDataModel().getAllFormattedConversions()); //prevent subsequent modification
 			if(conversionList.isEmpty())
 				conversionList.add("No Saved Conversion Favorites Available. Please Add Some By Navigating to the Home Screen, choosing a 'TO' and 'From', then pressing the 'Add Fav' menu button.");
 		}

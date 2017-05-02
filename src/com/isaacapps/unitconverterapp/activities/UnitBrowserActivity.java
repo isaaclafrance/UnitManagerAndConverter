@@ -14,7 +14,9 @@ import android.view.animation.*;
 import android.widget.*;
 import android.widget.AdapterView.*;
 
-public class UnitBrowserActivity extends Activity {
+public class UnitBrowserActivity extends Activity {	
+	private String DELIMITER = " :: ", IDENTITY = "- - - - - - -";
+	
 	private PersistentSharablesApplication pSharablesApplication;	
 
 	private Spinner dimFilterSpinner,unitSystemSpinner,categorySpinner;
@@ -38,20 +40,13 @@ public class UnitBrowserActivity extends Activity {
 		Bundle extras = getIntent().getExtras();	
 		callerButtonUnitType = extras != null? extras.getString("buttonName"):"";
 		oppositeUnitType = extras != null? (callerButtonUnitType.equalsIgnoreCase("to") ? "from":"to"): "";
-		
-		if(oppositeUnitType.equalsIgnoreCase("to")){
-			oppositeUnitCategoryName = pSharablesApplication.getToQuantity().getUnit().getCategory();
-		}
-		else if(oppositeUnitType.equalsIgnoreCase("from")){
-			oppositeUnitCategoryName = pSharablesApplication.getFromQuantity().getUnit().getCategory();
-		}
-		
-		generalFilters =  new String[]{"| All | Units", "| "+oppositeUnitType+" | "+"Units", "| Dynamic | Units", "| Currency | Units"};
+				
+		generalFilters =  new String[]{"| All | Units", "| "+oppositeUnitType+" | "+"Units", "| Dynamic | Units", "| Currency | Units"
+				                       ,"| Metric | Units", "| Special | Units"};
 		
 		//
 		setTitle("Select "+callerButtonUnitType.toUpperCase()+" Unit");
 		setupUIComponents();
-		
 		
 		//
 		populateSpinners();
@@ -99,8 +94,8 @@ public class UnitBrowserActivity extends Activity {
 		  2.Not a core unit (ie. meter, second, currency, etc)
 	    */
 		if(!unitToBePotentiallyDeleted.isCoreUnit() 
-		   && !pSharablesApplication.getFromQuantity().getUnit().equals(unitToBePotentiallyDeleted)
-		   && !pSharablesApplication.getToQuantity().getUnit().equals(unitToBePotentiallyDeleted)){
+		   && !pSharablesApplication.getFromQuantity().getUnits().equals(unitToBePotentiallyDeleted)
+		   && !pSharablesApplication.getToQuantity().getUnits().equals(unitToBePotentiallyDeleted)){
 			
 			deleteUnitButton.setVisibility(View.VISIBLE);
 		}
@@ -126,17 +121,17 @@ public class UnitBrowserActivity extends Activity {
 		selectUnitButton.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View view){
-				String prefix = ((String)prefixSpinner.getSelectedItem()).replace("- - - - - - -", "").split("::")[0].trim();
+				String prefix = ((String)prefixSpinner.getSelectedItem()).replace(IDENTITY, "").split(DELIMITER)[0].trim();
 				String mainUnitName = ((String)unitSpinner.getSelectedItem()).split("-")[0].trim();
 				
 				if(mainUnitName != null){
 					Unit selectedUnit = pSharablesApplication.getUnitManager().getUnitsDataModel().getUnit( prefix + ((prefix.length()!=0)?"-":"") + mainUnitName );
 					
 					if(callerButtonUnitType.equalsIgnoreCase("from")){
-						pSharablesApplication.getFromQuantity().setUnit(selectedUnit);				
+						pSharablesApplication.getFromQuantity().setUnits((Collection)Arrays.asList(selectedUnit));				
 					}
 					else if(callerButtonUnitType.equalsIgnoreCase("to")){
-						pSharablesApplication.getToQuantity().setUnit(selectedUnit);
+						pSharablesApplication.getToQuantity().setUnits((Collection)Arrays.asList(selectedUnit));	
 					}
 				}
 				
@@ -170,8 +165,16 @@ public class UnitBrowserActivity extends Activity {
 	private void addListenerOnSelectionSpinners(){
 		dimFilterSpinner.setOnItemSelectedListener(new OnItemSelectedListener() {
 			@Override
-			public void onItemSelected(AdapterView<?> parent, View view,
-					int position, long id) {
+			public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+				if(((String)dimFilterSpinner.getSelectedItem()).equalsIgnoreCase(generalFilters[1])){
+					if(oppositeUnitType.equalsIgnoreCase("to")){
+						oppositeUnitCategoryName = pSharablesApplication.getToQuantity().getLargestUnit().getCategory();
+					}
+					else if(oppositeUnitType.equalsIgnoreCase("from")){
+						oppositeUnitCategoryName = pSharablesApplication.getFromQuantity().getLargestUnit().getCategory();
+					}
+				}
+				
 				populateUnitSystemSpinner();
 				unitSystemSpinner.setSelection(0);
 				unitSystemSpinner.setSelected(true);
@@ -268,43 +271,48 @@ public class UnitBrowserActivity extends Activity {
 		prefixSpinner.setSelected(true);
 	}
 	private void populateDimensionFilterSpinner(){
-		ArrayAdapter<String> dimFilterArrayAdapter = new ArrayAdapter<String>(this, R.layout.unit_browse_spinner_item, generalFilters);
-		dimFilterSpinner.setAdapter(dimFilterArrayAdapter);
+		dimFilterSpinner.setAdapter(new ArrayAdapter<String>(this, R.layout.unit_browse_spinner_item, generalFilters));
 	}
 	private void populateUnitSystemSpinner(){
 		Set<String> unitSystems = new TreeSet<String>(); //Naturally ordered and no duplicates
 		String spinnerSelection = (String)dimFilterSpinner.getSelectedItem();
 
 		if(spinnerSelection.equals(generalFilters[0])){
-			for(String unitSystem:pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().getAllUnitSystems()){
+			for(String unitSystem:pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().getAllUnitSystems())
 				unitSystems.add(unitSystem);
-			}
-			unitSystems.remove(pSharablesApplication.getUnitManager().getUnitsDataModel().getUnit(Unit.UNKNOWN_UNIT_NAME).getUnitSystem());
+
+			unitSystems.remove(pSharablesApplication.getUnitManager().getUnitsDataModel().getUnknownUnit().getUnitSystem());	
 		}
 		else if(spinnerSelection.equals(generalFilters[2])){
-			for(Unit dynamicUnit:pSharablesApplication.getUnitManager().getUnitsDataModel().getDynamicUnits()){
+			for(Unit dynamicUnit:pSharablesApplication.getUnitManager().getUnitsDataModel().getDynamicUnits())
 				unitSystems.add(dynamicUnit.getUnitSystem());
-			}
 		}
 		else{
-			if(spinnerSelection.equals(generalFilters[3]))
-				oppositeUnitCategoryName = "currency";
-				
-			if(pSharablesApplication.getToQuantity().getUnit().getName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) && oppositeUnitType.equalsIgnoreCase("to") ||
-			   pSharablesApplication.getFromQuantity().getUnit().getName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) && oppositeUnitType.equalsIgnoreCase("from") ){ 
-				
-			   unitSystems.add("No Compatible Unit Systems");	
+			if(spinnerSelection.equalsIgnoreCase(generalFilters[3])){
+				oppositeUnitCategoryName = "currency_unit";
 			}
-			else{
-				for(String unitSystem:pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().getAllUnitSystems()){
-					if(pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().containsCategoryInUnitSystem(unitSystem, oppositeUnitCategoryName))
-						unitSystems.add(unitSystem);
+			else if(spinnerSelection.equalsIgnoreCase(generalFilters[4])){
+				oppositeUnitCategoryName = "metric";
+			}
+
+			boolean oppositeUnitIsNotUnknown = pSharablesApplication.getToQuantity().getLargestUnit().getName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) 
+					                           		&& oppositeUnitType.equalsIgnoreCase("to") 
+					                           || pSharablesApplication.getFromQuantity().getLargestUnit().getName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) 
+					                           		&& oppositeUnitType.equalsIgnoreCase("from");
+						
+			for(String unitSystem:pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().getAllUnitSystems()){	
+				if(spinnerSelection.equalsIgnoreCase(generalFilters[1]) && oppositeUnitIsNotUnknown || !spinnerSelection.equalsIgnoreCase(generalFilters[1])
+				   && pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().containsUnitCategoryInUnitSystem(unitSystem, oppositeUnitCategoryName, true))
+				{	
+					unitSystems.add(unitSystem);
 				}
 			}
 		}
+		
+		if(unitSystems.isEmpty())
+			unitSystems.add("No Compatible Unit Systems");
 
-		ArrayAdapter<String> unitSystemSpinnerArrayAdapter = new ArrayAdapter<String>(this, R.layout.unit_browse_spinner_item, new ArrayList<String>(unitSystems));
-		unitSystemSpinner.setAdapter(unitSystemSpinnerArrayAdapter);
+		unitSystemSpinner.setAdapter(new ArrayAdapter<String>(this, R.layout.unit_browse_spinner_item, new ArrayList<String>(unitSystems)));
 	}
 	private void populateCategorySpinner(){
 		Set<String> categories = new TreeSet<String>(); //Naturally ordered and no duplicates
@@ -312,35 +320,37 @@ public class UnitBrowserActivity extends Activity {
 		String unitSystemSpinnerSelection = (String)unitSystemSpinner.getSelectedItem();
 		
 		if(dimSpinnerSelection.equals(generalFilters[0])||dimSpinnerSelection.equals(generalFilters[2])){
-			categories.addAll(pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().getCategoriesInUnitSystem(unitSystemSpinnerSelection));
+			categories.addAll(pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().getUnitCategoriesInUnitSystem(unitSystemSpinnerSelection));
 		}
 		else{
 			categories.add(oppositeUnitCategoryName);
 		}
 
-		ArrayAdapter<String> categorySpinnerArrayAdapter = new ArrayAdapter<String>(this, R.layout.unit_browse_spinner_item, new ArrayList<String>(categories));
-		categorySpinner.setAdapter(categorySpinnerArrayAdapter);
+		categorySpinner.setAdapter(new ArrayAdapter<String>(this, R.layout.unit_browse_spinner_item, new ArrayList<String>(categories)));
 	}
 	private void populateUnitSpinner(){
 		Set<String> unitsNames = new TreeSet<String>(); //Sort by default alphabetical  
 		
-		String dimFilterSelection = (String)dimFilterSpinner.getSelectedItem();
-		String unitSystemSelection = (String)unitSystemSpinner.getSelectedItem();
-		String categorySelection = (String)categorySpinner.getSelectedItem();
-		if((pSharablesApplication.getToQuantity().getUnit().getName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) && oppositeUnitType.equalsIgnoreCase("to") ||
-			pSharablesApplication.getFromQuantity().getUnit().getName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) && oppositeUnitType.equalsIgnoreCase("from")) 
-			&& dimFilterSelection.equals(generalFilters[1])){ 
-					
+		String dimFilterSelection = (String)dimFilterSpinner.getSelectedItem(),
+			   unitSystemSelection = (String)unitSystemSpinner.getSelectedItem(),
+		       categorySelection = (String)categorySpinner.getSelectedItem();
+		
+		if((pSharablesApplication.getToQuantity().getLargestUnit().getName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) && oppositeUnitType.equalsIgnoreCase("to") ||
+			pSharablesApplication.getFromQuantity().getLargestUnit().getName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) && oppositeUnitType.equalsIgnoreCase("from")) 
+			&& dimFilterSelection.equals(generalFilters[1]))
+		{ 			
 			unitsNames.add("No Units Have A Dimension Compatible to the "+oppositeUnitType.toUpperCase()+" Unit.");	
 		}
 		else if(pSharablesApplication.getUnitManager().getUnitsDataModel().getDynamicUnits().isEmpty()
-				&& dimFilterSelection.equals(generalFilters[2])){
+				&& dimFilterSelection.equals(generalFilters[2]))
+		{
 			unitsNames.add("No Dynamic Units");
 		}
 		else{
 			//Include abbreviation with unit full name
 			String abbreviation;
 			Unit unit;
+			
 			for(String unitName:pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().getUnitNamesByUnitSystemNCategory(unitSystemSelection, categorySelection)){
 				unit = pSharablesApplication.getUnitManager().getUnitsDataModel().getUnit(unitName);
 				if((dimFilterSelection.equals(generalFilters[2]) && !unit.isCoreUnit()) || !dimFilterSelection.equals(generalFilters[2]) ){
@@ -348,40 +358,42 @@ public class UnitBrowserActivity extends Activity {
 					unitsNames.add( (!unitName.equalsIgnoreCase(abbreviation))? unitName+" - "+unit.getAbbreviation(): unitName);
 				}
 			}
+			
+			if(unitsNames.isEmpty())
+				unitsNames.add("Sorry, no units in category due to current \'General Filter\' selection");
 		}
 		
-		ArrayAdapter<String> unitsSpinnerArrayAdapter = new ArrayAdapter<String>(this, R.layout.unit_browse_spinner_item, (unitsNames!=null)?new ArrayList<String>(unitsNames):new ArrayList<String>());
-		unitSpinner.setAdapter(unitsSpinnerArrayAdapter);
+		unitSpinner.setAdapter(new ArrayAdapter<String>(this, R.layout.unit_browse_spinner_item
+				               , (unitsNames!=null)?new ArrayList<String>(unitsNames):new ArrayList<String>()));
 	}
 	
 	private void populatePrefixSpinner(){
-		ArrayList<String> prefixesFullNames = new ArrayList<String>();
-		prefixesFullNames.add("- - - - - - -  ::  1.0"); //When no selected prefix is applied, the identity factor is used.
+		List<String> prefixesFullNames = new ArrayList<String>();
+		prefixesFullNames.add(IDENTITY+DELIMITER+"1.0"); //When no selected prefix is applied, the identity factor is used.
 		
 		/*Only display prefixes if the unit name itself does not contain a prefix. 
-		 Make sure that unit name does not contain any complex term combinations.
-		 Also make sure it is not a currency. */
-		String categorySelection = (String)categorySpinner.getSelectedItem();
-		String unitSelection = (String)unitSpinner.getSelectedItem();
+		 *Make sure that unit name does not contain any complex term combinations.
+		 *Also make sure it is not a currency. */
+		String categorySelection = (String)categorySpinner.getSelectedItem(), unitSelection = (String)unitSpinner.getSelectedItem();
+		
 		if( !(unitSelection).equalsIgnoreCase("No Compatible Units")
 		    && pSharablesApplication.getUnitManager().getPrefixesDataModel().getPrefixMatches(unitSelection, true).isEmpty()
 			&& !Utility.unitNameHasComplexDimensions(unitSelection)
 			&& !(categorySelection).equalsIgnoreCase("currency_unit")){
 			
 			for(String prefixFullName:pSharablesApplication.getUnitManager().getPrefixesDataModel().getAllPrefixFullNames()){
-				prefixesFullNames.add(prefixFullName+"  ::  "+pSharablesApplication.getUnitManager().getPrefixesDataModel().getPrefixValue(prefixFullName));
+				prefixesFullNames.add(prefixFullName+DELIMITER+pSharablesApplication.getUnitManager().getPrefixesDataModel().getPrefixValue(prefixFullName));
 			}
 			
 			//Sort prefix list from least to greatest factor
 			Collections.sort(prefixesFullNames, new Comparator<String>(){
 				@Override
 				public int compare(String arg0, String arg1) {
-					return Double.compare(pSharablesApplication.getUnitManager().getPrefixesDataModel().getPrefixValue(arg0.split("::")[0].trim())
-							              ,pSharablesApplication.getUnitManager().getPrefixesDataModel().getPrefixValue(arg1.split("::")[0].trim()));
+					return Double.compare(pSharablesApplication.getUnitManager().getPrefixesDataModel().getPrefixValue(arg0.split(DELIMITER)[0])
+							              ,pSharablesApplication.getUnitManager().getPrefixesDataModel().getPrefixValue(arg1.split(DELIMITER)[0]));
 				}});
 		}
 		
-		ArrayAdapter<String> prefixSpinnerArrayAdapter = new ArrayAdapter<String>(this, R.layout.unit_browse_spinner_item, prefixesFullNames);
-		prefixSpinner.setAdapter(prefixSpinnerArrayAdapter);
+		prefixSpinner.setAdapter(new ArrayAdapter<String>(this, R.layout.unit_browse_spinner_item, prefixesFullNames));
 	}	
 }
