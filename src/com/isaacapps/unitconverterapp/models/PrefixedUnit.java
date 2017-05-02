@@ -4,7 +4,7 @@ import java.util.HashMap;
 
 //Encapsulates the prefixed unit creation process
 public class PrefixedUnit extends Unit {
-	private String prefix, prefixlessName;
+	private String prefix;
 	
 	///
 	public PrefixedUnit(String prefixFullName, String prefixAbbreviation, Double prefixValue, Unit unit , boolean useAbbreviation){
@@ -19,6 +19,6 @@ public class PrefixedUnit extends Unit {
 		return prefix;
 	}
 	public String getPrefixlessFullName(){
-		return prefixlessName.replace(prefix, "");
+		return getName().replace(prefix, "");
 	}
 }

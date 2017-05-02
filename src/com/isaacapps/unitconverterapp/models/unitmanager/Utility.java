@@ -7,69 +7,27 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.isaacapps.unitconverterapp.models.Unit;
-import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager.UNIT_TYPE;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.FundamentalUnitsDataModel.*;
 
 public class Utility {
-	private UnitManager unitManagerRef;
+	public static String UNIT_NAME_REGEX = "([a-zA-Z]+)?(\\w+)";
+	public static String UNIT_TYPE_REGEX = "[a-zA-Z]+";
+	public static String SIGNED_DOUBLE_VALUE_REGEX = "[-+]?(\\d*[.])?\\d+";
 	
 	///
 	Utility(){}
 		
-	///
-	public Map<UNIT_TYPE, Double> calculateFundmtUnitTypesFromCompUnitsDimension(Map<String, Double> compUnitsDimension){
-		Map<UNIT_TYPE, Double> fundMap = new HashMap<UnitManager.UNIT_TYPE, Double>();
-				
-		//Goes through each component unit whether derived or and sums up the recursively obtained total occurrences of the fundamental units. Makes sure to multiply those totals by the exponent of the component unit.
-		Unit componentUnit;
-		for(String componentUnitName:compUnitsDimension.keySet()){
-			componentUnit = unitManagerRef.getUnitsDataModel().getUnit(componentUnitName, true);
-			
-			if(componentUnit.getType() == UNIT_TYPE.DERIVED_MULTI_UNIT){
-				Map<UNIT_TYPE, Double> recursedMap = calculateFundmtUnitTypesFromCompUnitsDimension(((componentUnit.getComponentUnitsDimension().size() == 1)?componentUnit.getBaseUnit():componentUnit)
-						                                                                       .getComponentUnitsDimension());	
-				for(UNIT_TYPE unitType:UNIT_TYPE.values()){	
-					if(recursedMap.containsKey(unitType)){ 
-						if(!fundMap.containsKey(unitType)){
-							fundMap.put(unitType, 0.0);	
-						}				
-						fundMap.put(unitType,  
-								fundMap.get(unitType)+ compUnitsDimension.get(componentUnitName)*recursedMap.get(unitType));					
-					}				
-				}
-			}
-			else{
-				if(componentUnit.getType()!=UNIT_TYPE.DERIVED_SINGLE_UNIT){
-					if(!fundMap.containsKey(componentUnit.getBaseUnit().getType())){
-						fundMap.put(componentUnit.getBaseUnit().getType(), 0.0);	
-					}				
-					fundMap.put(componentUnit.getBaseUnit().getType(), fundMap.get(componentUnit.getBaseUnit().getType()) + compUnitsDimension.get(componentUnitName));
-				}
-				else{
-					for(Entry<UNIT_TYPE, Double> fundEntry:componentUnit.getBaseUnit().getFundamentalUnitTypesDimension().entrySet()){
-						if(!fundMap.containsKey(fundEntry.getKey())){
-							fundMap.put(fundEntry.getKey(), 0.0);	
-						}	
-						
-						fundMap.put(fundEntry.getKey(), fundMap.get(fundEntry.getKey()) +  fundEntry.getValue() * compUnitsDimension.get(componentUnitName));
-					}
-				}
-			}
-		}
-		
-		return fundMap;
-	}
-
 	///TODO: Modified version of the Command Design Pattern using generic programming. Need to upgrade from Java 7 to Java 8 in order to be make use of lambda functions for less verbosity when using methods as parameters to pass behavior.
 	public static Map<String, Double> getComponentUnitsDimensionFromString(String componentUnitsDimension){
 		//Format: a, prefix'a', (a)^(+-#.##) * or / (b)^(+-#.##), where 'a' and 'b' are word characters. Prefix can only alphabetical. Accounts for the optional presence of parenthesis and discounts the number of white space characters. 
-		return getDimensionFromString(componentUnitsDimension, Pattern.compile("(([a-zA-Z]+)?(\\w+))"), Pattern.compile("[-+]?(\\d*[.])?\\d+")
-                , Pattern.compile("([\\*|\\/]?[\\s]*)((([\\(]?[\\s]*(([a-zA-Z]+)?(\\w+))[\\s]*[\\)]?)([\\s]*\\^[\\s]*([\\(]?[\\s]*[-+]?(\\d*[.])?\\d+[\\s]*[\\)]?)))|(([a-zA-Z]+)?(\\w+)))")
+		return getDimensionFromString(componentUnitsDimension, Pattern.compile(UNIT_NAME_REGEX), Pattern.compile(SIGNED_DOUBLE_VALUE_REGEX)
+                , Pattern.compile("([\\*|\\/]?[\\s]*)((([\\(]?[\\s]*"+UNIT_NAME_REGEX+"[\\s]*[\\)]?)([\\s]*\\^[\\s]*([\\(]?[\\s]*"+SIGNED_DOUBLE_VALUE_REGEX+"[\\s]*[\\)]?)))|"+UNIT_NAME_REGEX+")")
                 , '/'
                 , new ComponentUnitsDimensionUpdater(), new HashMap<String, Double>());
 	}
 	public static Map<UNIT_TYPE, Double> getFundamentalUnitTypesDimensionFromString(String fundamentalUnitTypesDimension){
-		return getDimensionFromString(fundamentalUnitTypesDimension, Pattern.compile("[a-zA-Z]+"), Pattern.compile("[-+]?(\\d*[.])?\\d+")
-				                      , Pattern.compile("([\\*|\\/]?[\\s]*)((([\\(]?[\\s]*[a-zA-Z]+[\\s]*[\\)]?)([\\s]*\\^[\\s]*([\\(]?[\\s]*[-+]?(\\d*[.])?\\d+[\\s]*[\\)]?)))|[a-zA-Z]+)")
+		return getDimensionFromString(fundamentalUnitTypesDimension, Pattern.compile(UNIT_TYPE_REGEX), Pattern.compile(SIGNED_DOUBLE_VALUE_REGEX)
+				                      , Pattern.compile("([\\*|\\/]?[\\s]*)((([\\(]?[\\s]*"+UNIT_TYPE_REGEX+"[\\s]*[\\)]?)([\\s]*\\^[\\s]*([\\(]?[\\s]*"+SIGNED_DOUBLE_VALUE_REGEX+"[\\s]*[\\)]?)))|"+UNIT_TYPE_REGEX+")")
 				                      , '/'
 				                      , new FundamentalUnitTypesDimensionUpdater(), new HashMap<UNIT_TYPE, Double>());
 	}
@@ -182,10 +140,5 @@ public class Utility {
 	///
 	public static boolean unitNameHasComplexDimensions(String unitName){
 		return unitName.contains("*") || unitName.contains("/") || unitName.contains("^");
-	}
-	
-	///
-	void setUnitManagerRef(UnitManager unitManagerRef){
-		this.unitManagerRef = unitManagerRef; 
 	}
 }

@@ -1,25 +1,23 @@
 package com.isaacapps.unitconverterapp.models.unitmanager;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import com.isaacapps.unitconverterapp.models.Unit;
-import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager.*;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.*;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.FundamentalUnitsDataModel.*;
 
 public class UnitManagerBuilder {
 	boolean[] componentStates; //Keeps track of components that have been added or removed. [0] -> base units maps, [1] -> non-base units map, [2] -> core prefixes map, [3] -> dynamic prefixes map, [4] -> fundamental units map
 	
-	private ArrayList<Unit> baseUnits;
-	private ArrayList<Unit> nonBaseUnits;
+	private List<Unit> baseUnits;
+	private List<Unit> nonBaseUnits;
 		
 	private PrefixesDataModel prefixesDataModel;
 	private UnitsDataModel unitsDataModel;
 	private FundamentalUnitsDataModel fundamentalUnitsDataModel;	
 	private UnitsClassifierDataModel unitsClassifierDataModel;
 	private ConversionFavoritesDataModel conversionFavoritesDataModel;
-	
-	private Converter converter;
-	private Utility utility;
 	
 	///
 	public UnitManagerBuilder(){
@@ -33,13 +31,10 @@ public class UnitManagerBuilder {
 		fundamentalUnitsDataModel = new FundamentalUnitsDataModel();
 		unitsClassifierDataModel = new UnitsClassifierDataModel();
 		conversionFavoritesDataModel = new ConversionFavoritesDataModel();
-
-		converter = new Converter();
-		utility = new Utility();
 	}
 	
 	///
-	public UnitManagerBuilder addBaseUnits(ArrayList<Unit> baseUnits){	
+	public UnitManagerBuilder addBaseUnits(List<Unit> baseUnits){	
 		if(baseUnits != null){
 			for(Unit baseUnit:baseUnits){
 				addBaseUnit(baseUnit);
@@ -60,7 +55,7 @@ public class UnitManagerBuilder {
 		return this;
 	}
 	
-	public UnitManagerBuilder addNonBaseUnits(ArrayList<Unit> nonBaseUnits){	
+	public UnitManagerBuilder addNonBaseUnits(List<Unit> nonBaseUnits){	
 		if(nonBaseUnits != null){
 			for(Unit nonBaseUnit:nonBaseUnits){
 				addNonBaseUnit(nonBaseUnit);
@@ -123,7 +118,7 @@ public class UnitManagerBuilder {
 		return this;	
 	}
 	public UnitManagerBuilder clearFundUnits(){
-		fundamentalUnitsDataModel.removeAllItems();
+		fundamentalUnitsDataModel.removeAllFundamentalUnits();
 		componentStates[4] = false;
 		return this;
 	}
@@ -179,14 +174,6 @@ public class UnitManagerBuilder {
 		unitManager.setFundamentalUnitsModelData(fundamentalUnitsDataModel);
 		unitManager.setUnitsClassifierDataModel(unitsClassifierDataModel);
 		unitManager.setConversionFavoritesDataModel(conversionFavoritesDataModel);
-		
-		unitManager.setConverter(converter);
-		unitManager.setUtility(utility);
-		
-		//Set an unknown base unit to be return when no other unit in manager matches a query.
-		Unit unit = new Unit();
-		unit.setCoreUnitState(true);
-		unitsDataModel.addUnit(unit);
 		
 		update(unitManager);
 	
