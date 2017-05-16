@@ -21,4 +21,10 @@ public class PrefixedUnit extends Unit {
 	public String getPrefixlessFullName(){
 		return getName().replace(prefix, "");
 	}
+	
+	///
+	@Override
+	public String toString(){
+		return "Prefix: "+ getPrefix() + "; PrefixlessFullName: "+getPrefixlessFullName();
+	}
 }
