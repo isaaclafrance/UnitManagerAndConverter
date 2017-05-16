@@ -1,6 +1,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
     <item android:id="@+id/flipItem" android:title="Flip Units" android:titleCondensed="Flip" android:enabled="true" android:visible="true" android:checkable="false" android:showAsAction="ifRoom"></item>
     <item android:id="@+id/addToFavoritesItem" android:titleCondensed="Add Fav" android:checkable="false" android:title="Add to Favorites" android:enabled="true" android:visible="true" android:showAsAction="always"></item><item android:id="@+id/viewFavoritesItem" android:titleCondensed="View Fav" android:title="View Favorites" android:checkable="false" android:enabled="true" android:visible="true" android:showAsAction="always"></item>
-    <item android:id="@+id/multiUnitModeItem" android:checked="false" android:checkable="true" android:titleCondensed="Multi-Unit Mode" android:title="Multi-Unit Mode" android:showAsAction="always" android:visible="true" android:enabled="true"></item>
+    <item android:id="@+id/multiUnitModeItem" android:checked="false" android:checkable="true" android:titleCondensed="Multi-Unit Mode:OFF" android:title="Multi-Unit Mode" android:showAsAction="always" android:visible="true" android:enabled="true"></item>
 
 </menu>

@@ -131,26 +131,43 @@
             android:textSize="@dimen/from_value_label_text_size"
             android:textStyle="bold" />
 
-        <EditText
-            android:id="@+id/fromValueTextView"
+        <LinearLayout
+            android:id="@+id/fromValueLinearLayout"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1"
-            android:background="@drawable/value_text_background"
-            android:ems="10"
-            android:gravity="center"
-            android:inputType="numberDecimal|numberSigned"
-            android:lines="1"
-            android:minLines="1"
-            android:scrollbars="horizontal"
-            android:textAlignment="gravity"
-            android:textSize="@dimen/from_value_text_size"
-            android:textStyle="bold" />
+            android:layout_weight="1" >
+
+            <EditText
+                android:id="@+id/fromValueTextView"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight=".90"
+                android:background="@drawable/value_text_background"
+                android:ems="10"
+                android:gravity="center"
+                android:inputType="numberDecimal|numberSigned"
+                android:lines="1"
+                android:minLines="1"
+                android:scrollbars="horizontal"
+                android:textAlignment="gravity"
+                android:textSize="@dimen/from_value_text_size"
+                android:textStyle="bold" />
+
+            <ToggleButton
+                android:id="@+id/fromValueExpressionToggleButton"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight=".10"
+                android:text="ExpressionToggle"
+                android:textOff="EXP:\nOFF"
+                android:textOn="EXP:\nON" />
+
+        </LinearLayout>
 
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/switchLinearLayout"
+        android:id="@+id/convertLinearLayout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="0.25"
@@ -273,15 +290,17 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:gravity="center"
+            android:gravity="center_horizontal"
             android:orientation="vertical" >
 
             <TextView
                 android:id="@+id/conversionValueTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
+                android:gravity="center_horizontal"
                 android:paddingBottom="@dimen/conversion_value_bottom_padding"
                 android:text="@string/preConversionValue_text"
+                android:textAlignment="center"
                 android:textAppearance="?android:attr/textAppearanceLarge"
                 android:textSize="@dimen/conversion_value_text_size" />
 
