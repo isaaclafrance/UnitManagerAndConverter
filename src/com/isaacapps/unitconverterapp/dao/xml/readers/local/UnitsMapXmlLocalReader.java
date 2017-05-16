@@ -69,6 +69,15 @@ public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<U
 	 */
 	private void completeUnitConstruction(){
 		for(Unit unit:partiallyConstructedUnits){
+			//////////////////
+			if(unit.getName().equalsIgnoreCase("gallon")){
+				int a = 1;
+				a++;
+			}
+			
+			//////////////	
+			//The implicit assumption, dependent on the organization of the XML, is that the partiallyConstructedUnits list is ordered by sequential base unit dependence. 
+			//In other words if unit 'A' needs to set 'B' as a base unit, then 'B' had already had its base units properly set.
 			String baseUnitName = unit.getBaseUnit().getName();
 			unit.setBaseUnit(baseUnitsMap.containsKey(baseUnitName)?baseUnitsMap.get(baseUnitName):nonBaseUnitsMap.get(baseUnitName)
 					         ,unit.getBaseConversionPolyCoeffs());	
