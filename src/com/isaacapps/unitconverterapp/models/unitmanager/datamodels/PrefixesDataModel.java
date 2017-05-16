@@ -7,24 +7,24 @@ import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager.DATA_MODEL_CATEGORY;
 
 public class PrefixesDataModel extends AbstractDataModelWithDualKeyNCategory<String, Double, DATA_MODEL_CATEGORY> {
-	private UnitManager unitManagerRef;
+	private UnitManager unitManagerContext;
 		
 	///
 	public PrefixesDataModel(){
-		super(true);
+		super(true, true, true);
 	}
 
 	///Modify Content
 	public void addCorePrefix(String prefixName, String abbreviation, double prefixValue){
-		addItem(DATA_MODEL_CATEGORY.CORE, prefixName.toLowerCase(), abbreviation, prefixValue, true);
+		addItem(DATA_MODEL_CATEGORY.CORE, prefixName.toLowerCase(), abbreviation, prefixValue);
 	}	
 	public void addDynamicPrefix(String prefixName, String abbreviation, double prefixValue){
-		addItem(DATA_MODEL_CATEGORY.DYNAMIC, prefixName.toLowerCase(), abbreviation, prefixValue, true);
+		addItem(DATA_MODEL_CATEGORY.DYNAMIC, prefixName.toLowerCase(), abbreviation, prefixValue);
 	}
 	
 	
 	public void removePrefix(String prefixName){
-		removeItemByAnyKey(prefixName);
+		removeItemByKey(prefixName);
 	}
 	public void removeAllCorePrefixes(){
 		removeCategory(DATA_MODEL_CATEGORY.CORE);
@@ -35,7 +35,7 @@ public class PrefixesDataModel extends AbstractDataModelWithDualKeyNCategory<Str
 	
 	///Retrieve Prefixes
 	public double getPrefixValue(String prefixName){
-		Double prefixValue = getItemByAnyKey(prefixName.toLowerCase());
+		Double prefixValue = getFirstItemByAnyKey(prefixName.toLowerCase());
 			if(prefixValue != null){
 				return prefixValue;
 			}else{
@@ -94,18 +94,18 @@ public class PrefixesDataModel extends AbstractDataModelWithDualKeyNCategory<Str
 			 *Otherwise simply select prefixes that can found at the beginning of the specified name */
 			String unitName = name.replaceFirst(prefix, "");
 			boolean prefixFoundAtBeginning = name.indexOf(prefix) == 0,
-					unitNameIsValid = unitManagerRef != null && unitManagerRef.getUnitsDataModel().containsUnit(unitName),
-					prefixAndUnitAreSameKindOfName = isKey1(prefix) && unitManagerRef.getUnitsDataModel().isKey2(unitName) 
-		             				|| isKey2(prefix) && unitManagerRef.getUnitsDataModel().isKey2(unitName)
-		             				|| unitManagerRef.getUnitsDataModel().isKey1(unitName) && unitManagerRef.getUnitsDataModel().isKey2(unitName);
+					unitNameIsValid = unitManagerContext != null && unitManagerContext.getUnitsDataModel().containsUnit(unitName),
+					prefixAndUnitAreSameKindOfName = isKey1(prefix) && unitManagerContext.getUnitsDataModel().isKey1(unitName) 
+		             				|| isKey2(prefix) && unitManagerContext.getUnitsDataModel().isKey2(unitName)
+		             				|| unitManagerContext.getUnitsDataModel().isKey1(unitName) && unitManagerContext.getUnitsDataModel().isKey2(unitName);
 			
 			if( prefixFoundAtBeginning
 			    && (constrainBasedOnValidUnitNames && unitNameIsValid && prefixAndUnitAreSameKindOfName
 			         || !constrainBasedOnValidUnitNames) )
 			{	
 				//Make sure prefix full name is first item in the array and the abbreviation is the second item.
-				prefixMatches.add(new String[]{unitManagerRef.getPrefixesDataModel().isKey2(prefix)?unitManagerRef.getPrefixesDataModel().getKey1FromKey2(prefix):prefix,
-									           unitManagerRef.getPrefixesDataModel().isKey2(prefix)?prefix:unitManagerRef.getPrefixesDataModel().getKey2FromKey1(prefix)});
+				prefixMatches.add(new String[]{unitManagerContext.getPrefixesDataModel().isKey2(prefix)?unitManagerContext.getPrefixesDataModel().getKey1FromKey2(prefix):prefix,
+									           unitManagerContext.getPrefixesDataModel().isKey2(prefix)?prefix:unitManagerContext.getPrefixesDataModel().getKey2FromKey1(prefix)});
 			}
 		}
 		
@@ -118,8 +118,8 @@ public class PrefixesDataModel extends AbstractDataModelWithDualKeyNCategory<Str
 	}
 	
 	///
-	public void setUnitManagerRef(UnitManager unitManager){
-		this.unitManagerRef = unitManager;
+	public void setUnitManagerContext(UnitManager unitManager){
+		this.unitManagerContext = unitManager;
 	}
 }
 

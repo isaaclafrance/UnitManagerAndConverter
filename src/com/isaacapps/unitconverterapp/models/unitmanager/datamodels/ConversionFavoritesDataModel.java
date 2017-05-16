@@ -14,22 +14,22 @@ public class ConversionFavoritesDataModel extends AbstractDataModelWithDualKeyNC
 		// Allowing for a non bijective relations between keys.
 		// Key1 will be the source unit name and key2 will be the formatted conversion favorite and the item will be the target unit name
 		// Therefore, according to existing abstract datamodel data structure,  many keys2 can point to the same key1 or item.
-		super(false);
+		super(false, false, true);
 		significanceRanks = new HashMap<String, Integer>();
 	}
 	
 	///
 	public boolean addConversion(Unit sourceUnit, Unit targetUnit){
-		if(sourceUnit.getUnitManagerRef() == targetUnit.getUnitManagerRef() && sourceUnit.equalsDimension(targetUnit) 
+		if(sourceUnit.getUnitManagerContext() == targetUnit.getUnitManagerContext() && sourceUnit.equalsDimension(targetUnit) 
 		   && UnitsDataModel.getDataModelCategory(sourceUnit) != DATA_MODEL_CATEGORY.UNKNOWN){
 		   
-			addItem( sourceUnit.getCategory(), sourceUnit.getName(), convertToFormattedConversion(sourceUnit, targetUnit), targetUnit.getName(), false);
+			addItem( sourceUnit.getCategory(), sourceUnit.getName(), convertToFormattedConversion(sourceUnit, targetUnit), targetUnit.getName());
 			return true;
 		}
 		return false;
 	}
 	public boolean addConversion(String category, String sourceUnitName, String targetUnitName){
-		addItem(category, sourceUnitName, convertToFormattedConversion(category, sourceUnitName, targetUnitName), targetUnitName, false);
+		addItem(category, sourceUnitName, convertToFormattedConversion(category, sourceUnitName, targetUnitName), targetUnitName);
 		return true;
 	}
 
@@ -37,14 +37,14 @@ public class ConversionFavoritesDataModel extends AbstractDataModelWithDualKeyNC
 	public boolean removeConversionByUnitPair(Unit sourceUnit, Unit targetUnit){
 		modifySignificanceRankOfMultipleConversions(sourceUnit, false);
 		modifySignificanceRankOfMultipleConversions(targetUnit, false);
-		return removeItemByAnyKey(convertToFormattedConversion(sourceUnit, targetUnit)) != null;
+		return removeItemByKey(convertToFormattedConversion(sourceUnit, targetUnit));
 	}
 	public boolean removeFormattedConversion(String formattedConversion){
 		String sourceUnitName = getSourceUnitNameFromConversion(formattedConversion)
 			   , targetUnitName = getTargetUnitNameFromConversion(formattedConversion)
 			   , unitCategory = getUnitCategoryFromFormattedConversion(formattedConversion);
 		
-		if(removeItemByAnyKey(formattedConversion) != null){
+		if(removeItemByKey(formattedConversion)){
 			modifySignificanceRankOfMultipleConversions(unitCategory, false);
 			//Add extra significance decrement to conversion that contains source and target unit.
 			for(String favoriteConversion:getFormattedConversionsAssociatedWithCategory(unitCategory)){
@@ -57,7 +57,7 @@ public class ConversionFavoritesDataModel extends AbstractDataModelWithDualKeyNC
 		return false;
 	}
 	public boolean removeConversionByUnit(Unit unit){	
-		boolean removed = removeItemByAnyKey(unit.getName()) != null //Removes by source unit name 
+		boolean removed = removeItemByKey(unit.getName()) //Removes by source unit name 
 				          || removeItem(unit.getName()); // Remove by target unit name	
 		if(removed){
 			modifySignificanceRankOfMultipleConversions(unit.getCategory(), false);

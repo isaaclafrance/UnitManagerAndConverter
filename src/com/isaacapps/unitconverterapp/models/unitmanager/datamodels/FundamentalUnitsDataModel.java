@@ -8,18 +8,18 @@ import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager;
 
 //Associates a unit full name with a particular unit type within a unit system
 public class FundamentalUnitsDataModel extends AbstractDataModelWithDualKeyNCategory<String, FundamentalUnitsDataModel.UNIT_TYPE, String>{
-	//This only makes sense within the context of a unit manager. A unit may be of type mass in one unit manager but something else in another unit manager 
+	//A unit may be of type mass in one unit manager but something else in another unit manager 
 	public static enum UNIT_TYPE{MASS, LENGTH, TIME, AMT_OF_SUBSTANCE, ANGLE, TEMPERATURE, CHARGE, LUMINOUS_INTENSITY, DERIVED_SINGLE_UNIT, DERIVED_MULTI_UNIT, UNKNOWN, CURRENCY};
-	private UnitManager unitManagerRef;
+	private UnitManager unitManagerContext;
 	
 	///
 	public FundamentalUnitsDataModel(){
-		super(true);
+		super(true, false, true);
 	}
 	
 	///
 	public void addFundamentalUnit(String unitSystem, String unitName, UNIT_TYPE unitType){
-		addItem(unitSystem, unitName, unitName, unitType, false);
+		addItem(unitSystem, unitName, unitName, unitType);
 	}
 	public void removeAllFundamentalUnits(){
 		removeAllItems();
@@ -48,7 +48,7 @@ public class FundamentalUnitsDataModel extends AbstractDataModelWithDualKeyNCate
 		//Goes through each component unit whether derived or and sums up the recursively obtained total occurrences of the fundamental units. Makes sure to multiply those totals by the exponent of the component unit.
 		Unit componentUnit;
 		for(String componentUnitName:compUnitsDimension.keySet()){
-			componentUnit = unitManagerRef.getUnitsDataModel().getUnit(componentUnitName, true);
+			componentUnit = unitManagerContext.getUnitsDataModel().getUnit(componentUnitName, true);
 			
 			if(componentUnit.getType() == UNIT_TYPE.DERIVED_MULTI_UNIT){
 				Map<UNIT_TYPE, Double> recursedMap = calculateFundmtUnitTypesFromCompUnitsDimension(((componentUnit.getComponentUnitsDimension().size() == 1)?componentUnit.getBaseUnit():componentUnit)
@@ -87,7 +87,7 @@ public class FundamentalUnitsDataModel extends AbstractDataModelWithDualKeyNCate
 	}
 		
 	///
-	public void setUnitManagerRef(UnitManager unitManager){
-		this.unitManagerRef = unitManager;
+	public void setUnitManagerContext(UnitManager unitManager){
+		this.unitManagerContext = unitManager;
 	}
 }

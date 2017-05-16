@@ -21,7 +21,7 @@ public final class UnitManager{
 	}
 	void setPrefixesModelData(PrefixesDataModel modelData){
 		this.prefixesDataModel = modelData;
-		this.prefixesDataModel.setUnitManagerRef(this);
+		this.prefixesDataModel.setUnitManagerContext(this);
 	}
 	
 	public UnitsDataModel getUnitsDataModel() {
@@ -29,7 +29,7 @@ public final class UnitManager{
 	}
 	void setUnitsModelData(UnitsDataModel modelData){ //Should ideally only be invoked by the UnitManagerBuilder
 		this.unitsDataModel = modelData;
-		this.unitsDataModel.setUnitManagerRef(this);
+		this.unitsDataModel.setUnitManagerContext(this);
 	}
 	
 	public UnitsClassifierDataModel getUnitsClassifierDataModel() {
@@ -44,7 +44,7 @@ public final class UnitManager{
 	}
 	void setFundamentalUnitsModelData(FundamentalUnitsDataModel modelData){  //Should ideally only be invoked by the UnitManagerBuilder
 		this.fundamentalUnitsDataModel = modelData;
-		this.fundamentalUnitsDataModel.setUnitManagerRef(this);
+		this.fundamentalUnitsDataModel.setUnitManagerContext(this);
 	}	
 	
 	public ConversionFavoritesDataModel getConversionFavoritesDataModel(){

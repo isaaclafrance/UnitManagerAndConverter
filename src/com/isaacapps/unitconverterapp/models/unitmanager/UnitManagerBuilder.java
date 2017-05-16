@@ -175,17 +175,28 @@ public class UnitManagerBuilder {
 		unitManager.setUnitsClassifierDataModel(unitsClassifierDataModel);
 		unitManager.setConversionFavoritesDataModel(conversionFavoritesDataModel);
 		
+		//Set an unknown base unit to be returned when no other unit in data model matches a query.
+		Unit unknownUnit = new Unit();
+		unknownUnit.setCoreUnitState(true);
+		unitManager.getUnitsDataModel().addUnit(unknownUnit);
+		
 		update(unitManager);
 	
 		return unitManager;
 	}
 	public boolean update(UnitManager unitManager){ //Updates any existing unit manager with the content of this unit manager builder.
 		if(areAnyComponentsAvailable()){
-			if(componentStates[2] || componentStates[3])
+			if((componentStates[2] || componentStates[3])
+					&& unitManager.getPrefixesDataModel() != prefixesDataModel ) //If 'update' was called by 'build' then the prefixesDataModel would be identical
+			{
 				unitManager.getPrefixesDataModel().combineWith(prefixesDataModel);
+			}
 			
-			if(componentStates[4])
+			if(componentStates[4] 
+					&& unitManager.getFundamentalUnitsDataModel() != fundamentalUnitsDataModel)//If 'update' was called by 'build' then the fundamentalUnitsDataModel would be identical
+			{ 
 				unitManager.getFundamentalUnitsDataModel().combineWith(fundamentalUnitsDataModel);
+			}
 			
 			//Base units depend on the fundamental units map being set first in order to ensure that their types can be determined.
 			if(componentStates[0])

@@ -9,28 +9,33 @@ public abstract class AbstractDataModelWithDualKeyNCategory<T, U, V> {
 	private Map<T, T> key1ToKey2Map;
 	private Map<T, T> key2ToKey1Map;
 	private boolean keysMustHaveBijectiveRelation;
+	private boolean removeDuplicateItems;
+	private boolean removeEmptyCategories;
 	
 	///
-	AbstractDataModelWithDualKeyNCategory(boolean keysMustHaveBijectiveRelation){
+	AbstractDataModelWithDualKeyNCategory(boolean keysMustHaveBijectiveRelation, boolean removeDuplicateItems, boolean removeEmptyCategories){
 		key2ToItemMapsByCategory = new HashMap<V,Map<T, U>>();
 		key1ToKey2Map = new HashMap<T, T>();
 		key2ToKey1Map = new HashMap<T, T>();
 		this.keysMustHaveBijectiveRelation = keysMustHaveBijectiveRelation;
+		this.removeDuplicateItems = removeDuplicateItems;
+		this.removeEmptyCategories = removeEmptyCategories;
 	}
 	
 	///
-	protected U addItem(V category, T key1, T key2, U item, boolean removeDuplicateItems){
+	protected U addItem(V category, T key1, T key2, U item){
 		U addedItem = null;
 		
-		//Ensure bijective relationship of keys if required
-		boolean isBijective = !key1ToKey2Map.containsValue(key1) && !key2ToKey1Map.containsValue(key2),
-				hasIdenticalKeys = key1ToKey2Map.get(key1) != null &&  key1ToKey2Map.get(key1).equals(key2ToKey1Map.get(key2)); //Allows an identity key relation to be replaced despite bijection restriction 
+		//Ensure bijective relationship of keys if required. These keys can not be found any where else across all categories.
+		boolean isBijective = !key1ToKey2Map.containsValue(key1) && !key2ToKey1Map.containsValue(key2)
+				,hasIdenticalKeys = key1ToKey2Map.get(key1) != null &&  key1ToKey2Map.get(key1).equals(key2ToKey1Map.get(key2)) //Allows an identity key relation to be replaced despite bijection restriction 
+				,keysAreAlreadyAssociatedWithExistingOtherItem = isKey1(key1) && isKey2(key2) && containsItem(item); //Allow existing keys to be replaced with a different item
 		
-		if(keysMustHaveBijectiveRelation && (isBijective || hasIdenticalKeys) || !keysMustHaveBijectiveRelation)
+		if(keysMustHaveBijectiveRelation && (isBijective || hasIdenticalKeys || keysAreAlreadyAssociatedWithExistingOtherItem) 
+		   || !keysMustHaveBijectiveRelation)
 		{			
-			//If state is selected, then there can not be duplicates of item anywhere in this data structure.
 			if(removeDuplicateItems)
-				removeItem(item);
+				removeItem(null, null, item);
 			
 			addedItem = addItemToCategory(category, key2, item);
 			key1ToKey2Map.put(key1, key2);
@@ -48,21 +53,97 @@ public abstract class AbstractDataModelWithDualKeyNCategory<T, U, V> {
 	}
 	
 	///
-	protected U removeItemByAnyKey(T key){ //Remove item by key from any category and as well the key relations
-		U removedItem = null;	
-		for (V category:key2ToItemMapsByCategory.keySet()) {
-			if (key2ToKey1Map.containsKey(key)) {
-				removedItem = removeItemFromCategory(category, key);
+	protected boolean removeItemFromCategoryByKey(V category, T anyKey){
+		if(containsCategory(category)
+			&& key2ToItemMapsByCategory.get(category)
+			                .remove(isKey1(anyKey)
+			                		?getKey2FromKey1(anyKey)
+			                				:anyKey) != null) //Remove with respect to key1 or key 2 which ever is valid
 
-			} else if (key1ToKey2Map.containsKey(key)) {
-				removedItem = removeItemFromCategory(category, key1ToKey2Map.get(key));
-			} 
-			
-			removeKeyRelations(key);
+		{
+			removeKeyRelations(anyKey);
+			if(removeEmptyCategories && key2ToItemMapsByCategory.get(category).isEmpty())
+				key2ToItemMapsByCategory.remove(category);
+			return true;
 		}
-		return removedItem;
+		else{
+			return false;
+		}
 	}
-	private void removeKeyRelations(T key){
+	protected boolean removeItemByKey(T anyKey){
+		return removeItem(null, anyKey, null);
+	}	
+	protected boolean removeItem(U item){
+		return removeItem(null, null, item);
+	}
+	
+	protected boolean removeCategory(V category){
+		return removeItem(category, null, null);
+	}
+	
+	protected void removeAllItems(){
+		removeItem(null, null, null);
+	}
+	
+	/*In most call either category, key, or item parameters will not be null and the remaining parameters not null or
+	 *all three will be null. The non null parameter is the parameter upon which removal is based; however, if all are null then
+	 *no restriction is met and consequently everything is removed. The use of iterator prevent concurrent modifications exceptions although it's 
+	 *a bit bulky. */
+	private boolean removeItem(V category, T key, U item){ 		
+		boolean someItemRemoved = false;
+		for ( Iterator<Entry<V, Map<T, U>>> key2ToItemByCategoryIterator = key2ToItemMapsByCategory.entrySet().iterator()
+				; key2ToItemByCategoryIterator.hasNext();) 
+		{
+			Entry<V,Map<T,U>> key2ToItemByCategoryEntry = key2ToItemByCategoryIterator.next();
+			
+			boolean removeEverything = category == null && key == null && item == null;
+			
+			//
+			if(key2ToItemByCategoryEntry.getKey() == category || removeEverything){
+				removeKeyRelations(key2ToItemByCategoryEntry.getValue().keySet());
+				key2ToItemByCategoryIterator.remove();
+				if(!removeEverything){
+					return true;
+				}
+				else{ //Continue removing other stuff if necessary
+					someItemRemoved = true;
+					continue;
+				}
+			}
+			
+			//
+			for( Iterator<Entry<T,U>> key2ToItemIterator = key2ToItemByCategoryEntry.getValue().entrySet().iterator()
+					; key2ToItemIterator.hasNext();)
+			{
+				Entry<T,U> key2ToItemEntry = key2ToItemIterator.next();
+				
+				if(item != null && item == key2ToItemEntry.getValue()){
+					removeKeyRelations(key2ToItemEntry.getKey());
+					key2ToItemIterator.remove();
+					if(!removeDuplicateItems){ //No duplicated items had been added to data structure, therefore no need to search any further
+						return true;	
+					}		
+					else{
+						someItemRemoved = true; 
+						continue;
+					}
+				}		
+				if( key != null && (key2ToItemEntry.getKey() == key || getKey2FromKey1(key) == key) ){
+					removeKeyRelations(key);
+					key2ToItemIterator.remove();
+					if(keysMustHaveBijectiveRelation)
+						return true;
+				}
+			}
+			
+			//
+			if( removeEmptyCategories && key2ToItemByCategoryEntry.getValue().isEmpty())
+				key2ToItemByCategoryIterator.remove(); 
+
+		}
+		return someItemRemoved;
+	}
+	protected void removeKeyRelations(T key){//Should only be sparingly used by descendent classes
 		if (key2ToKey1Map.containsKey(key)) {
 			key1ToKey2Map.remove(key2ToKey1Map.remove(key));
 
@@ -71,55 +152,23 @@ public abstract class AbstractDataModelWithDualKeyNCategory<T, U, V> {
 		} 
 		//Since bijections relations of keys is not met, the big O of removal may be O(n) due to removal of duplicate values in opposite map
 		if(!keysMustHaveBijectiveRelation){ 
-			for(Iterator<Entry<T, T>> entryIterator =  key2ToKey1Map.entrySet().iterator(); entryIterator.hasNext();){
+			for(Iterator<Entry<T, T>> entryIterator =  key2ToKey1Map.entrySet().iterator()
+					; entryIterator.hasNext();)
+			{
 				if(entryIterator.next().getValue().equals(key))
 					entryIterator.remove();	
 			}
 		}
 	}
-	private U removeItemFromCategory(V category, T key2){
-		U removedItem = null;
-		if(containsCategory(category)){
-			removedItem = key2ToItemMapsByCategory.get(category).remove(key2);
-			if(key2ToItemMapsByCategory.get(category).isEmpty())
-				key2ToItemMapsByCategory.remove(category); //remove category if nothing associated with it anymore.
-		}
-		return removedItem;
-	}
-	
-	protected boolean removeItem(U item){ //Remove item by its object reference from any category. Since searching done by value rather by keys, the Big O runtime is O(n).
-		boolean somethingRemoved = false;
-		for (V category:getAllAssignedCategories()) {
-			for(Iterator<Entry<T, U>> key2ToItemEntryIterator = key2ToItemMapsByCategory.get(category).entrySet().iterator()
-				;key2ToItemEntryIterator.hasNext();){
-				
-				Entry<T, U> key2ToItemEntry = key2ToItemEntryIterator.next();
-				if(key2ToItemEntry.getValue().equals(item)){
-					removeKeyRelations(key2ToItemEntry.getKey());
-					key2ToItemEntryIterator.remove();
-					somethingRemoved = true;
-				}		
-			}	
-		}
-		return somethingRemoved;
-	}
-	protected boolean removeCategory(V category){
-		boolean somethingRemoved = false;
-		for(T key2:getKey2sByCategory(category)){
-			somethingRemoved = removeItemByAnyKey(key2) != null;
-		}
-		return somethingRemoved;
-	}
-	
-	protected void removeAllItems(){
-		for(T key1:key1ToKey2Map.keySet()){
-			removeItemByAnyKey(key1);
+	private void removeKeyRelations(Collection<T> keys){
+		for(T key:keys){
+			removeKeyRelations(key);
 		}
 	}
 	
 	///
-	protected U getItemByAnyKey(T key){
-		//Find item using based on key 1 or key 2 for any category
+	protected U getFirstItemByAnyKey(T key){
+		//Find item based on key1 or key2 for first category in enumeration.
 		U item = null;
 		for(V category:getAllAssignedCategories()){
 			item = getItem(category, key);
@@ -160,6 +209,20 @@ public abstract class AbstractDataModelWithDualKeyNCategory<T, U, V> {
 		}
 		return items;
 	}
+	protected Collection<U> getItemsByAnyKey(T anyKey){
+		//All items based on key1 or key2 for any category
+		Set<U> items = new HashSet<U>();
+		for(V category:getAllAssignedCategories()){
+			U item = getItem(category, anyKey);
+			if(item != null){
+				items.add(item);
+				 //No need to search any further since key will not be found in any other category.
+				if(keysMustHaveBijectiveRelation)
+					break;
+			}
+		}	
+		return items;
+	}
 	protected Collection<U> getAllItems(){
 		Collection<U> items = new ArrayList<U>();
 		for(V category:key2ToItemMapsByCategory.keySet()){
@@ -174,7 +237,7 @@ public abstract class AbstractDataModelWithDualKeyNCategory<T, U, V> {
 			
 		return key2ToItemMapsByCategory.get(category).keySet();
 	}
-	protected Collection<T> getKey1sbyCategory(V category){
+	protected Collection<T> getKey1sByCategory(V category){
 		Collection<T> keys = new HashSet<T>();
 		for(T key2:getKey2sByCategory(category)){
 			keys.add(getKey1FromKey2(key2));
@@ -185,7 +248,7 @@ public abstract class AbstractDataModelWithDualKeyNCategory<T, U, V> {
 	protected Collection<T> getAllKey1s(){
 		Collection<T> keys = new ArrayList<T>();
 		for(V category:getAllAssignedCategories()){
-			keys.addAll(getKey1sbyCategory(category));
+			keys.addAll(getKey1sByCategory(category));
 		}
 		return keys;
 	}
@@ -225,7 +288,7 @@ public abstract class AbstractDataModelWithDualKeyNCategory<T, U, V> {
 		return false;
 	}
 	protected boolean containsKey(T key){
-		return key1ToKey2Map.containsKey(key)||key2ToKey1Map.containsKey(key);
+		return isKey1(key)||isKey2(key);
 	}
 	protected boolean containsCategory(V category){
 		return key2ToItemMapsByCategory.containsKey(category);
@@ -233,11 +296,10 @@ public abstract class AbstractDataModelWithDualKeyNCategory<T, U, V> {
 	protected boolean containsKeyInCategory(V category, T key){
 		if(!containsCategory(category))
 			return false;
-		
-		if(containsKey(key) && isKey1(key))
-			key = getKey2FromKey1(key);
-		
-		return getKey2sByCategory(category).contains(key);		
+				
+		return getKey2sByCategory(category)
+				.contains( isKey1(key)
+						? getKey2FromKey1(key): key);		
 	}
 	
 	protected boolean isKey2(T key){

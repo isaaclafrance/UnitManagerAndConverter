@@ -13,19 +13,19 @@ public class Utility {
 	public static String UNIT_NAME_REGEX = "([a-zA-Z]+)?(\\w+)";
 	public static String UNIT_TYPE_REGEX = "[a-zA-Z]+";
 	public static String SIGNED_DOUBLE_VALUE_REGEX = "[-+]?(\\d*[.])?\\d+";
-	
-	///
-	Utility(){}
-		
-	///TODO: Modified version of the Command Design Pattern using generic programming. Need to upgrade from Java 7 to Java 8 in order to be make use of lambda functions for less verbosity when using methods as parameters to pass behavior.
+			
+	///TODO: Modified version of the Command Design Pattern using generic programming. Need to upgrade from Java 7 to Java 8 in order to be make use of independent lambda functions for less verbosity when passing around behavior.
 	public static Map<String, Double> getComponentUnitsDimensionFromString(String componentUnitsDimension){
 		//Format: a, prefix'a', (a)^(+-#.##) * or / (b)^(+-#.##), where 'a' and 'b' are word characters. Prefix can only alphabetical. Accounts for the optional presence of parenthesis and discounts the number of white space characters. 
+		//Multiplication or division symbol can optionally appear as first items in the group.
 		return getDimensionFromString(componentUnitsDimension, Pattern.compile(UNIT_NAME_REGEX), Pattern.compile(SIGNED_DOUBLE_VALUE_REGEX)
                 , Pattern.compile("([\\*|\\/]?[\\s]*)((([\\(]?[\\s]*"+UNIT_NAME_REGEX+"[\\s]*[\\)]?)([\\s]*\\^[\\s]*([\\(]?[\\s]*"+SIGNED_DOUBLE_VALUE_REGEX+"[\\s]*[\\)]?)))|"+UNIT_NAME_REGEX+")")
                 , '/'
                 , new ComponentUnitsDimensionUpdater(), new HashMap<String, Double>());
 	}
 	public static Map<UNIT_TYPE, Double> getFundamentalUnitTypesDimensionFromString(String fundamentalUnitTypesDimension){
+		//Format: a, prefix'a', (a)^(+-#.##) * or / (b)^(+-#.##), where 'a' and 'b' are word characters. Accounts for the optional presence of parenthesis and discounts the number of white space characters. 
+		//Multiplication or division symbol can optionally appear as first items in the group.
 		return getDimensionFromString(fundamentalUnitTypesDimension, Pattern.compile(UNIT_TYPE_REGEX), Pattern.compile(SIGNED_DOUBLE_VALUE_REGEX)
 				                      , Pattern.compile("([\\*|\\/]?[\\s]*)((([\\(]?[\\s]*"+UNIT_TYPE_REGEX+"[\\s]*[\\)]?)([\\s]*\\^[\\s]*([\\(]?[\\s]*"+SIGNED_DOUBLE_VALUE_REGEX+"[\\s]*[\\)]?)))|"+UNIT_TYPE_REGEX+")")
 				                      , '/'
@@ -42,10 +42,9 @@ public class Utility {
 	public static <T> Map<T, Double> getDimensionFromString(String dimensionString, Pattern typeRegExPattern, Pattern exponentRegExPattern, Pattern groupRegExPattern
 			      ,char divisionSymbol, DimensionUpdater<T> dimensionUpdater, Map<T, Double> dimensionMap){	
 
-		//RegEx pattern to parse string into groups of unit type and exponents. The pattern must account for the multiplication symbol being the first item in the group
+		//Perform type and exponent extracting and processing
 		Matcher groupRegExMatcher = groupRegExPattern.matcher(dimensionString);
-		
-		//Perform extraction using RegEx patterns
+
 		if(groupRegExMatcher.find()){
 			do{
 				String group = groupRegExMatcher.group();
@@ -130,6 +129,7 @@ public class Utility {
 	}
 	
 	private static <T> void updateDimensionMap(T type, String exponent, String group, char divisionSymbol, Map<T, Double> dimensionMap){
+		//For simplicity, anything other than the specified division symbol will be considered multiplication.
 		if(dimensionMap.containsKey(type)){
 			dimensionMap.put(type, Double.valueOf(exponent) + ((group.charAt(0) == divisionSymbol)?-dimensionMap.get(type):dimensionMap.get(type)));	
 		}else{
