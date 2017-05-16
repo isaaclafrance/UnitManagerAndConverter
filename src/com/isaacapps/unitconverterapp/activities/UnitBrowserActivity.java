@@ -15,7 +15,7 @@ import android.widget.*;
 import android.widget.AdapterView.*;
 
 public class UnitBrowserActivity extends Activity {	
-	private String DELIMITER = " :: ", IDENTITY = "- - - - - - -";
+	private String DELIMITER = " :: ", PREFIX_IDENTITY_SYMBOL = "- - - - - - -";
 	
 	private PersistentSharablesApplication pSharablesApplication;	
 
@@ -121,7 +121,7 @@ public class UnitBrowserActivity extends Activity {
 		selectUnitButton.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View view){
-				String prefix = ((String)prefixSpinner.getSelectedItem()).replace(IDENTITY, "").split(DELIMITER)[0].trim();
+				String prefix = ((String)prefixSpinner.getSelectedItem()).replace(PREFIX_IDENTITY_SYMBOL, "").split(DELIMITER)[0].trim();
 				String mainUnitName = ((String)unitSpinner.getSelectedItem()).split("-")[0].trim();
 				
 				if(mainUnitName != null){
@@ -246,7 +246,7 @@ public class UnitBrowserActivity extends Activity {
 		});
 	}
 	
-	///Populate Spinners
+	///Populate Spinners. Spinners dynamically update selection of spinner higher in hierarchy and restrictions of general filter spinner. 
 	private void populateSpinners(){
 		populateDimensionFilterSpinner();
 		dimFilterSpinner.startAnimation(AnimationUtils.loadAnimation(UnitBrowserActivity.this, android.R.anim.slide_in_left));
@@ -294,12 +294,16 @@ public class UnitBrowserActivity extends Activity {
 			else if(spinnerSelection.equalsIgnoreCase(generalFilters[4])){
 				oppositeUnitCategoryName = "metric";
 			}
+			else if(spinnerSelection.equalsIgnoreCase(generalFilters[5])){
+				oppositeUnitCategoryName = "special";
+			}
 
 			boolean oppositeUnitIsNotUnknown = pSharablesApplication.getToQuantity().getLargestUnit().getName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) 
 					                           		&& oppositeUnitType.equalsIgnoreCase("to") 
 					                           || pSharablesApplication.getFromQuantity().getLargestUnit().getName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) 
 					                           		&& oppositeUnitType.equalsIgnoreCase("from");
-						
+			
+			//Only add relevant unit system.
 			for(String unitSystem:pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().getAllUnitSystems()){	
 				if(spinnerSelection.equalsIgnoreCase(generalFilters[1]) && oppositeUnitIsNotUnknown || !spinnerSelection.equalsIgnoreCase(generalFilters[1])
 				   && pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().containsUnitCategoryInUnitSystem(unitSystem, oppositeUnitCategoryName, true))
@@ -321,6 +325,15 @@ public class UnitBrowserActivity extends Activity {
 		
 		if(dimSpinnerSelection.equals(generalFilters[0])||dimSpinnerSelection.equals(generalFilters[2])){
 			categories.addAll(pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().getUnitCategoriesInUnitSystem(unitSystemSpinnerSelection));
+			
+			//Remove categories not relevant to dynamic units.
+			if(dimSpinnerSelection.equals(generalFilters[2])){
+				for(Unit dynamicUnit:pSharablesApplication.getUnitManager().getUnitsDataModel().getDynamicUnits()){
+					if(categories.contains(dynamicUnit.getCategory())){
+						categories.remove(dynamicUnit.getCategory());
+					}		
+				}
+			}
 		}
 		else{
 			categories.add(oppositeUnitCategoryName);
@@ -369,7 +382,7 @@ public class UnitBrowserActivity extends Activity {
 	
 	private void populatePrefixSpinner(){
 		List<String> prefixesFullNames = new ArrayList<String>();
-		prefixesFullNames.add(IDENTITY+DELIMITER+"1.0"); //When no selected prefix is applied, the identity factor is used.
+		prefixesFullNames.add(PREFIX_IDENTITY_SYMBOL+DELIMITER+"1.0"); //When no selected prefix is applied, the identity factor is used.
 		
 		/*Only display prefixes if the unit name itself does not contain a prefix. 
 		 *Make sure that unit name does not contain any complex term combinations.
