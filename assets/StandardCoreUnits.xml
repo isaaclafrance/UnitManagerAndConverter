@@ -131,7 +131,7 @@
 	    <unitDescription>It is equal to the energy transferred to (or work done on) an object when a force of one newton acts on that object in the direction of its motion through a distance of one metre (1 newton metre or N·m). It is also the energy dissipated as heat when an electric current of one ampere passes through a resistance of one ohm for one second.</unitDescription>  	    
 	    <componentUnits>
 	        <component>
-	            <unitName>kilo-gram</unitName>
+	            <unitName>kilogram</unitName>
 	            <exponent>2.0f</exponent>
 	        </component>	        
 	        <component>
@@ -207,7 +207,7 @@
 	    <unitDescription>The amount needed to accelerate 1 kilogram of mass at the rate of 1 metre per second squared.</unitDescription>  	    
 	    <componentUnits>
 	        <component>
-	            <unitName>kilo-gram</unitName>
+	            <unitName>kilogram</unitName>
 	            <exponent>1.0f</exponent>
 	        </component>	        
 	        <component>
@@ -266,14 +266,14 @@
 	</unit> 
 	
 	<unit>
-	   	<unitName>kilo-gram</unitName>
+	   	<unitName>kilogram</unitName>
 	   	<unitSystem>si</unitSystem>
 	    <abbreviation>kg</abbreviation>
 	    <unitCategory>mass_unit</unitCategory>
 	    <unitDescription>Equal to 1000 times the mass of 1 gram.</unitDescription>  	    
 	    <componentUnits>
 	        <component>
-	            <unitName>kilo-gram</unitName>
+	            <unitName>kilogram</unitName>
 	            <exponent>1.0f</exponent>
 	        </component>	        
 	    </componentUnits>
@@ -633,24 +633,6 @@
 	</unit>
 	
 	<unit>
-	    <unitName>gallon</unitName>	    
-	    <unitSystem>us customary system</unitSystem>
-	    <abbreviation>gal</abbreviation>
-	    <unitCategory>volume_unit</unitCategory>
-	    <unitDescription>The US gallon is used in Liberia, Belize, Colombia, The Dominican Republic, Ecuador, El Salvador, Guatemala, Haiti, Honduras, Nicaragua, and Peru.</unitDescription>  	    
-	    <componentUnits>
-	        <component>
-	            <unitName>gallon</unitName>
-	            <exponent>1.0f</exponent>
-	        </component>
-	    </componentUnits>
-	    <baseConversionPolyCoeffs>
-	       	<baseUnit>quart</baseUnit>
-	        <polynomialCoeffs>4.0 0.0</polynomialCoeffs>  	            
-	    </baseConversionPolyCoeffs>
-	</unit>
-	
-	<unit>
 	    <unitName>quart</unitName>	    
 	    <unitSystem>us customary system</unitSystem>
 	    <abbreviation>qt</abbreviation>
@@ -668,6 +650,24 @@
 	    </baseConversionPolyCoeffs>
 	</unit>
 	
+	<unit>
+	    <unitName>gallon</unitName>	    
+	    <unitSystem>us customary system</unitSystem>
+	    <abbreviation>gal</abbreviation>
+	    <unitCategory>volume_unit</unitCategory>
+	    <unitDescription>The US gallon is used in Liberia, Belize, Colombia, The Dominican Republic, Ecuador, El Salvador, Guatemala, Haiti, Honduras, Nicaragua, and Peru.</unitDescription>  	    
+	    <componentUnits>
+	        <component>
+	            <unitName>gallon</unitName>
+	            <exponent>1.0f</exponent>
+	        </component>
+	    </componentUnits>
+	    <baseConversionPolyCoeffs>
+	       	<baseUnit>quart</baseUnit>
+	        <polynomialCoeffs>4.0 0.0</polynomialCoeffs>  	            
+	    </baseConversionPolyCoeffs>
+	</unit>
+		
 	<unit>
 	    <unitName>fluid_ounce</unitName>	    
 	    <unitSystem>us customary system</unitSystem>
