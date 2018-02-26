@@ -1,15 +1,15 @@
 package com.isaacapps.unitconverterapp.utilities;
 
 public class ParsingException extends Exception {
-	private final String itemBeingParsed, howToFix;
+	private final String scenario, howToFix;
 	
-	public ParsingException(String itemBeingParsed, String howToFix){
-		this.itemBeingParsed = itemBeingParsed;
+	public ParsingException(String scenario, String howToFix){
+		this.scenario = scenario;
 		this.howToFix = howToFix;
 	}
 	
-	public String getItemBeingParsed(){
-		return itemBeingParsed;
+	public String getScenario(){
+		return scenario;
 	}
 	
 	public String getHowToFix(){
@@ -18,6 +18,6 @@ public class ParsingException extends Exception {
 	
 	@Override
 	public String toString(){
-		return String.format("**Parsed item that caused problem: %s \n **This can be resolved by: %s", itemBeingParsed, howToFix);
+		return String.format("**Parsing scenario that caused problem: %s \n **The follwing can resolve the problem: %s", scenario, howToFix);
 	}
 }
