@@ -12,17 +12,18 @@ public final class UnitRegExUtility {
 	public static final String DIVISION_SYMBOL = "/";
 	public static final String MULTIPLICTION_SYMBOL = "*";
 	
-	
 	//
     public static String getOperationComponent(String divisionSymbol, String multiplicationSymbol){
     	return "([\\s]*[\\"+multiplicationSymbol+"\\"+divisionSymbol+"]?[\\s]*)";
     }
-    public static String getInteriorGroupComponent(String typeRegEx){
-    	return "([\\s]*"+typeRegEx+"[\\s]*)";
+    public static String getInteriorGroupComponent(String atomicTypeRegEx){
+    	return "([\\s]*"+atomicTypeRegEx+"[\\s]*)";
     }
     
     /**
-     * Recursively and greedily searches for the existence of nested groups
+     * Recursively and greedily searches for the existence multigroups. All multigroups satisfy the complex dimension criteria.
+     * They can be nested obviously nested such as '( ((a)^2 * (a)^3)^8 /(b)^4 )^5',  '(a^3/b)^3'
+     * Or they can be trivially nested such as '(a*b*c*d)^5' which is the same as ((a)^1*(b)^1*(c)^1*(d)^1)^5.
      */
 	public static Pattern getMultiGroupRegExPattern(String typeRegEx, String exponentRegEx, String divisionSymbol, String multiplicationSymbol){
 		String operationComponent = getOperationComponent(divisionSymbol, multiplicationSymbol);
@@ -30,39 +31,45 @@ public final class UnitRegExUtility {
 		
 		return Pattern.compile("(?<group>"+operationComponent+"[\\(]((?'group')|"+interiorGroupComponent+")*[\\)]"+exponentRegEx+")");
 	}
-	public static Pattern getSingleGroupRegExPattern(String typeRegEx, String divisionSymbol, String multiplicationSymbol){
-		return Pattern.compile(getOperationComponent(divisionSymbol,multiplicationSymbol)+getInteriorGroupComponent(typeRegEx));
+	
+	/**
+	 * Search for a single group that has the following simple format 'a', 'a^2', '(a)^3'.
+	 */
+	public static Pattern getSingleGroupRegExPattern(String atomicTypeRegEx, String divisionSymbol, String multiplicationSymbol, String exponentRegEx){
+		return Pattern.compile( "([\\(])?"+getOperationComponent(divisionSymbol,multiplicationSymbol)
+		                          +getInteriorGroupComponent(atomicTypeRegEx) 
+		                          + "(?(1)[\\)])"+exponentRegEx+"?)");
 	}
 	
 	//
-	public static boolean unitNameHasComplexDimensions(String unitName){
+	public static boolean textHasComplexDimensions(String unitName){
 		return unitName.contains(MULTIPLICTION_SYMBOL) || unitName.contains(DIVISION_SYMBOL) || unitName.contains(EXPONENT_SYMBOL)
-				|| numberOfParenthsisPairs(unitName) > 1;
+				|| hasBalancedParanetheses(unitName);
 	}
 	
 	/**
-	 * Quickly determines if for every open brace, there is a corresponding closing brace. For simplicity sake, does not account got correct position.
-	 * For instance "{}{}" is just as valid as "}{}{"
+	 * Quickly determines if for every open brace, there is a corresponding closing brace. Text with no parentheses are trivially balanced...
 	 */
-	public static boolean hasBalancedParanethesis(String text){
-		if(text.contains("(") && text.contains(")")
-		   || text.matches("[^\\(\\]+")) // text have no parenthesis is trivially balanced
-		{
-			return text.split("(").length == text.split(")").length;
-		}
-		return false;
+	public static boolean hasBalancedParanetheses(String text){
+		return Pattern.matches("(?<block>[\\(]((?block)|[^\\(\\)]*)[\\)])", text.trim());
 	}
+	
 	/**
-	 * Quickly calculates the number of the balanced pairings. For simplicity sake, does not account got correct position.
-	 * For instance "{}{}" is just as valid as "}{}{"
-	 * @return Number of parenthesis pairings or -1 if parenthesis pairings are unbalanced.
+	 * Quickly determines if there is a nesting of parentheses.
 	 */
-	public static int numberOfParenthsisPairs(String text){
-		if(hasBalancedParanethesis(text)){
-			return text.split("(").length - 1;
+	public static boolean hasNestedParentheses(String text){
+		if(hasBalancedParanetheses(text)){
+			return text.trim().matches("[\\(][^\\)]*[\\(]");
 		}
 		else{
-			return -1;
+			return false;
 		}
+	}
+	
+	/**
+	 * Quickly determines if there is a nesting of exponents. Something like '(a^2/(b)^4)^2' and so on
+	 */
+	public static boolean hasNestedExponents(String text, String exponentRegEx){
+		return Pattern.matches("(?<block>[\\(]((?block)|.*[\\)]?"+exponentRegEx+".*)[\\)]"+exponentRegEx+")", text.trim());
 	}
 }
