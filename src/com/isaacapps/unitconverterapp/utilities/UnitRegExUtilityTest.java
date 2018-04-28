@@ -1,13 +1,10 @@
 package com.isaacapps.unitconverterapp.utilities;
 
-import com.florianingerl.util.regex.Matcher;
-import com.florianingerl.util.regex.Pattern;
+import com.florianingerl.util.regex.*;
 
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static junit.framework.Assert.*;
 
@@ -25,7 +22,7 @@ public class UnitRegExUtilityTest {
             Matcher participantSymbolGroupMatcher = participantSymbolsGroupPattern.matcher(participantSymbolGroup);
             assertTrue(String.format("Participant symbol '%s' is not matched by regex for group %s"
                         , participantSymbolGroup, Arrays.toString(partipantSymbolGroups))
-                    , participantSymbolGroupMatcher.matches());
+                    , participantSymbolGroupMatcher.find());
         }
     }
 
@@ -94,7 +91,7 @@ public class UnitRegExUtilityTest {
 
     @Test
     public void createOperationComponentRegex_WithMultiplicationAndDivisionSymbolArrays_Should_IgnoreWhiteSpace_ForMatches(){
-        String[] partipantMultiplicationSymbolGroups = new String[]{"*", " "};
+        String[] partipantMultiplicationSymbolGroups = new String[]{"*", " x "};
         String[] partipantDivisionSymbolGroups = new String[]{"/"};
 
         Pattern participantSymbolsGroupPattern = Pattern.compile(UnitRegExUtility
@@ -171,7 +168,7 @@ public class UnitRegExUtilityTest {
 
         Pattern exponentGroupPattern = Pattern.compile(exponentGroupRegEx);
 
-        String input = "      "+"**"+"   "+"123"+"     ";
+        String input = "      "+"**"+"   "+"123";
 
         assertTrue(String.format("No match found although input has specfied symbol and value format. " +
                         "Input:%s. Specified symbols:%s. " +
@@ -325,7 +322,8 @@ public class UnitRegExUtilityTest {
         Pattern singleGroupPattern = UnitRegExUtility.createMultiGroupRegExPattern(atomicTypeRegEx
                 , exponentGroupRegEx, operationComponentRegEx);
 
-        String[] inputs = new String[]{"( (aaa^123 * bbb / (aaa^123*bbb*aaa) )^123 *aaa x aaa/bbb)^123"};
+        String[] inputs = new String[]{"( (aaa^123 * bbb / (aaa^123*bbb*aaa) )^123 *aaa x aaa/bbb)^123"
+                , "(aaa/((aaa)*(bbb)))"};
 
         for(String input:inputs) {
             assertTrue(String.format("No Match for Input:%s. With Atomic type regex:%s, "
@@ -344,7 +342,7 @@ public class UnitRegExUtilityTest {
         Pattern singleGroupPattern = UnitRegExUtility.createMultiGroupRegExPattern(atomicTypeRegEx
                 , exponentGroupRegEx, operationComponentRegEx);
 
-        String[] inputs = new String[]{"aaa", "bbb", "*bbb", "aaa^123"}; //Ideal (aaa) should not match but it does.
+        String[] inputs = new String[]{"aaa", "bbb", "*bbb", "aaa^123"}; //Ideally (aaa) and (aaa) ^2 should not match but they do.
 
         for(String input:inputs) {
             assertFalse(String.format("Match for Input:%s. With Atomic type regex:%s, "
@@ -380,8 +378,8 @@ public class UnitRegExUtilityTest {
     }
 
     @Test
-    public void hasNestedParentheses_Should_Be_True_When_Parentheses_Are_Embedded(){
-        String[] inputs = new String[]{"(())", "(())()"};
+    public void hasNestedParentheses_Should_Be_True_When_Balanced_Parentheses_Are_Embedded(){
+        String[] inputs = new String[]{"(())", "(())()", "(((())))"};
 
         for(String input:inputs)
         {
@@ -392,7 +390,7 @@ public class UnitRegExUtilityTest {
 
     @Test
     public void hasNestedParentheses_Should_Be_False_When_Parentheses_Are_Not_Embedded(){
-        String[] inputs = new String[]{"()", "()() ()"};
+        String[] inputs = new String[]{"()", "()() ()", "(("};
 
         for(String input:inputs)
         {

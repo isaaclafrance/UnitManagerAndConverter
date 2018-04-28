@@ -34,14 +34,14 @@ public final class UnitDimensionProcessingUtility {
 	 */
 	public static Map<String, Double> parseToComponentUnitsDimensionFromString(String componentUnitsDimension
 			, boolean strictParsing) throws ParsingException{
-		String exponentGroupRegex = createExponentGroupRegex(EXPONENT_SYMBOLS, SIGNED_DOUBLE_VALUE_REGEX);
+		String exponentGroupRegex = createExponentGroupRegex(EXPONENT_SYMBOL_GROUPS, SIGNED_DOUBLE_VALUE_REGEX);
 
 		return parseToGenericDimensionFromString(componentUnitsDimension
 				, UNIT_NAME_REGEX
 				, exponentGroupRegex
 				, SIGNED_DOUBLE_VALUE_REGEX
-				, DIVISION_SYMBOLS
-				, MULTIPLICATION_SYMBOLS
+				, DIVISION_SYMBOL_GROUPS
+				, MULTIPLICATION_SYMBOL_GROUPS
 				, new ComponentUnitsDimensionUpdater()
 				, new HashMap<String, Double>()
 				, strictParsing);
@@ -61,14 +61,14 @@ public final class UnitDimensionProcessingUtility {
 	 */
 	public static Map<UNIT_TYPE, Double> parseToFundamentalUnitTypesDimensionFromString(String fundamentalUnitTypesDimension
 			, boolean strictParsing) throws ParsingException{
-		String exponentGroupRegex = createExponentGroupRegex(EXPONENT_SYMBOLS, SIGNED_DOUBLE_VALUE_REGEX);
+		String exponentGroupRegex = createExponentGroupRegex(EXPONENT_SYMBOL_GROUPS, SIGNED_DOUBLE_VALUE_REGEX);
 		
 		return parseToGenericDimensionFromString(fundamentalUnitTypesDimension
 				, FUNDAMENTAL_UNIT_TYPE_REGEX
 				, exponentGroupRegex
 				, SIGNED_DOUBLE_VALUE_REGEX
-				, DIVISION_SYMBOLS
-				, MULTIPLICATION_SYMBOLS
+				, DIVISION_SYMBOL_GROUPS
+				, MULTIPLICATION_SYMBOL_GROUPS
 				, new FundamentalUnitTypesDimensionUpdater()
 				, new HashMap<UNIT_TYPE, Double>()
 				, strictParsing);
@@ -93,6 +93,7 @@ public final class UnitDimensionProcessingUtility {
 				, createMultiGroupRegExPattern(atomicTypeRegEx, exponentGroupRegEx, operationsComponentRegEx)
 				, createSingleGroupRegExPattern(atomicTypeRegEx, exponentGroupRegEx, operationsComponentRegEx)
 				, Pattern.compile(createMultipleSymbolsRegEx(divisionSymbols))
+				, Pattern.compile(createMultipleSymbolsRegEx(multiplicationSymbols))
 				, dimensionUpdater
 				, dimensionMap
 				, strictParsing);
@@ -106,8 +107,9 @@ public final class UnitDimensionProcessingUtility {
 	 */
 	private static <T> Map<T, Double> parseToGenericDimensionFromString(String dimensionString, Pattern atomicTypeRegExPattern
             , Pattern exponentGroupRegExPattern, Pattern exponentValueRegExPattern, Pattern multiGroupRegExPattern
-            , Pattern singleGroupRegExPattern, Pattern divisionSymbolsRegExPattern, DimensionUpdater<T> dimensionUpdater
-				  , Map<T, Double> dimensionMap, boolean strictParsing) throws ParsingException{	
+            , Pattern singleGroupRegExPattern, Pattern divisionSymbolsRegExPattern, Pattern multiplicationSymbolsRegExPattern
+			, DimensionUpdater<T> dimensionUpdater, Map<T, Double> dimensionMap, boolean strictParsing)
+			throws ParsingException{
 		
 		//
 		if(dimensionString.isEmpty()){
@@ -123,21 +125,21 @@ public final class UnitDimensionProcessingUtility {
 	
 		//
 		if(hasBalancedParentheses(dimensionString)){
-	       //Processes all multigroups first if there are any, leaving behind single groups that are returned as a truncated dimension string
 			return parseNestedMultiGroups(dimensionString, 1.0, atomicTypeRegExPattern
 					, exponentGroupRegExPattern, exponentValueRegExPattern, multiGroupRegExPattern, singleGroupRegExPattern
-					, divisionSymbolsRegExPattern, dimensionUpdater, dimensionMap, strictParsing);
+					, divisionSymbolsRegExPattern, multiplicationSymbolsRegExPattern, dimensionUpdater
+					, dimensionMap, strictParsing);
 		}
 		else{
 			//Having balanced parenthesis is critical to proper parsing and must always throw an exception.
 			throw new ParsingException(dimensionString
-                    , "Make sure the number of open parenthesis braces equals the number of closing parenthesis braces.");
+                    , "Make sure the number of open parenthesis braces equals the number of closing parenthesis braces in proper order.");
 		}
 	}
 	
 	/**
 	 * Processes multi-groups using a recursive structure that greedily parses nested unit groups bounded by parentheses. ie. ( ((a)^2 * (a)^3)^8 /(b)^4 )^5.
-	 * Use single group construct as base case.
+	 * Uses single group construct as base case.
 	 * Updates the passed in dimension map with extracted results.
 	 * @return Dimension map representing string that satifies type requirement of passed in dimension updater.
 	 * @throws ParsingException 
@@ -145,8 +147,9 @@ public final class UnitDimensionProcessingUtility {
 	private static <T> Map<T, Double> parseNestedMultiGroups(String dimensionString, double recursedExponent
 			, Pattern atomicTypeRegExPattern, Pattern exponentGroupRegExPattern, Pattern exponentValueRegExPattern
 			, Pattern multiGroupRegExPattern, Pattern singleGroupDimensionRegExPattern
-			, Pattern divisionSymbolsRegExPattern, DimensionUpdater<T> dimensionUpdater
-			, Map<T, Double> dimensionMap, boolean strictParsing) throws ParsingException{
+			, Pattern divisionSymbolsRegExPattern, Pattern multiplicationSymbolsRegExPattern
+			, DimensionUpdater<T> dimensionUpdater, Map<T, Double> dimensionMap, boolean strictParsing)
+			throws ParsingException{
 
 		String truncatedDimensionString = dimensionString; // During the recursion process matching multigroups will be greedily matched and successively excised from the dimension string.
 
@@ -162,14 +165,15 @@ public final class UnitDimensionProcessingUtility {
                 && !singleGroupDimensionRegExPattern.matcher(multiGroupDimensionRegExMatcher.group()).matches())
         {
 			String multiGroupDimension = multiGroupDimensionRegExMatcher.group();
-			
-			String[] extractedExponentGroup = parseExponentGroup(multiGroupDimension
+
+			//
+			String[] parsedExponentGroup = parseExponentGroup(multiGroupDimension
 					, exponentGroupRegExPattern, exponentValueRegExPattern, divisionSymbolsRegExPattern);
-			String exponentGroup = extractedExponentGroup.length == 0 ? "" : extractedExponentGroup[0];
-			double currentExponent = extractedExponentGroup.length == 0 ? 1.0 : Double.valueOf(extractedExponentGroup[1]); //If not raised to anything, then assume 1.
+			double currentExponent = Double.valueOf(parsedExponentGroup[1]);
 						
 			//Force a new nested multigroup search to occur in preparation for recursion.
-            String multiGroupDimensionToBeRecursed = multiGroupDimension.substring(0, multiGroupDimension.lastIndexOf(exponentGroup))
+            String multiGroupDimensionToBeRecursed = multiGroupDimension.substring(0, multiGroupDimension
+                        .lastIndexOf(parsedExponentGroup[0]))
                     .replaceFirst("^[^(]*\\(","").replaceFirst("\\)$", "")
                     .trim();
 			
@@ -178,9 +182,9 @@ public final class UnitDimensionProcessingUtility {
                     , recursedExponent * currentExponent
                     , atomicTypeRegExPattern, exponentGroupRegExPattern, exponentValueRegExPattern
                     , multiGroupRegExPattern, singleGroupDimensionRegExPattern, divisionSymbolsRegExPattern
-                    , dimensionUpdater, dimensionMap, strictParsing);
+                    , multiplicationSymbolsRegExPattern, dimensionUpdater, dimensionMap, strictParsing);
 
-			truncatedDimensionString = truncatedDimensionString.replace(multiGroupDimension, "");				
+			truncatedDimensionString = truncatedDimensionString.replace(multiGroupDimension, "");
 		}
 
 		/*If for some reason the remaining truncated dimension string still appears to have multi groups,
@@ -205,7 +209,7 @@ public final class UnitDimensionProcessingUtility {
         if(!truncatedDimensionString.isEmpty()){
             return parseSingleGroups(truncatedDimensionString, recursedExponent, atomicTypeRegExPattern
                     , exponentGroupRegExPattern, exponentValueRegExPattern
-                    , singleGroupDimensionRegExPattern, divisionSymbolsRegExPattern
+                    , singleGroupDimensionRegExPattern, divisionSymbolsRegExPattern, multiplicationSymbolsRegExPattern
                     , dimensionUpdater, dimensionMap, strictParsing);
         }
         else{
@@ -220,35 +224,38 @@ public final class UnitDimensionProcessingUtility {
 	private static <T> Map<T, Double> parseSingleGroups(String dimensionString, double outerExponent
             , Pattern atomicTypeRegExPattern, Pattern exponentGroupRegExPattern
             , Pattern exponentValueRegExPattern, Pattern singleGroupDimensionRegExPattern
-            , Pattern divisionSymbolsRegExPattern , DimensionUpdater<T> dimensionUpdater
-            , Map<T, Double> dimensionMap, boolean strictParsing) throws ParsingException{
-		
-		String truncatedDimensionString = dimensionString; //Single groups will be successively excised until hopefully there is nothing left.
-		
+            , Pattern divisionSymbolsRegExPattern, Pattern multiplicationSymbolsRegExpattern
+			, DimensionUpdater<T> dimensionUpdater, Map<T, Double> dimensionMap, boolean strictParsing)
+			throws ParsingException{
+
 		Matcher singleGroupDimensionRegExMatcher = singleGroupDimensionRegExPattern.matcher(dimensionString);
 		
 		while(singleGroupDimensionRegExMatcher.find()){
 			String singleGroupDimension = singleGroupDimensionRegExMatcher.group();
-			
-			//
-			String atomicType = parseAtomicTypeGroup(singleGroupDimension, atomicTypeRegExPattern);
-			if(atomicType.isEmpty())
-				throw new ParsingException(String.format("No atomic type can be extracted using atomicTypeRegExPattern '%s'" +
-								" from the group '%s' that was produced by the singleGroupDimensionRegExPattern '%s'."
-								, exponentValueRegExPattern.pattern(), singleGroupDimension, exponentGroupRegExPattern.pattern())
-				  		, "The group regular expression must corresponding with atomic type regular expressions.");
 
 			//
 			String[] extractedExponentGroup = parseExponentGroup(singleGroupDimension
 					, exponentGroupRegExPattern, exponentValueRegExPattern, divisionSymbolsRegExPattern);
-			double currentExponent = extractedExponentGroup.length == 0 ? 1.0 : Double.valueOf(extractedExponentGroup[1]); //If not raised to anything, then assume 1.
-				
+			double currentExponent = Double.valueOf(extractedExponentGroup[1]);
+
+			//
+			String atomicType = parseAtomicTypeGroup(singleGroupDimension
+						.replaceAll(divisionSymbolsRegExPattern.pattern(), "")
+						.replaceAll(multiplicationSymbolsRegExpattern.pattern(), "")
+					, atomicTypeRegExPattern);
+
+			if(atomicType.isEmpty())
+				throw new ParsingException(String.format("No atomic type can be extracted using atomicTypeRegExPattern '%s'" +
+								" from the group '%s' that was produced by the singleGroupDimensionRegExPattern '%s'."
+						, atomicTypeRegExPattern.pattern(), singleGroupDimension, singleGroupDimensionRegExPattern.pattern())
+						, "The group regular expression must corresponding with atomic type regular expressions.");
+
 			//
 			dimensionUpdater.updateDimension(atomicType, outerExponent*currentExponent, dimensionMap);
-			
-			truncatedDimensionString = truncatedDimensionString.replace(singleGroupDimension, "");
 		}
-		
+
+		//All single groups will be successively excised until hopefully there is nothing left.
+		String truncatedDimensionString = singleGroupDimensionRegExMatcher.replaceAll("");
 		if(!truncatedDimensionString.isEmpty()){
 		    if(strictParsing){
                 throw new ParsingException(truncatedDimensionString
@@ -276,15 +283,21 @@ public final class UnitDimensionProcessingUtility {
 	private static String[] parseExponentGroup(String dimension, Pattern exponentGroupRegExPattern
 			, Pattern exponentValueRegExPattern, Pattern divisionSymbolsPattern) throws ParsingException{
 		Matcher exponentRegExMatcher = exponentGroupRegExPattern.matcher(dimension);
-		
+		Matcher divisionSymbolRegExMatcher = divisionSymbolsPattern.matcher(dimension);
+
+		//Division inverts the exponent
+		String exponentValueSignBasedOnOperation = (divisionSymbolRegExMatcher.find()
+				&& dimension.trim().startsWith(divisionSymbolRegExMatcher.group()))? "-":"";
+
 		if(exponentRegExMatcher.find()){
 			String exponentGroup = exponentRegExMatcher.group();
 			Matcher exponentValueRegExMatcher = exponentValueRegExPattern.matcher(exponentGroup);
 			
 			if(exponentValueRegExMatcher.find()){
 				//By this point the parsing tree any present operation token was already validated as being suitable for division or multiplication
-				String exponentValue = ((divisionSymbolsPattern.matcher(dimension).find()?"-":"")
-                        + exponentValueRegExMatcher.group()).replace("--", "");
+				//Therefore any operation token present other than the division is a multiplication
+				String exponentValue = (exponentValueSignBasedOnOperation + exponentValueRegExMatcher.group())
+						.replace("--", ""); //negatives cancel
 				return new String[] {exponentGroup, exponentValue};
 			}
 			
@@ -294,7 +307,8 @@ public final class UnitDimensionProcessingUtility {
 					, "The group regular expression must corresponding with value regular expressions.");
 		}
 		else{
-			return new String[0];
+			//If not explicitly raised to anything then assume 1 (+/- depending on presence of division)
+			return new String[]{"", exponentValueSignBasedOnOperation+"1"};
 		}
 	}
 	/**
@@ -305,7 +319,7 @@ public final class UnitDimensionProcessingUtility {
 		Matcher atomicTypeRegExMatcher = atomicTypeRegExPattern.matcher(dimension);
 		
 		if(atomicTypeRegExMatcher.find())
-			return atomicTypeRegExMatcher.group().toLowerCase();
+			return atomicTypeRegExMatcher.group();
 		
 		return "";
 	}
@@ -349,7 +363,7 @@ public final class UnitDimensionProcessingUtility {
 		return dimensionStringBuilder.toString();
 	}
 	public static <T> String convertGenericDimensionToString(Map<T, Double> dimensionMap, DimensionUpdater<T> dimensionUpdater){
-		return convertGenericDimensionToString(dimensionMap, dimensionUpdater, MULTIPLICATION_SYMBOLS[0], EXPONENT_SYMBOLS[0], true);
+		return convertGenericDimensionToString(dimensionMap, dimensionUpdater, MULTIPLICATION_SYMBOL_GROUPS[0], EXPONENT_SYMBOL_GROUPS[0], true);
 	}
 	
 	//
@@ -364,7 +378,7 @@ public final class UnitDimensionProcessingUtility {
 	}
 
     /**
-     * Specifes how to parse and process component unit dimension maps.
+     * Specifies how to parse and process component unit dimension maps.
      */
 	public static class ComponentUnitsDimensionUpdater implements DimensionUpdater<String>{
 		@Override

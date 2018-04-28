@@ -6,9 +6,9 @@ public final class UnitRegExUtility {
 	public static final String UNIT_NAME_REGEX = "(?:([a-zA-Z]+)?\\w+)"; //ex. h20, meter, 10
 	public static final String FUNDAMENTAL_UNIT_TYPE_REGEX = "(?:[a-zA-Z]+)";
 	public static final String SIGNED_DOUBLE_VALUE_REGEX = "(?:[-+]?(?:\\d*[.])?\\d+)";
-	public static final String[] EXPONENT_SYMBOLS = new String[]{"^", "**", " raised to "};
-	public static final String[] DIVISION_SYMBOLS = new String[]{"/", " per ", " divided by "};
-	public static final String[] MULTIPLICATION_SYMBOLS = new String[]{"*", " x ", " times ", " ", " multiplied by "};
+	public static final String[] EXPONENT_SYMBOL_GROUPS = new String[]{"^", "**", " raised to "};
+	public static final String[] DIVISION_SYMBOL_GROUPS = new String[]{"/", " per ", " divided by "};
+	public static final String[] MULTIPLICATION_SYMBOL_GROUPS = new String[]{"*", " x ", " times ", " multiplied by "};
 	
 	/**
 	 * Converts groups of symbols into a regular expression with alternation.
@@ -22,16 +22,28 @@ public final class UnitRegExUtility {
 		StringBuilder regexStringBuilder = new StringBuilder();
 		
 		for(String symbolGroup:symbolGroups){
-            //If there are multiple symbol groups, then they are joined with an alternation symbol.
-            regexStringBuilder.append(regexStringBuilder.length() == 0 ? "" : "|");
+            String trimedSymbolGroup = symbolGroup.trim();
+
+			//If there are multiple symbol groups, then they are joined with an alternation symbol.
+			if(!trimedSymbolGroup.isEmpty())
+            	regexStringBuilder.append(regexStringBuilder.length() == 0 ? "" : "|");
+
+            //Replace white spaces with regex word boundary
+			if( !trimedSymbolGroup.isEmpty() && symbolGroup.startsWith(" "))
+				regexStringBuilder.append("\\b");
 
 		    //Finds reserved characters in the symbol group and places them is brackets
-			for(char character:symbolGroup.toCharArray()){
+			for(char character:trimedSymbolGroup.toCharArray()){
 				if(reservedSymbolPattern.matcher(String.valueOf(character)).matches())
 					regexStringBuilder.append("\\");
 
 				regexStringBuilder.append(character);
 			}
+
+			//Replace white spaces with regex word boundary
+			if(!trimedSymbolGroup.isEmpty() && symbolGroup.endsWith(" "))
+				regexStringBuilder.append("\\b");
+
 		}
 		
 		return regexStringBuilder.insert(0, "(?:").append(")").toString();
@@ -64,7 +76,7 @@ public final class UnitRegExUtility {
      * @return Regular expression string that captures an exponent construct.
      */
     public static String createExponentGroupRegex(String[] exponentSymbols, String exponentValueRegEx){
-    	return String.format("(?:[\\s]*%s[\\s]*([\\s]*%s[\\s]*))", createMultipleSymbolsRegEx(exponentSymbols)
+    	return String.format("(?:[\\s]*%s[\\s]*([\\s]*%s))", createMultipleSymbolsRegEx(exponentSymbols)
                 , exponentValueRegEx);
     }
     
@@ -97,9 +109,9 @@ public final class UnitRegExUtility {
 	public static Pattern createSingleGroupRegExPattern(String atomicTypeRegEx, String exponentGroupRegEx
             , String operationComponentRegEx){
         String optionalExponentialComponent = "(?:"+exponentGroupRegEx+")?";
-        String optionalOperationalComponent = "(?:"+operationComponentRegEx+")?";
+        String optionalOperationalComponent = "(?:(?<=\\s|[()]|\\A)(?:"+operationComponentRegEx+")?|"+operationComponentRegEx+")";
 
-	    return Pattern.compile(String.format("%s(?<p>[(][\\s]*)?%s(?(p)[\\s]*[)])%s"
+	    return Pattern.compile(String.format("%s(?<p>[(][\\s]*)?%s(?(p)[\\s]*[)])%s(?=\\b|\\Z)"
 				, optionalOperationalComponent, createInteriorGroupComponentRegEx(atomicTypeRegEx)
                 , optionalExponentialComponent));
 	}
@@ -109,8 +121,8 @@ public final class UnitRegExUtility {
 	 * Uses default multiplication, division, and exponent symbols.
 	 */
 	public static boolean hasComplexDimensions(String unitDefinition){
-		return hasComplexDimensions(unitDefinition, createExponentGroupRegex(EXPONENT_SYMBOLS, SIGNED_DOUBLE_VALUE_REGEX)
-				,createOperationComponentRegEx(DIVISION_SYMBOLS, MULTIPLICATION_SYMBOLS));
+		return hasComplexDimensions(unitDefinition, createExponentGroupRegex(EXPONENT_SYMBOL_GROUPS, SIGNED_DOUBLE_VALUE_REGEX)
+				,createOperationComponentRegEx(DIVISION_SYMBOL_GROUPS, MULTIPLICATION_SYMBOL_GROUPS));
 	}
 	
 	/**
@@ -144,7 +156,7 @@ public final class UnitRegExUtility {
 	
 	/**
 	 * Quickly determines if there is a nesting of parentheses, but only if the text is balanced
-	 * If there is at least one instance of ' ( [anything not ')'] ( ', then there is some nesting of some kind.
+	 * If there is at least one instance of " '(' [anything not ')'] '(' ", then there is some nesting of some kind.
 	 */
 	public static boolean hasNestedParentheses(String unitDefinition){
 		if(hasBalancedParentheses(unitDefinition)){
