@@ -44,9 +44,9 @@ public final class PluralTextProcessingUtility {
 		//Transform multidimenional array of rules into one regular expression to be used for matching
 		return Pattern.compile(Arrays.deepToString(FIRST_PASS_RULES)
 				.replace("]]",")")
-				.replaceAll(", \\[",")|(")
+				.replaceAll(", \\[",")|(?:")
 				.replaceAll(",[^\\[)]+","")
-				.replace("[[","("))
+				.replace("[[","(?:"))
 				.matcher(text)
 				.find();
 	}
@@ -58,7 +58,7 @@ public final class PluralTextProcessingUtility {
 	 */
 	public static Collection<String> getPossibleSingularCombinations(String text){
 		if(!hasPossiblePlural(text, true))
-			return Arrays.asList(text);
+			return Collections.EMPTY_LIST;
 
 		SortedMap<String, ArrayList<String>> pluralWordToSingularMap = new TreeMap<String,ArrayList<String>>();
 		

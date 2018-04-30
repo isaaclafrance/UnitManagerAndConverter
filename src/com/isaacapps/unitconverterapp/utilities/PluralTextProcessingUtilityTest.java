@@ -92,4 +92,15 @@ public class PluralTextProcessingUtilityTest {
                             .contains(expectedSingularizedCompoundNoun));
         }
     }
+
+    @Test
+    public void getPossibleSingularCombinations_Should_Return_Empty_List_When_Compound_Noun_Has_No_Plural(){
+        for(String singularWord:secondPassPluralToSingular.values()){
+
+            String compoundNoun = String.format("%s %<s_%<s", singularWord);
+
+            assertTrue(String.format("Compound noun with no plural is incorrectly identified as containing plural: %s",compoundNoun)
+                    , getPossibleSingularCombinations(compoundNoun).isEmpty());
+        }
+    }
 }
