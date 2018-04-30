@@ -43,8 +43,10 @@ public final class PluralTextProcessingUtility {
 
 		//Transform multidimenional array of rules into one regular expression to be used for matching
 		return Pattern.compile(Arrays.deepToString(FIRST_PASS_RULES)
+				.replace("]]",")")
 				.replaceAll(", \\[",")|(")
 				.replaceAll(",[^\\[)]+","")
+				.replace("[[","("))
 				.matcher(text)
 				.find();
 	}

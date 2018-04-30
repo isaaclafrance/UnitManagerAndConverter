@@ -78,6 +78,7 @@ public class PluralTextProcessingUtilityTest {
     }
 
     @Test
+    public void getPossibleSingularCombinations_Should_Return_Singular_Combinations_When_Compound_Noun_Has_Plural(){
         for(Map.Entry<String, String> pluralSingularEntry:firstPassPluralToSingular.entrySet()){
 
             String compoundNoun = String.format("%s %s_%1$s", pluralSingularEntry.getKey(), pluralSingularEntry.getValue());
