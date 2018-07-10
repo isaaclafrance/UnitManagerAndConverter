@@ -1,151 +1,220 @@
 package com.isaacapps.unitconverterapp.models.unitmanager.datamodels;
 
-import java.util.*;
+import com.isaacapps.unitconverterapp.models.measurables.quantity.Quantity;
+import com.isaacapps.unitconverterapp.models.measurables.unit.Unit;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.repositories.IDualKeyNCategoryRepository;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.repositories.hashdriven.SignificanceRankHashedRepository;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.ContentDeterminer;
+import com.isaacapps.unitconverterapp.processors.operators.measurables.QuantityOperators;
+import com.isaacapps.unitconverterapp.processors.operators.measurables.units.UnitOperators;
+import com.isaacapps.unitconverterapp.processors.serializers.SerializingException;
 
-import com.isaacapps.unitconverterapp.models.Unit;
-import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager.DATA_MODEL_CATEGORY;
+import java.util.ArrayList;
+import java.util.Collection;
 
-public class ConversionFavoritesDataModel extends AbstractDataModelWithDualKeyNCategory<String, String, String>{
-	private static  String[] DELIMITERS = new String[]{": ", " --> "};
-	private Map<String, Integer> significanceRanks;
-	
-	///
-	public ConversionFavoritesDataModel(){
-		// Allowing for a non bijective relations between keys.
-		// Key1 will be the source unit name and key2 will be the formatted conversion favorite and the item will be the target unit name
-		// Therefore, according to existing abstract datamodel data structure,  many keys2 can point to the same key1 or item.
-		super(false, false, true);
-		significanceRanks = new HashMap<String, Integer>();
-	}
-	
-	///
-	public boolean addConversion(Unit sourceUnit, Unit targetUnit){
-		if(sourceUnit.getUnitManagerContext() == targetUnit.getUnitManagerContext() && sourceUnit.equalsDimension(targetUnit) 
-		   && UnitsDataModel.getDataModelCategory(sourceUnit) != DATA_MODEL_CATEGORY.UNKNOWN){
-		   
-			addItem( sourceUnit.getCategory(), sourceUnit.getName(), convertToFormattedConversion(sourceUnit, targetUnit), targetUnit.getName());
-			return true;
-		}
-		return false;
-	}
-	public boolean addConversion(String category, String sourceUnitName, String targetUnitName){
-		addItem(category, sourceUnitName, convertToFormattedConversion(category, sourceUnitName, targetUnitName), targetUnitName);
-		return true;
-	}
+public class ConversionFavoritesDataModel extends BaseDataModel<String, String, String> {
+    private static final String CATEGORY_DELIMITER = ": ";
+    private static final String CONVERSION_DELIMITER = " --> ";
+    private SignificanceRankHashedRepository significanceRankRepository;
 
-	///
-	public boolean removeConversionByUnitPair(Unit sourceUnit, Unit targetUnit){
-		modifySignificanceRankOfMultipleConversions(sourceUnit, false);
-		modifySignificanceRankOfMultipleConversions(targetUnit, false);
-		return removeItemByKey(convertToFormattedConversion(sourceUnit, targetUnit));
-	}
-	public boolean removeFormattedConversion(String formattedConversion){
-		String sourceUnitName = getSourceUnitNameFromConversion(formattedConversion)
-			   , targetUnitName = getTargetUnitNameFromConversion(formattedConversion)
-			   , unitCategory = getUnitCategoryFromFormattedConversion(formattedConversion);
-		
-		if(removeItemByKey(formattedConversion)){
-			modifySignificanceRankOfMultipleConversions(unitCategory, false);
-			//Add extra significance decrement to conversion that contains source and target unit.
-			for(String favoriteConversion:getFormattedConversionsAssociatedWithCategory(unitCategory)){
-				if(favoriteConversion.contains(sourceUnitName) || favoriteConversion.contains(targetUnitName))
-					modifySignificanceRankOfConversion(favoriteConversion, false);
-			}
-			return true;
-		}
+    ///
+    public ConversionFavoritesDataModel() {
+    }
+    public ConversionFavoritesDataModel(IDualKeyNCategoryRepository<String, String, String> repositoryWithDualKeyNCategory){
+        super(repositoryWithDualKeyNCategory);
+    }
 
-		return false;
-	}
-	public boolean removeConversionByUnit(Unit unit){	
-		boolean removed = removeItemByKey(unit.getName()) //Removes by source unit name 
-				          || removeItem(unit.getName()); // Remove by target unit name	
-		if(removed){
-			modifySignificanceRankOfMultipleConversions(unit.getCategory(), false);
-			return true;
-		}
-		return false;
-	}
-	public boolean removedConversionByCategory(String unitCategory){
-		return removeCategory(unitCategory);
-	}
-	
-	///
-	public boolean containsUnit(Unit unit){
-		return containsKey(unit.getName()) || containsItem(unit.getName());
-	}
-	
-	///
-	public void modifySignificanceRankOfMultipleConversions(Unit unit, boolean increase){
-		modifySignificanceRankOfMultipleConversions(getFormattedConversionsAssociatedWithUnit(unit), increase);
-		modifySignificanceRankOfMultipleConversions(unit.getCategory(), increase);
-	}
-	public void modifySignificanceRankOfMultipleConversions(String category, boolean increase){
-		modifySignificanceRankOfMultipleConversions(getFormattedConversionsAssociatedWithCategory(category), increase);
-	}
-	private void modifySignificanceRankOfMultipleConversions(List<String> formattedConversions, boolean increase){
-		for(String formattedConversion:formattedConversions)
-			modifySignificanceRankOfConversion(formattedConversion, increase);
-	}
-	public void modifySignificanceRankOfConversion(String formattedConversion, boolean increase){
-		if(!significanceRanks.containsKey(formattedConversion))
-			significanceRanks.put(formattedConversion, 0);
-		if(significanceRanks.get(formattedConversion) < 0)
-			significanceRanks.put(formattedConversion, significanceRanks.get(formattedConversion)+(increase?1:-1));
-	}
-	
-	///
-	public int getSignificanceRankOfConversion(String formattedConversion){
-		return significanceRanks.get(formattedConversion);
-	}
-	
-	///
-	public List<String> getFormattedConversionsAssociatedWithUnit(Unit unit){
-		ArrayList<String> matchingFormattedConversionFavorites = new ArrayList<String>();
-		if(containsKey(unit.getName())){
-			/*Since bijection is not ensured, there is no guarantee that all related conversions would be retrieved simply by constant time mapped key references.
-			 * Therefore, a non constant time is necessary.*/
-			matchingFormattedConversionFavorites.add(getKey2FromKey1(unit.getName())); 
-			
-			for(String candidateConversionFavorites:getKey2sByCategory(getCategoryOfKey(unit.getName()))){
-				if(candidateConversionFavorites.contains(unit.getName()))
-					matchingFormattedConversionFavorites.add(candidateConversionFavorites);
-			}
-		}
-		else if(containsItem(unit.getName())){
-			for(String formattedConversionFavorite:getAllKey2s()){
-				if(formattedConversionFavorite.contains(unit.getName()))
-					matchingFormattedConversionFavorites.add(formattedConversionFavorite);
-			}
-		}
-		return matchingFormattedConversionFavorites;
-	}
-	public List<String> getFormattedConversionsAssociatedWithCategory(String category){
-		return new ArrayList<String>(getKey2sByCategory(category));
-	}
-	
-	///
-	public static String getSourceUnitNameFromConversion(String formattedConversion){
-		String[] categoryNConversionUnitNames = formattedConversion.split(DELIMITERS[0]);
-		return categoryNConversionUnitNames[1].split(DELIMITERS[1])[0];
-	}
-	public static String getTargetUnitNameFromConversion(String formattedConversion){
-		String[] categoryNConversionUnitNames = formattedConversion.split(DELIMITERS[0]);
-		return categoryNConversionUnitNames[1].split(DELIMITERS[1])[1];
-	}
-	public static String getUnitCategoryFromFormattedConversion(String formattedConversion){
-		return formattedConversion.split(DELIMITERS[0])[0];
-	}
-	
-	///
-	private String convertToFormattedConversion(Unit sourceUnit, Unit targetUnit){
-		return convertToFormattedConversion(sourceUnit.getCategory(), sourceUnit.getName(), targetUnit.getName());
-	}
-	public static  String convertToFormattedConversion(String category, String sourceUnitName, String targetUnitName){
-		return category.toUpperCase()+DELIMITERS[0]+sourceUnitName +DELIMITERS[1]+ targetUnitName;
-	}
-	
-	///
-	public Collection<String> getAllFormattedConversions(){
-		return getAllKey2s();
-	}
+    ///
+    public String addConversion(Unit sourceUnit, Unit targetUnit) {
+        String formattedConversion = convertToFormattedConversion(sourceUnit, targetUnit);
+        if (sourceUnit.getUnitManagerContext() == targetUnit.getUnitManagerContext()
+                && UnitOperators.equalsDimension(sourceUnit,targetUnit)
+                && ContentDeterminer.determineGeneralDataModelCategory(sourceUnit) != ContentDeterminer.DATA_MODEL_CATEGORY.UNKNOWN) {
+            return repositoryWithDualKeyNCategory.addItem(sourceUnit.getCategory(), sourceUnit.getName()
+                    , formattedConversion, targetUnit.getName()) != null ? formattedConversion : "";
+        }
+        return "";
+    }
+
+    public String addConversion(String unitCategory, String sourceUnitName, String targetUnitName) {
+        String formattedConversion = convertToFormattedConversion(unitCategory, sourceUnitName, targetUnitName);
+        return repositoryWithDualKeyNCategory.addItem(unitCategory, sourceUnitName, formattedConversion, targetUnitName) != null ? formattedConversion : "";
+    }
+
+    public String addConversion(Quantity sourceQuantity, Quantity targetQuantity) throws SerializingException {
+        if (sourceQuantity.getUnitManagerContext() == targetQuantity.getUnitManagerContext()
+                && QuantityOperators.equalsUnitDimensionOf(sourceQuantity, targetQuantity)) {
+
+            //Properly update other conversions based on if they are associated by unit or category
+            for (Unit sourceUnit : sourceQuantity.getUnits()) {
+                modifySignificanceRankOfMultipleConversions(sourceUnit, true);
+            }
+            for (Unit targetUnit : targetQuantity.getUnits()) {
+                modifySignificanceRankOfMultipleConversions(targetUnit, true);
+            }
+            modifySignificanceRankOfMultipleConversions(sourceQuantity.getLargestUnit().getCategory(), true);
+
+            return addConversion(sourceQuantity.getLargestUnit().getCategory()
+                    , sourceQuantity.getUnitNames(), targetQuantity.getUnitNames());
+        }
+        return "";
+    }
+
+    ///
+    public boolean removeConversionByUnitPair(Unit sourceUnit, Unit targetUnit) {
+        modifySignificanceRankOfMultipleConversions(sourceUnit, false);
+        modifySignificanceRankOfMultipleConversions(targetUnit, false);
+        return repositoryWithDualKeyNCategory.removeItemByKey(convertToFormattedConversion(sourceUnit, targetUnit));
+    }
+
+    public boolean removeFormattedConversion(String formattedConversion) {
+        String sourceUnitName = getSourceUnitNameFromConversion(formattedConversion);
+        String targetUnitName = getTargetUnitNameFromConversion(formattedConversion);
+        String unitCategory = parseUnitCategoryFromConversion(formattedConversion);
+
+        if (repositoryWithDualKeyNCategory.removeItemByKey(formattedConversion)) {
+            modifySignificanceRankOfMultipleConversions(unitCategory, false);
+            //Add extra significance decrement to conversion that contains source and target unit.
+            for (String favoriteConversion : getFormattedConversionsAssociatedWithCategory(unitCategory)) {
+                if (favoriteConversion.contains(sourceUnitName) || favoriteConversion.contains(targetUnitName))
+                    significanceRankRepository.modifySignificanceRankOfConversion(favoriteConversion, -1);
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    public boolean removeAllConversionsWithUnit(Unit unit) {
+        boolean removed = repositoryWithDualKeyNCategory.removeItemByKey(unit.getName()) //Remove by source unit name
+                || repositoryWithDualKeyNCategory.removeItem(unit.getName()); // Remove by target unit name
+        if (removed) {
+            modifySignificanceRankOfMultipleConversions(unit.getCategory(), false);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean removedAllConversionWithCategory(String unitCategory) {
+        return repositoryWithDualKeyNCategory.removeCategory(unitCategory);
+    }
+
+    ///
+    public boolean hasAsASourceUnit(String unitName) {
+        return repositoryWithDualKeyNCategory.containsKey(unitName);
+    }
+
+    public boolean hasAsATargetUnit(String unitName) {
+        return repositoryWithDualKeyNCategory.containsItem(unitName);
+    }
+
+    public boolean hasUnit(String unitName) {
+        return hasAsASourceUnit(unitName) || hasAsATargetUnit(unitName);
+    }
+
+    public boolean hasConversion(String conversion) {
+        return repositoryWithDualKeyNCategory.isKey2(conversion);
+    }
+
+    public boolean hasUnitCategory(String unitCategory) {
+        return repositoryWithDualKeyNCategory.containsCategory(unitCategory);
+    }
+
+    ///
+    public void modifySignificanceRankOfMultipleConversions(Unit unit, boolean increase) {
+        //Increase rank of conversions with related units. Add an extra rank rating to conversion
+        //specifically containing the unit.
+        modifySignificanceRankOfMultipleConversions(unit.getCategory(), increase);
+        significanceRankRepository.modifySignificanceRankOfMultipleConversions(getFormattedConversionsAssociatedWithUnit(unit), increase ? 1 : -1);
+    }
+
+    public void modifySignificanceRankOfMultipleConversions(String category, boolean increase) {
+        significanceRankRepository.modifySignificanceRankOfMultipleConversions(getFormattedConversionsAssociatedWithCategory(category), increase ? 1 : -1);
+    }
+
+    /**
+     * Increases a formatted conversion's ranks by a specific delta amount. This should be rarely used.
+     */
+    public void modifySignificanceRankOfConversion(String formattedConversion, int rankDelta) {
+        significanceRankRepository.modifySignificanceRankOfConversion(formattedConversion, rankDelta);
+    }
+
+    ///
+    public Collection<String> getFormattedConversionsAssociatedWithUnit(Unit unit) {
+        ArrayList<String> matchingFormattedConversionFavorites = new ArrayList<>();
+        if (repositoryWithDualKeyNCategory.containsKey(unit.getName())) {
+            /*Since bijection is not ensured, there is no guarantee that all related conversions would be retrieved simply by constant time mapped key references.
+             * Therefore, a non constant time is necessary.*/
+            matchingFormattedConversionFavorites.add(repositoryWithDualKeyNCategory.getKey2FromKey1(unit.getName()));
+
+            for (String candidateConversionFavorites : repositoryWithDualKeyNCategory.getKey2sByCategory(repositoryWithDualKeyNCategory.getCategoryOfKey(unit.getName()))) {
+                if (candidateConversionFavorites.contains(unit.getName()))
+                    matchingFormattedConversionFavorites.add(candidateConversionFavorites);
+            }
+        } else if (repositoryWithDualKeyNCategory.containsItem(unit.getName())) {
+            for (String formattedConversionFavorite : repositoryWithDualKeyNCategory.getAllKey2s()) {
+                if (formattedConversionFavorite.contains(unit.getName()))
+                    matchingFormattedConversionFavorites.add(formattedConversionFavorite);
+            }
+        }
+        return matchingFormattedConversionFavorites;
+    }
+
+    public Collection<String> getFormattedConversionsAssociatedWithCategory(String category) {
+        return new ArrayList<>(repositoryWithDualKeyNCategory.getKey2sByCategory(category));
+    }
+
+    ///
+    public String getSourceUnitNameFromConversion(String formattedConversion) {
+        //Use a quick constant time lookup to find corresponding source unit associated with conversion, otherwsie use string transformations
+        if (hasConversion(formattedConversion)) {
+            return repositoryWithDualKeyNCategory.getKey1FromKey2(formattedConversion);
+        }
+        return formattedConversion.split(CATEGORY_DELIMITER)[1].split(CONVERSION_DELIMITER)[0];
+    }
+
+    public String getTargetUnitNameFromConversion(String formattedConversion) {
+        //Use a quick constant time lookup to find corresponding target unit associated with conversion, otherwsie use string transformations
+        if (hasConversion(formattedConversion)) {
+            return repositoryWithDualKeyNCategory.getFirstItemByAnyKey(formattedConversion);
+        }
+        return formattedConversion.split(CATEGORY_DELIMITER)[1].split(CONVERSION_DELIMITER)[1];
+    }
+
+    ///
+    private String convertToFormattedConversion(Unit sourceUnit, Unit targetUnit) {
+        return convertToFormattedConversion(sourceUnit.getCategory(), sourceUnit.getName(), targetUnit.getName());
+    }
+
+    private String convertToFormattedConversion(String category, String sourceUnitName, String targetUnitName) {
+        return category.toUpperCase() + CATEGORY_DELIMITER + sourceUnitName + CONVERSION_DELIMITER + targetUnitName;
+    }
+
+    ///
+    public static String parseUnitCategoryFromConversion(String formattedConversion) {
+        return formattedConversion.split(CATEGORY_DELIMITER)[0];
+    }
+
+    ///
+    public int getSignificanceRankOfConversion(String formattedConversion){
+        return significanceRankRepository.getSignificanceRankOfConversion(formattedConversion);
+    }
+
+    ///
+    public void setSignificanceRankRepository(SignificanceRankHashedRepository significanceRankRepository){
+        this.significanceRankRepository = significanceRankRepository;
+    }
+
+    ///
+    public Collection<String> getAllFormattedConversions() {
+        return repositoryWithDualKeyNCategory.getAllKey2s();
+    }
+
+    public Collection<String> getAllSourceUnits() {
+        return repositoryWithDualKeyNCategory.getAllKey1s();
+    }
+
+    public Collection<String> getAllTargetUnits() {
+        return repositoryWithDualKeyNCategory.getAllItems();
+    }
 }

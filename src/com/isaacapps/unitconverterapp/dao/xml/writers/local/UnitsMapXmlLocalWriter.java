@@ -1,80 +1,88 @@
 package com.isaacapps.unitconverterapp.dao.xml.writers.local;
 
+import android.content.Context;
+
+import com.isaacapps.unitconverterapp.dao.xml.writers.XmlWriter;
+import com.isaacapps.unitconverterapp.models.measurables.unit.Unit;
+
+import org.xmlpull.v1.XmlSerializer;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map.Entry;
 
-import org.xmlpull.v1.XmlSerializer;
-
-import com.isaacapps.unitconverterapp.dao.xml.writers.XmlWriter;
-import com.isaacapps.unitconverterapp.models.Unit;
-
-import android.content.Context;
-
 public class UnitsMapXmlLocalWriter extends XmlWriter<Collection<Unit>> {
 
-	///
-	public UnitsMapXmlLocalWriter(Context context){
-		super(context);
-		destination = "DynamicUnits.xml";
-	}
-	
-	///
-	@Override
-	protected void writeEntity(XmlSerializer serializer, String namespace, Collection<Unit> units) throws IllegalArgumentException, IllegalStateException, IOException{
-		for(Unit unit:units){
-			serializer.startTag(namespace, "unit");
+    ///
+    public UnitsMapXmlLocalWriter(Context context) {
+        super(context);
+        destination = "DynamicUnits.xml";
+    }
 
-				serializer.startTag(namespace, "unitName");
-					serializer.text(unit.getName());
-				serializer.endTag(namespace, "unitName");
-				
-				serializer.startTag(namespace, "unitSystem");
-					serializer.text(unit.getUnitSystem());
-				serializer.endTag(namespace, "unitSystem");
-				
-				serializer.startTag(namespace, "abbreviation");
-					serializer.text(unit.getAbbreviation());
-				serializer.endTag(namespace, "abbreviation");
-				
-				serializer.startTag(namespace, "unitCategory");
-					serializer.text(unit.getCategory());
-				serializer.endTag(namespace, "unitCategory");
-				
-				serializer.startTag(namespace, "unitDescription");
-					serializer.text(unit.getDescription());
-				serializer.endTag(namespace, "unitDescription");
-				
-				serializer.startTag(namespace, "componentUnits");
-					for(Entry<String, Double> entry:unit.getComponentUnitsDimension().entrySet()){
-						serializer.startTag(namespace, "component");
-							serializer.startTag(namespace, "unitName");
-								serializer.text(entry.getKey());
-							serializer.endTag(namespace, "unitName");
-							
-							serializer.startTag(namespace, "exponent");
-								serializer.text(entry.getValue().toString());
-							serializer.endTag(namespace, "exponent");
-						serializer.endTag(namespace, "component");
-					}
-				serializer.endTag(namespace, "componentUnits");
-				
-				serializer.startTag(namespace, "baseConversionPolyCoeffs");
-					serializer.startTag(namespace, "baseUnit");
-						serializer.text(unit.getBaseUnit().getName());
-					serializer.endTag(namespace, "baseUnit");
-					
-					serializer.startTag(namespace, "polynomialCoeffs");
-						String polyCoeffsString = "";
-						for(int i=0;i<unit.getBaseConversionPolyCoeffs().length;i++){
-							polyCoeffsString += Double.toString(unit.getBaseConversionPolyCoeffs()[i])+" ";
-						}
-						serializer.text(polyCoeffsString);
-					serializer.endTag(namespace, "polynomialCoeffs");		
-				serializer.endTag(namespace, "baseConversionPolyCoeffs");			
-			
-			serializer.endTag(namespace, "unit");
-		}
-	}
-	
+    ///
+    @Override
+    protected void writeEntity(XmlSerializer xmlSerializer, String namespace, Collection<Unit> units) throws IllegalArgumentException, IllegalStateException, IOException {
+        for (Unit unit : units) {
+            xmlSerializer.startTag(namespace, "unit");
+
+            xmlSerializer.startTag(namespace, "unitName");
+            xmlSerializer.text(unit.getName());
+            xmlSerializer.endTag(namespace, "unitName");
+
+            xmlSerializer.startTag(namespace, "unitNameAliases");
+            for (String alias : unit.getAliases()) {
+                xmlSerializer.startTag(namespace, "alias");
+                xmlSerializer.text(alias);
+                xmlSerializer.endTag(namespace, "alias");
+            }
+            xmlSerializer.endTag(namespace, "unitNameAliases");
+
+            xmlSerializer.startTag(namespace, "unitSystem");
+            xmlSerializer.text(unit.getUnitSystem());
+            xmlSerializer.endTag(namespace, "unitSystem");
+
+            xmlSerializer.startTag(namespace, "abbreviation");
+            xmlSerializer.text(unit.getAbbreviation());
+            xmlSerializer.endTag(namespace, "abbreviation");
+
+            xmlSerializer.startTag(namespace, "unitCategory");
+            xmlSerializer.text(unit.getCategory());
+            xmlSerializer.endTag(namespace, "unitCategory");
+
+            xmlSerializer.startTag(namespace, "unitDescription");
+            xmlSerializer.text(unit.getDescription());
+            xmlSerializer.endTag(namespace, "unitDescription");
+
+            xmlSerializer.startTag(namespace, "componentUnits");
+            for (Entry<String, Double> entry : unit.getComponentUnitsDimension().entrySet()) {
+                xmlSerializer.startTag(namespace, "component");
+                xmlSerializer.startTag(namespace, "unitName");
+                xmlSerializer.text(entry.getKey());
+                xmlSerializer.endTag(namespace, "unitName");
+
+                xmlSerializer.startTag(namespace, "exponent");
+                xmlSerializer.text(entry.getValue().toString());
+                xmlSerializer.endTag(namespace, "exponent");
+                xmlSerializer.endTag(namespace, "component");
+            }
+            xmlSerializer.endTag(namespace, "componentUnits");
+
+            xmlSerializer.startTag(namespace, "baseConversionPolyCoeffs");
+            xmlSerializer.startTag(namespace, "baseUnit");
+            xmlSerializer.text(unit.getBaseUnit().getName());
+            xmlSerializer.endTag(namespace, "baseUnit");
+
+            xmlSerializer.startTag(namespace, "polynomialCoeffs");
+            StringBuilder polyCoeffsString = new StringBuilder();
+            for (int i = 0; i < unit.getBaseConversionPolyCoeffs().length; i++) {
+                polyCoeffsString.append(Double.toString(unit.getBaseConversionPolyCoeffs()[i])).append(" ");
+            }
+            xmlSerializer.text(polyCoeffsString.toString());
+            xmlSerializer.endTag(namespace, "polynomialCoeffs");
+            xmlSerializer.endTag(namespace, "baseConversionPolyCoeffs");
+
+            xmlSerializer.endTag(namespace, "unit");
+        }
+    }
+
 }

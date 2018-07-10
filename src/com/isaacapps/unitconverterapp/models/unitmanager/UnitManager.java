@@ -1,57 +1,89 @@
 package com.isaacapps.unitconverterapp.models.unitmanager;
 
-import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.*;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.ConversionFavoritesDataModel;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.FundamentalUnitsDataModel;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.PrefixesDataModel;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.UnitsClassifierDataModel;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsDataModel;
 
-//This class acts almost like a service locator that contains accessible references to service-like objects that share a particular environment.
-public final class UnitManager{
-	public static enum DATA_MODEL_CATEGORY{CORE, DYNAMIC, UNKNOWN};
-		
-	private PrefixesDataModel prefixesDataModel;
-	private UnitsDataModel unitsDataModel;
-	private FundamentalUnitsDataModel fundamentalUnitsDataModel;
-	private UnitsClassifierDataModel unitsClassifierDataModel;
-	private ConversionFavoritesDataModel conversionFavoritesDataModel;
-	
-	///Should ideally only be invoked by the UnitManagerBuilder
-	UnitManager(){}
+import java.util.Locale;
 
-	///
-	public PrefixesDataModel getPrefixesDataModel() {
-		return prefixesDataModel;
-	}
-	void setPrefixesModelData(PrefixesDataModel modelData){
-		this.prefixesDataModel = modelData;
-		this.prefixesDataModel.setUnitManagerContext(this);
-	}
-	
-	public UnitsDataModel getUnitsDataModel() {
-		return unitsDataModel;
-	}
-	void setUnitsModelData(UnitsDataModel modelData){ //Should ideally only be invoked by the UnitManagerBuilder
-		this.unitsDataModel = modelData;
-		this.unitsDataModel.setUnitManagerContext(this);
-	}
-	
-	public UnitsClassifierDataModel getUnitsClassifierDataModel() {
-		return unitsClassifierDataModel;
-	}
-	void setUnitsClassifierDataModel(UnitsClassifierDataModel unitsClassifierDataModel){ //Should ideally only be invoked by the UnitManagerBuilder
-		this.unitsClassifierDataModel = unitsClassifierDataModel;
-	}
-	
-	public FundamentalUnitsDataModel getFundamentalUnitsDataModel() {
-		return fundamentalUnitsDataModel;
-	}
-	void setFundamentalUnitsModelData(FundamentalUnitsDataModel modelData){  //Should ideally only be invoked by the UnitManagerBuilder
-		this.fundamentalUnitsDataModel = modelData;
-		this.fundamentalUnitsDataModel.setUnitManagerContext(this);
-	}	
-	
-	public ConversionFavoritesDataModel getConversionFavoritesDataModel(){
-		return conversionFavoritesDataModel;
-	}
-	void setConversionFavoritesDataModel(ConversionFavoritesDataModel conversionFavoritesDataModel) {
-		this.conversionFavoritesDataModel = conversionFavoritesDataModel;
-	}
+/**
+ * This class provides access to a set of components sharing the same environment that have grouped functionalitiees allowing for the storage and manipulation of units.
+ */
+public class UnitManager {
+    private Locale locale;
+    private PrefixesDataModel prefixesDataModel;
+    private UnitsDataModel unitsDataModel;
+    private FundamentalUnitsDataModel fundamentalUnitsDataModel;
+    private UnitsClassifierDataModel unitsClassifierDataModel;
+    private ConversionFavoritesDataModel conversionFavoritesDataModel;
+
+    /**
+     * Should ideally only be invoked by the UnitManagerBuilder
+     */
+
+    UnitManager(Locale locale) {
+        this.locale = locale;
+    }
+
+    ///
+    public PrefixesDataModel getPrefixesDataModel() {
+        return prefixesDataModel;
+    }
+    void setPrefixesModelData(PrefixesDataModel modelData) {
+        this.prefixesDataModel = modelData;
+        this.prefixesDataModel.setUnitsDataModel(unitsDataModel);
+    }
+
+    public UnitsDataModel getUnitsDataModel() {
+        return unitsDataModel;
+    }
+    /**
+     * Should ideally only be invoked by the UnitManagerBuilder
+     */
+    void setUnitsModelData(UnitsDataModel modelData) {
+        this.unitsDataModel = modelData;
+        this.unitsDataModel.setUnitManagerContext(this);
+        this.unitsDataModel.setLocale(locale);
+    }
+
+    public UnitsClassifierDataModel getUnitsClassifierDataModel() {
+        return unitsClassifierDataModel;
+    }
+    /**
+     * Should ideally only be invoked by the UnitManagerBuilder
+     */
+    void setUnitsClassifierDataModel(UnitsClassifierDataModel unitsClassifierDataModel) {
+        this.unitsClassifierDataModel = unitsClassifierDataModel;
+    }
+
+    public FundamentalUnitsDataModel getFundamentalUnitsDataModel() {
+        return fundamentalUnitsDataModel;
+    }
+    /**
+     * Should ideally only be invoked by the UnitManagerBuilder
+     */
+    void setFundamentalUnitsModelData(FundamentalUnitsDataModel fundamentalUnitsDataModel) {
+        this.fundamentalUnitsDataModel = fundamentalUnitsDataModel;
+        this.fundamentalUnitsDataModel.setUnitsDataModel(unitsDataModel);
+    }
+
+    public ConversionFavoritesDataModel getConversionFavoritesDataModel() {
+        return conversionFavoritesDataModel;
+    }
+    void setConversionFavoritesDataModel(ConversionFavoritesDataModel conversionFavoritesDataModel) {
+        this.conversionFavoritesDataModel = conversionFavoritesDataModel;
+    }
+
+    ///
+    public Locale getLocale() {
+        return locale;
+    }
+
+    public void setLocale(Locale locale) {
+        this.locale = locale;
+        this.unitsDataModel.setLocale(locale);
+    }
 }
 

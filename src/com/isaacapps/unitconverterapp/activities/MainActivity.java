@@ -1,602 +1,648 @@
 package com.isaacapps.unitconverterapp.activities;
 
-import java.util.*;
-import java.util.regex.Pattern;
-
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
-import android.support.v4.app.*;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.LoaderManager;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
-import android.app.AlertDialog;
-import android.content.*;
-import android.graphics.Color;
-import android.view.*;
-import android.view.View.*;
-import android.view.animation.*;
-import android.widget.*;
+import android.text.InputType;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnFocusChangeListener;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.MultiAutoCompleteTextView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+import android.widget.ToggleButton;
 
-import com.isaacapps.unitconverterapp.activities.R;
-import com.isaacapps.unitconverterapp.dao.xml.readers.local.*;
-import com.isaacapps.unitconverterapp.dao.xml.readers.online.*;
-import com.isaacapps.unitconverterapp.models.*;
-import com.isaacapps.unitconverterapp.models.unitmanager.*;
-import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager.DATA_MODEL_CATEGORY;
-import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.UnitsDataModel;
+import com.isaacapps.unitconverterapp.dao.xml.readers.local.FundamentalUnitsMapXmlLocalReader;
+import com.isaacapps.unitconverterapp.dao.xml.readers.local.PrefixesMapXmlLocalReader;
+import com.isaacapps.unitconverterapp.dao.xml.readers.local.UnitsMapXmlLocalReader;
+import com.isaacapps.unitconverterapp.dao.xml.readers.online.EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader;
+import com.isaacapps.unitconverterapp.dao.xml.readers.online.PrefixesNUnitsMapXmlOnlineReader;
+import com.isaacapps.unitconverterapp.models.measurables.quantity.Quantity;
+import com.isaacapps.unitconverterapp.models.measurables.unit.Unit;
+import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager;
+import com.isaacapps.unitconverterapp.models.unitmanager.UnitManagerBuilder;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.FundamentalUnitsDataModel;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.PrefixesDataModel;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.ContentDeterminer;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.ContentDeterminer.DATA_MODEL_CATEGORY;
+import com.isaacapps.unitconverterapp.processors.converters.QuantityConverter;
+import com.isaacapps.unitconverterapp.processors.formatters.grouping.GroupingFormatter;
+import com.isaacapps.unitconverterapp.processors.formatters.grouping.UnitNamesGroupingFormatter;
+import com.isaacapps.unitconverterapp.processors.formatters.grouping.ValuesGroupingFormatter;
+import com.isaacapps.unitconverterapp.processors.formatters.text.GeneralTextFormatter;
+import com.isaacapps.unitconverterapp.processors.operators.measurables.QuantityOperators;
+import com.isaacapps.unitconverterapp.processors.parsers.dimension.componentunits.ComponentUnitsDimensionParser;
+import com.isaacapps.unitconverterapp.processors.parsers.measurables.quantity.QuantityGroupingDefiner;
+import com.isaacapps.unitconverterapp.processors.parsers.measurables.quantity.tokeniser.SerialGroupingQuantityTokenizer;
+import com.isaacapps.unitconverterapp.processors.parsers.measurables.unit.UnitParser;
+import com.isaacapps.unitconverterapp.processors.serializers.SerializingException;
+import com.isaacapps.unitconverterapp.processors.serializers.dimension.componentnunit.ComponentUnitsDimensionItemSerializer;
+import com.isaacapps.unitconverterapp.processors.serializers.dimension.componentnunit.ComponentUnitsDimensionSerializer;
+import com.isaacapps.unitconverterapp.processors.serializers.dimension.fundamentalunit.FundamentalUnitTypesDimensionItemSerializer;
+import com.isaacapps.unitconverterapp.processors.serializers.dimension.fundamentalunit.FundamentalUnitTypesDimensionSerializer;
 
-public class MainActivity extends FragmentActivity implements LoaderManager.LoaderCallbacks<UnitManagerBuilder>{
-	private static enum LOADER{LOCAL_UNITS_LOADER, FUND_UNITS_LOADER, ONLINE_CURRENCY_UNITS_LOADER
-		                          , LOCAL_PREFIXES_LOADER, ONLINE_PREFIXES_N_UNITS_LOADER, POST_LOADER}
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
 
-	PersistentSharablesApplication pSharablesApplication;
-	UnitManager unitManager;
-	Quantity fromQuantity, toQuantity;
+public class MainActivity extends FragmentActivity implements LoaderManager.LoaderCallbacks<UnitManagerBuilder> {
+    private static final int LOCAL_UNITS_LOADER = 0, FUND_UNITS_LOADER = 1, ONLINE_CURRENCY_UNITS_LOADER = 2, LOCAL_PREFIXES_LOADER = 3, ONLINE_PREFIXES_N_UNITS_LOADER = 4, POST_LOADER = 5;
 
-	ProgressBar unitManagerLoaderProgressBar;
-	TextView progressBarTextView;
+    static public final String SOURCE_NAME = "Source";
+    static public final String TARGET_NAME = "Target";
+    private PersistentSharablesApplication pSharablesApplication;
+    private UnitManager unitManager;
+    private Quantity sourceQuantity, targetQuantity;
 
-	Button fromUnitBrowseButton, toUnitBrowseButton, convertButton;	
-	Button fromUnitViewInfoButton, toUnitViewInfoButton;
-	ToggleButton fromValueExpressionToggleButton;
-	
-	Animation convertButtonAnimation;
-	
-	MultiAutoCompleteTextView fromUnitTextView;
-	TextView fromValueTextView;
-	MultiAutoCompleteTextView toUnitTextView;
-	TextView conversionValueTextView;
+    private Locale locale;
+    private QuantityGroupingDefiner quantityGroupingDefiner;
+    private GroupingFormatter generalGroupingFormatter;
+    private UnitNamesGroupingFormatter unitNamesGroupingFormatter;
+    private ValuesGroupingFormatter valuesGroupingFormatter;
+    private SerialGroupingQuantityTokenizer serialGroupingQuantityTokenizer;
+    private ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer;
+    private FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer;
 
-	AlertDialog unitInfoDialog;
-	
-	MenuItem multiModeMenuItem;
-	boolean isMultiUnitMode;
-	
-	///
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
-		
-		pSharablesApplication = (PersistentSharablesApplication)this.getApplication();
-		
-		fromQuantity = pSharablesApplication.getFromQuantity();
-		toQuantity = pSharablesApplication.getToQuantity();
-		
-		isMultiUnitMode = false;
-			
-		//
-		setupUIComponents();
-		
-		setupAnimations();
-		
-		setListenersOnMainButtons();
-		setListenersOnTextViews();
-		
-		loadUnitManager();
-		
-	}
-	@Override
-	protected void onPause(){
-		super.onPause();;
-	}
-	@Override
-	public void onWindowFocusChanged(boolean hasFocus) {
-		super.onWindowFocusChanged(hasFocus);
-		
-		if(hasFocus){
-			if (fromQuantity.hasValidGroup()){
-				fromUnitTextView.setText(fromQuantity.getUnitNames());	
-				fromValueTextView.setText(fromQuantity.getValuesString());
-			}
-			
-			if (toQuantity.hasValidGroup())
-				toUnitTextView.setText(toQuantity.getUnitNames());				
-			
-			checkUnits();	
-		}
-		else{
-			pSharablesApplication.saveUnits();
-			pSharablesApplication.saveConversionFavorites();
-		}
-	}
-	
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.main, menu);
-		multiModeMenuItem = menu.findItem(R.id.multiUnitModeItem);
-		return true;
-	}
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item){
-		switch(item.getItemId()){
-		case R.id.addToFavoritesItem:
-			if(fromQuantity.getUnits().size() == 1 && toQuantity.getUnits().size() == 1
-			   && pSharablesApplication.getUnitManager().getConversionFavoritesDataModel().addConversion(fromQuantity.getLargestUnit(), toQuantity.getLargestUnit()) )
-			{
-				fromUnitTextView.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.slide_out_right));
-				toUnitTextView.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.slide_out_right));
-			}	
-			return true;
-		case R.id.viewFavoritesItem:
-			Intent i = new Intent(MainActivity.this, ConversionFavoritesActivity.class);
-			startActivity(i);
-			return true;
-		case R.id.flipItem:
-			String tempText = fromUnitTextView.getText().toString();
-			
-			fromUnitTextView.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.fade_in));
-			fromUnitTextView.setText(toUnitTextView.getText().toString());
-			
-			toUnitTextView.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.fade_in));
-			toUnitTextView.setText(tempText);
-			
-			setFromUnitsIntoQuantity();
-			setToUnitIntoQuantity();
-			
-			if(checkUnits() && checkNSetFromValuesIntoQuantity())
-				getConversion();
-			
-			return true;
-		case R.id.multiUnitModeItem:
-			isMultiUnitMode = !item.isChecked();
-			item.setChecked(isMultiUnitMode);
-			item.setTitle(item.getTitle().toString().replaceFirst(":.+", isMultiUnitMode?":ON":":OFF"));
-			item.setTitleCondensed(item.getTitleCondensed().toString().replaceFirst(":.+", isMultiUnitMode?":ON":":OFF"));
-			
-			if(isMultiUnitMode){
-				//No grouping exist, then add some dummy ones for demonstration purposes
-				if(calculateGroupCount(fromUnitTextView.getText().toString()) == 0)
-					fromUnitTextView.setText("{a} {b} {c}");
-				if(calculateGroupCount(toUnitTextView.getText().toString()) == 0)
-					toUnitTextView.setText("{a} {b} {c}");
-				
-				fromValueTextView.setText(formatValuesGroupingTypes(fromValueTextView.getText().toString()));
-				
-				adjustGroupingsCount(fromValueTextView, fromQuantity.getUnits().size(), " {1}");
-				
-				fromValueExpressionToggleButton.setChecked(false); //Grouping are not recognized by the expression evaluator
-			}
-			
-			return true;
-		default:
-			return super.onOptionsItemSelected(item);
-		}
-		
-	}
-	
-	///Setup UI Components Methods
-	private void setupUIComponents(){
-		unitManagerLoaderProgressBar = (ProgressBar) findViewById(R.id.unitManagerLoaderProgressBar);
-		progressBarTextView = (TextView) findViewById(R.id.progressBarTextView);
-		
-		//
-		fromUnitBrowseButton = (Button) findViewById(R.id.fromUnitBrowseButton);
-		toUnitBrowseButton = (Button) findViewById(R.id.toUnitBrowseButton);
-		convertButton = (Button) findViewById(R.id.convertButton);	
-		fromUnitViewInfoButton = (Button) findViewById(R.id.fromUnitViewDescButton);
-		toUnitViewInfoButton = (Button) findViewById(R.id.toUnitViewDescButton);
-		
-		//
-		fromValueExpressionToggleButton = (ToggleButton) findViewById(R.id.fromValueExpressionToggleButton);
-		
-		//
-		fromUnitTextView = (MultiAutoCompleteTextView) findViewById(R.id.fromUnitTextView);
-		fromValueTextView = (TextView) findViewById(R.id.fromValueTextView);
-		fromValueTextView.setText("1");
-		toUnitTextView = (MultiAutoCompleteTextView) findViewById(R.id.toUnitTextView);
-		conversionValueTextView = (TextView) findViewById(R.id.conversionValueTextView);
-		
-		//
-		unitInfoDialog = new AlertDialog.Builder(MainActivity.this).create();
-		unitInfoDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK", new DialogInterface.OnClickListener() {		
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				dialog.dismiss();
-			}
-		});
-	}
-	
-	///Setup Animation Methods
-	private void setupAnimations(){
-		convertButtonAnimation = AnimationUtils.loadAnimation(MainActivity.this, R.anim.conversion_button_animation);
-	}
-	
-	///Unit Manager Loading Methods
-	private void loadUnitManager(){
-		if(!pSharablesApplication.isUnitManagerPreReqLoadingComplete()){
-			//getSupportLoaderManager().initLoader(LOADER.ONLINE_PREFIXES_N_UNITS_LOADER.ordinal(), null, this).forceLoad();
-			getSupportLoaderManager().initLoader(LOADER.LOCAL_UNITS_LOADER.ordinal(), null, this).forceLoad();
-			getSupportLoaderManager().initLoader(LOADER.LOCAL_PREFIXES_LOADER.ordinal(), null, this).forceLoad();
-			getSupportLoaderManager().initLoader(LOADER.FUND_UNITS_LOADER.ordinal(), null, this).forceLoad();	
-			//getSupportLoaderManager().initLoader(LOADER.ONLINE_CURRENCY_UNITS_LOADER.ordinal(), null, this).forceLoad();
-			
-			//
-			((LinearLayout)findViewById(R.id.progressBarLinearLayout)).setVisibility(View.VISIBLE);
-			((LinearLayout)findViewById(R.id.fromLinearLayout)).setVisibility(View.INVISIBLE);
-			((LinearLayout)findViewById(R.id.convertLinearLayout)).setVisibility(View.INVISIBLE);
-			((LinearLayout)findViewById(R.id.toLinearLayout)).setVisibility(View.INVISIBLE);
-		}
-	}
-	private void postLoadSetup(){
-		((LinearLayout)findViewById(R.id.progressBarLinearLayout)).setVisibility(View.GONE);
-		((LinearLayout)findViewById(R.id.fromLinearLayout)).setVisibility(View.VISIBLE);
-		((LinearLayout)findViewById(R.id.convertLinearLayout)).setVisibility(View.VISIBLE);
-		((LinearLayout)findViewById(R.id.toLinearLayout)).setVisibility(View.VISIBLE);
-	}
-	
-	
-	///Listeners Methods
-	private void setListenersOnMainButtons(){
+    private Button sourceUnitBrowseButton;
+    private Button sourceUnitViewInfoButton;
+    private ToggleButton sourceValueExpressionToggleButton;
+    private MultiAutoCompleteTextView sourceUnitTextView;
+    private TextView sourceValueTextView;
 
-		fromUnitBrowseButton.setOnClickListener(new OnClickListener(){
-			@Override
-			public void onClick(View view){
-				Intent i = new Intent(MainActivity.this, UnitBrowserActivity.class);
-				i.putExtra("buttonName", "from");
-				startActivity(i);
-			}
-		});
-		
-		toUnitBrowseButton.setOnClickListener(new OnClickListener(){
-			@Override
-			public void onClick(View view){
-				Intent i = new Intent(MainActivity.this, UnitBrowserActivity.class);
-				i.putExtra("buttonName", "to");
-				startActivity(i);
-			}
-		});
-		
-		fromUnitViewInfoButton.setOnClickListener(new OnClickListener() {	
-			@Override
-			public void onClick(View v) {
-				unitInfoDialog.setTitle("From Unit Details");				
-				unitInfoDialog.setMessage(getUnitDetailsMessage(fromQuantity.getUnits()));
-				unitInfoDialog.show();
-			}
-		});
-		
-		toUnitViewInfoButton.setOnClickListener(new OnClickListener() {	
-			@Override
-			public void onClick(View v) {
-				unitInfoDialog.setTitle("To Unit Details");
-				unitInfoDialog.setMessage(getUnitDetailsMessage(toQuantity.getUnits()));
-				unitInfoDialog.show();
-			}
-		});
-		
-		fromValueExpressionToggleButton.setOnCheckedChangeListener(new OnCheckedChangeListener() {
-			
-			@Override
-			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-				//TODO: Make necessary preparation to use the expression evaluator some third party library. Possibily, the JEL third party library
-				
-				if(multiModeMenuItem.isChecked())//Disable multi-unit group to prevent interference with expression evalutation 
-					onOptionsItemSelected(multiModeMenuItem);
-				
-				//
-			}
-		});
-		
-		convertButton.setOnClickListener(new OnClickListener(){
-			@Override
-			public void onClick(View view){
-				
-				setFromUnitsIntoQuantity();
-				setToUnitIntoQuantity();
-				
-				if(checkUnits() && checkNSetFromValuesIntoQuantity())
-					getConversion();
-			}
-		});
-	}
-	private String getUnitDetailsMessage(Collection<Unit> units){
-		Unit firstUnit = units.iterator().next(); //Assumption is that all units in collection are similar
-		
-		String category = firstUnit.getCategory();
-		String fundamentalTypesDim = UnitsDataModel.getDataModelCategory(firstUnit) != DATA_MODEL_CATEGORY.UNKNOWN
-												?"": Utility.getFundamentalUnitTypesDimensionAsString(firstUnit.getFundamentalUnitTypesDimension());
-		String description = units.size()==1?firstUnit.getDescription():"";
-		
-		return (category.equals(firstUnit.getUnitSystem()
-								 +fundamentalTypesDim.toLowerCase())?"":"\n\nCategory: "+ category) //Prevent display of duplicate data in case of complex units  
-								 +(description.length()==0?"":"\n\nDescription: "+description)
-								 +(fundamentalTypesDim.length()==0?"":"\n\nFundamental Types Dimension: "+fundamentalTypesDim);
-		
-	}
-	
-	private void setListenersOnTextViews(){
-		fromUnitTextView.setOnFocusChangeListener(new OnFocusChangeListener() {
-			
-			@Override
-			public void onFocusChange(View view, boolean hasFocus) {
-				if(!hasFocus){
-					
-					if(isMultiUnitMode)
-						((TextView)view).setText(formatUnitsGroupingTypes(((TextView)view).getText().toString()));
-					
-					setFromUnitsIntoQuantity();
-					
-					if(isMultiUnitMode){
-						adjustGroupingsCount(fromValueTextView, fromQuantity.getUnits().size(), " {1}");
-					}
-															
-					checkUnits();
-					
-					checkNSetFromValuesIntoQuantity();
-				}
-			}
-			
-		});
-	
-		toUnitTextView.setOnFocusChangeListener(new OnFocusChangeListener() {
-			
-			@Override
-			public void onFocusChange(View view, boolean hasFocus) {
-				if(!hasFocus){
-					
-					if(isMultiUnitMode)
-						((TextView)view).setText(formatUnitsGroupingTypes(((TextView)view).getText().toString()));
-					
-					setToUnitIntoQuantity();
-															
-					checkUnits();
-					
-					checkNSetFromValuesIntoQuantity();
-				}
-			}
-		});
-		
-		fromValueTextView.setOnFocusChangeListener(new OnFocusChangeListener(){
-			
-			@Override
-			public void onFocusChange(View view, boolean hasFocus) {
-				if(!hasFocus){
-					if(isMultiUnitMode){
-						String fromValueText = formatValuesGroupingTypes(((TextView)view).getText().toString());
-					    ((TextView)view).setText(fromValueText);
-						adjustGroupingsCount(fromUnitTextView, calculateGroupCount(fromValueText), " {a}");
-					}
-					
-					checkNSetFromValuesIntoQuantity();
-				}
-			}
-		});
-	}
-	
-	///Multi-Unit Grouping Formatting Methods
-	private int calculateGroupCount(String text){
-		//Recursively find the number of '{ [anything in between] }' groupings. Only accounts for kernel groupings if groups are nested.
-		if(text.indexOf("{") != -1 && text.indexOf("}") != -1 ){
-			if(text.indexOf("{") < text.indexOf("}")){
-				return 1 + calculateGroupCount(text.substring(text.indexOf("}")+1));
-			}
-			else{ // if the braces are not arranged appropriately, then do not tally count , ie '}[anything in between]{'
-				return calculateGroupCount(text.substring(text.indexOf("}")+1));
-			}
-		}
-		else{
-			return 0;
-		}
-	}
-	private boolean adjustGroupingsCount(TextView textViewToBeAdjusted, int referenceGroupCount, String dummyValue){
-		String text = textViewToBeAdjusted.getText().toString();
-		int groupCount = calculateGroupCount(text);
-		if(referenceGroupCount>1){
-		   //Makes grouping units and value groupings are identical
-		   if(groupCount > referenceGroupCount){
-			   while(calculateGroupCount(text) != referenceGroupCount ){
-				   text = text.replaceFirst("\\{[^\\{\\}]*\\}", ""); //remove extra groupings starting at the beginning
-			   }
-			   textViewToBeAdjusted.setText(text);
-		   }
-		   else if(groupCount < referenceGroupCount){
-			   textViewToBeAdjusted.append( new String(new char[referenceGroupCount-groupCount]).replaceAll("\0", dummyValue));
-		   }
-		   return true; 
-		}
-		   return false;
-	}
-	private String formatAnyGroupingTypes(String text){
-		/*Recursively tries to format grouping since fixing one kind of may disrupt an already fixed formatting
-		 There is probably a more efficient graph theory algorithmic approach to this.
-		 Strict regular expression restrictions that lookbacks (unlike lookaheads) have fixed lengths caused some obstacles and limitations in implementation */
-		
-		String missingStartBraceRegEx = "(?!\\A)\\}(?=[^\\{]+\\})"
-			   ,missingEndBraceRegEx = "(?<!\\A|\\})\\{(?=[^\\}]+\\{)"
-			   ,betweenGroupingRegEx = "\\}[^\\{\\}\\s]+\\{"
-			   ,extraStartBraceRegEx = "\\{[\\{]+"
-			   ,extraEndBraceRegEx = "\\}[\\}]+"
-			   ,endBraceAtBeginningRegEx = "\\A\\}\\s*\\{"
-			   ,startingBraceAtEnd = "\\{\\Z"
-			   ,edgecase = "(?<=\\})\\{(?=.+\\{)";
-		
-		
-		 // Add missing starting brace as long as the adjacent terminating brace is not in the beginning of the string, ie {aa}bb}... --> {aa}{bb}
-		if(Pattern.compile(missingStartBraceRegEx).matcher(text).find())	
-			text = formatAnyGroupingTypes(text.replaceAll(missingStartBraceRegEx, "} {"));
-		
-		// Add missing terminating brace as long as the adjacent beginning brace is not in the beginning of string or immediately to the right of a terminating brace , ie. {aa{bb}... --> {aa}{bb}
-		if(Pattern.compile(missingEndBraceRegEx).matcher(text).find())   
-			text = formatAnyGroupingTypes(text.replaceAll(missingEndBraceRegEx, "} {"));
-		
-		if(Pattern.compile(betweenGroupingRegEx).matcher(text).find()) //Nothing should be in between groupings, ie. '} dkfj [too many space characters] {' --> '} {'
-			text = formatAnyGroupingTypes(text.replaceAll(betweenGroupingRegEx, "} {"));
-		
-		if(Pattern.compile(extraStartBraceRegEx).matcher(text).find()) // Remove extra starting braces ie '{{{' --> '{'
-			text = formatAnyGroupingTypes(text.replaceAll(extraStartBraceRegEx, "{"));
+    private Button targetUnitViewInfoButton;
+    private Button targetUnitBrowseButton;
+    private MultiAutoCompleteTextView targetUnitTextView;
 
-		if(Pattern.compile(extraEndBraceRegEx).matcher(text).find()) // Remove extra starting braces ie '}}}' --> '}'
-			text = formatAnyGroupingTypes(text.replaceAll(extraEndBraceRegEx, "}"));
-		
-		if(Pattern.compile(endBraceAtBeginningRegEx).matcher(text).find()) // Remove terminating bracket at beginning, ie '} {asnd}' --> '{asnd}'
-			text = formatAnyGroupingTypes(text.replaceAll(endBraceAtBeginningRegEx, "{"));
-		
-		if(Pattern.compile(startingBraceAtEnd).matcher(text).find()) //In most cases when a line ends an starting brace, the actual intent would be a closing brace
-			text = formatAnyGroupingTypes(text.replaceAll(startingBraceAtEnd, "}"));
+    private TextView conversionValueTextView;
+    private Animation convertButtonAnimation;
+    private Button convertButton;
 
-		if(Pattern.compile(edgecase).matcher(text).find()) //Account for some edge case.
-			text = formatAnyGroupingTypes(text.replaceAll(edgecase, ""));
-		
-		return text;
-	}
-	private String formatUnitsGroupingTypes(String text){
-		if(calculateGroupCount(text)==0)
-			text = "{"+text+"}";
-		return formatAnyGroupingTypes(text.replaceAll("\\{\\s*\\}", "")); //empty grouping are removed
-	}
-	private String formatValuesGroupingTypes(String text){
-		return formatAnyGroupingTypes(text.replaceAll("\\{\\s*\\}", "{1}")); //empty grouping default to one
-	}
-	
-	///Quantity Setting and Validation Methods
-	private void setFromUnitsIntoQuantity(){
-		setUnitsIntoQuantity(false);
-	}
-	private void setToUnitIntoQuantity(){
-		setUnitsIntoQuantity(true);
-	}
-	private void setUnitsIntoQuantity(boolean isToQuantity){
-		String unitNamesOrDimension = (isToQuantity?toUnitTextView:fromUnitTextView).getText().toString();
-		unitNamesOrDimension = unitNamesOrDimension.trim();
+    private AlertDialog unitInfoDialog;
+    private MenuItem multiModeMenuItem;
+    private ProgressBar unitManagerLoaderProgressBar;
+    private TextView progressBarTextView;
 
-		Quantity selectedQuantity = (isToQuantity)?toQuantity:fromQuantity;
-		
-		//User are allowed to enter a singular unit name without grouping brackets if multi-unit mode is not on.
-		if(!(selectedQuantity.getUnitNames().replaceAll(Quantity.GROUPING_REGEX, "")
-				                        .equalsIgnoreCase(unitNamesOrDimension.replaceAll(Quantity.GROUPING_REGEX, "")))){ //Replace anything only if there is difference
-			if(unitNamesOrDimension.isEmpty()){
-				selectedQuantity.setUnitValues(Arrays.asList(pSharablesApplication.getUnitManager().getUnitsDataModel().getUnknownUnit()), Arrays.asList(1.0));
-			}
-			else{
-				selectedQuantity.setUnitValues(unitNamesOrDimension
-						           ,new String(new char[calculateGroupCount(unitNamesOrDimension)]).replaceAll("\0", "{1}")  //Associate units with placeholder values, since values will be set and checked later on.
-						           ,pSharablesApplication.getUnitManager()); 
-			}
-		}
-		
-		//Update conversion favorites rank
-		for(Unit unit:(isToQuantity?toQuantity.getUnits():fromQuantity.getUnits()))
-		{
-			pSharablesApplication.getUnitManager().getConversionFavoritesDataModel()
-											  .modifySignificanceRankOfMultipleConversions(unit, true);
-		}
-	}
-	
-	private boolean checkNSetFromValuesIntoQuantity(){
-		String selectedFromValue = fromValueTextView.getText().toString();
-	
-		if(!selectedFromValue.equalsIgnoreCase("")
-		   && !selectedFromValue.matches("\\s*0+[\\.0]*\\s*") //values that are only integer or double zero values are invalid
-		   && fromQuantity.setValues(Quantity.toValidatedValues(!selectedFromValue
-				                                                   .matches(Quantity.VALUES_GROUPING_REGEX+"+")
-				                                                                   ?"{"+selectedFromValue+"}"
-				                                                                		   :selectedFromValue)))
-		{ 	
-		    return true;			
-		}
-		else{
-			fromValueTextView.setTextColor(Color.rgb(180, 0, 0));	
-			
-			//
-			setConversionButton(false);
-			return false;
-		}
-	}
-	private boolean checkUnits(){
-		boolean FromUnitIsUnknown = UnitsDataModel.getDataModelCategory(fromQuantity.getLargestUnit()) == DATA_MODEL_CATEGORY.UNKNOWN;
-		boolean ToUnitIsUnknown = UnitsDataModel.getDataModelCategory(toQuantity.getLargestUnit()) == DATA_MODEL_CATEGORY.UNKNOWN;
-		boolean UnitsMatch = fromQuantity.equalsUnit(toQuantity);
-		boolean UnitsAreOK = !(FromUnitIsUnknown || ToUnitIsUnknown) && UnitsMatch;
+    ///
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
-		fromUnitTextView.setTextColor(Color.rgb(FromUnitIsUnknown?180:0, 0, 0));
-		toUnitTextView.setTextColor(Color.rgb(ToUnitIsUnknown?180:0, 0, 0));	
-		conversionValueTextView.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.fade_in));
-		conversionValueTextView.setTextColor(Color.rgb(UnitsAreOK? 0:200, 0, 0));
-		
-		setConversionButton(UnitsAreOK);
-		
-		//
-		if(UnitsAreOK){		
-			conversionValueTextView.setText("##:Units Match");	
-		}
-		else if(!(FromUnitIsUnknown || ToUnitIsUnknown) && !UnitsMatch){
-			conversionValueTextView.setText("XX:Units Don't Match");
-		}
-		else{				
-			String unknownsName = (FromUnitIsUnknown?"'FROM', ":"")+(ToUnitIsUnknown?"'TO', ":"");
-			String unknownsSymbol = (FromUnitIsUnknown?"?":"#")+(ToUnitIsUnknown?"?":"#");
-			
-			conversionValueTextView.setText(unknownsSymbol+": Unit In "+unknownsName+" Group(s) is Unkn. or Has Wrong Dim.");
-		}
-		
-		return UnitsAreOK;
-	}
-	
-	///Conversion Methods
-	private void getConversion(){
-		toQuantity.setValues(fromQuantity.convertToUnitsGroup(toQuantity.getUnits()).getValues());	
-				
-		conversionValueTextView.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.slide_in_left));
-		conversionValueTextView.setText(String.valueOf(toQuantity.getValuesString()));
-		
-		//
-		setConversionButton(false);
-	}
-	private void setConversionButton(boolean triggerFocus){
-		if(triggerFocus){
-			convertButton.setTextColor(Color.BLUE);
-			convertButton.startAnimation(convertButtonAnimation);
-		}
-		else{
-			convertButton.setTextColor(Color.BLACK);
-			convertButton.clearAnimation();
-		}
-	}
-	
-	///Loader Manager Methods
-	@Override
-	public Loader<UnitManagerBuilder> onCreateLoader(int id, Bundle arg1) {
-		if(id == LOADER.LOCAL_UNITS_LOADER.ordinal()){
-			return new UnitsMapXmlLocalReader(this);
-		}else if(id == LOADER.LOCAL_PREFIXES_LOADER.ordinal()){
-			return new PrefixesMapXmlLocalReader(this);	
-		}else if(id == LOADER.FUND_UNITS_LOADER.ordinal()){
-			return new FundamentalUnitsMapXmlLocalReader(this);
-		}else if(id == LOADER.ONLINE_CURRENCY_UNITS_LOADER.ordinal()){
-			return new CurrencyUnitsMapXmlOnlineReader(this);
-		} else if(id == LOADER.ONLINE_PREFIXES_N_UNITS_LOADER.ordinal()){
-			return new PrefixesNUnitsMapXmlOnlineReader(this);
-		} else if(id == LOADER.POST_LOADER.ordinal()){
-			return new AsyncTaskLoader<UnitManagerBuilder>(this){
-				@Override
-				public UnitManagerBuilder loadInBackground() {
-					((PersistentSharablesApplication)getContext().getApplicationContext()).recreateUnitManager();
-					return null;
-				}	
-			};
-		}else{
-			return null;
-		}
-	}
+        pSharablesApplication = (PersistentSharablesApplication) this.getApplication();
+        unitManager = pSharablesApplication.getUnitManager();
 
-	@Override
-	public void onLoadFinished(Loader<UnitManagerBuilder> loader, UnitManagerBuilder loadedUnitManagerBuilder) {
-		if(loadedUnitManagerBuilder != null){	
-			pSharablesApplication.getUnitManagerBuilder().combineWith(loadedUnitManagerBuilder);	 
-			pSharablesApplication.numOfLoaderCompleted++;
-		}
-	  	
-		if(pSharablesApplication.isUnitManagerPreReqLoadingComplete()){
+        sourceQuantity = pSharablesApplication.getSourceQuantity();
+        targetQuantity = pSharablesApplication.getTargetQuantity();
 
-  			if(loadedUnitManagerBuilder == null)
-  				postLoadSetup();
-  			else{
-  				getSupportLoaderManager().initLoader(LOADER.POST_LOADER.ordinal(), null, this).forceLoad();
-  			}
-  		}
-	}
+        locale = pSharablesApplication.getResources().getConfiguration().locale;
+        quantityGroupingDefiner = new QuantityGroupingDefiner();
+        generalGroupingFormatter = new GroupingFormatter(locale, quantityGroupingDefiner);
+        unitNamesGroupingFormatter = new UnitNamesGroupingFormatter(locale, quantityGroupingDefiner);
+        valuesGroupingFormatter = new ValuesGroupingFormatter(locale, quantityGroupingDefiner);
 
-	@Override
-	public void onLoaderReset(Loader<UnitManagerBuilder> arg0) {	}	
+        fundamentalUnitTypesDimensionSerializer = new FundamentalUnitTypesDimensionSerializer(locale, new FundamentalUnitTypesDimensionItemSerializer(locale, new GeneralTextFormatter(locale)));
+        componentUnitsDimensionSerializer  = new ComponentUnitsDimensionSerializer(locale, new ComponentUnitsDimensionItemSerializer(locale, new GeneralTextFormatter(locale)));
+
+        UnitParser unitParser = new UnitParser(new ComponentUnitsDimensionParser(), componentUnitsDimensionSerializer, false);
+        unitParser.setUnitManager(unitManager);
+        serialGroupingQuantityTokenizer = new SerialGroupingQuantityTokenizer(locale, unitParser, quantityGroupingDefiner, valuesGroupingFormatter, unitNamesGroupingFormatter);
+
+        //
+        setupUIComponents();
+
+        setupAnimations();
+
+        setListenersOnMainButtons();
+        setListenersOnTextViews();
+
+        loadUnitManager();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+
+        if (hasFocus) {
+            try {
+                sourceUnitTextView.setText(sourceQuantity.getUnitNames());
+                sourceValueTextView.setText(sourceQuantity.getValuesString());
+                targetUnitTextView.setText(targetQuantity.getUnitNames());
+
+                checkUnits();
+            }
+            catch(Exception e){}
+        } else {
+            pSharablesApplication.saveUnits();
+            pSharablesApplication.saveConversionFavorites();
+        }
+    }
+
+    ///Menu Methods
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.main, menu);
+        multiModeMenuItem = menu.findItem(R.id.multiUnitModeItem);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.addToFavoritesItem:
+                addToFavorites(item);
+                return true;
+            case R.id.viewFavoritesItem:
+                viewFavorites(item);
+                return true;
+            case R.id.flipItem:
+                flipConversion(item);
+                return true;
+            case R.id.multiUnitModeItem:
+                setMultiUnitMode(item);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    private void addToFavorites(MenuItem item) {
+        boolean conversionPossible = unitManager.getConversionFavoritesDataModel()
+                .addConversion(sourceQuantity.getLargestUnit(), targetQuantity.getLargestUnit()).length() > 0;
+
+        if (conversionPossible) {
+            sourceUnitTextView.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.slide_out_right));
+            targetUnitTextView.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.slide_out_right));
+        }
+    }
+
+    private void viewFavorites(MenuItem item) {
+        Intent i = new Intent(MainActivity.this, ConversionFavoritesActivity.class);
+        startActivity(i);
+    }
+
+    private void flipConversion(MenuItem item) {
+        String tempText = sourceUnitTextView.getText().toString();
+
+        sourceUnitTextView.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.fade_in));
+        sourceUnitTextView.setText(targetUnitTextView.getText().toString());
+
+        targetUnitTextView.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.fade_in));
+        targetUnitTextView.setText(tempText);
+
+        setSourceUnitsIntoQuantity();
+        setTargetUnitIntoQuantity();
+
+        if (checkUnits() && checkNSetSourceValuesIntoQuantity())
+            processConversion();
+    }
+
+    private void setMultiUnitMode(MenuItem item) {
+        boolean isMultiUnitMode = !item.isChecked();
+        item.setChecked(isMultiUnitMode);
+        item.setTitle(item.getTitle().toString().replaceFirst(":.+", isMultiUnitMode ? ":ON" : ":OFF"));
+        item.setTitleCondensed(item.getTitleCondensed().toString().replaceFirst(":.+", isMultiUnitMode ? ":ON" : ":OFF"));
+
+        if (isMultiUnitMode) {
+            //No grouping exist, then add some dummy ones for demonstration purposes
+            if (generalGroupingFormatter.calculateGroupingCount(sourceUnitTextView.getText().toString()) == 0)
+                sourceUnitTextView.setText("{a} {b} {c}");
+            if (generalGroupingFormatter.calculateGroupingCount(targetUnitTextView.getText().toString()) == 0)
+                targetUnitTextView.setText("{a} {b} {c}");
+
+            sourceValueTextView.setText(valuesGroupingFormatter.format(sourceValueTextView.getText().toString()));
+
+            adjustTextViewGroupingsCount(sourceValueTextView, sourceQuantity.getUnits().size(), " {1}");
+
+            sourceValueExpressionToggleButton.setChecked(false); //Bracketed groupings are not recognized by the expression evaluator
+        }
+    }
+
+    ///Setup UI Components Methods
+    private void setupUIComponents() {
+        unitManagerLoaderProgressBar = (ProgressBar) findViewById(R.id.unitManagerLoaderProgressBar);
+        progressBarTextView = (TextView) findViewById(R.id.progressBarTextView);
+
+        //
+        sourceUnitBrowseButton = (Button) findViewById(R.id.sourceUnitBrowseButton);
+        targetUnitBrowseButton = (Button) findViewById(R.id.targetUnitBrowseButton);
+        convertButton = (Button) findViewById(R.id.convertButton);
+        sourceUnitViewInfoButton = (Button) findViewById(R.id.sourceUnitViewDescButton);
+        targetUnitViewInfoButton = (Button) findViewById(R.id.targetUnitViewDescButton);
+
+        //
+        sourceValueExpressionToggleButton = (ToggleButton) findViewById(R.id.sourceValueExpressionToggleButton);
+
+        //
+        sourceUnitTextView = (MultiAutoCompleteTextView) findViewById(R.id.sourceUnitTextView);
+        sourceValueTextView = (TextView) findViewById(R.id.sourceValueTextView);
+        sourceValueTextView.setText("1");
+        targetUnitTextView = (MultiAutoCompleteTextView) findViewById(R.id.targetUnitTextView);
+        conversionValueTextView = (TextView) findViewById(R.id.conversionOutputTextView);
+
+        //
+        unitInfoDialog = new AlertDialog.Builder(MainActivity.this).create();
+        unitInfoDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+    }
+
+    ///Setup Animation Methods
+    private void setupAnimations() {
+        convertButtonAnimation = AnimationUtils.loadAnimation(MainActivity.this, R.anim.conversion_button_animation);
+    }
+
+    ///Unit Manager Loading Methods
+    private void loadUnitManager() {
+        if (!pSharablesApplication.isUnitManagerPreReqLoadingComplete()) {
+            //getSupportLoaderManager().initLoader(ONLINE_PREFIXES_N_UNITS_LOADER, null, this).forceLoad();
+            getSupportLoaderManager().initLoader(LOCAL_UNITS_LOADER, null, this).forceLoad();
+            getSupportLoaderManager().initLoader(LOCAL_PREFIXES_LOADER, null, this).forceLoad();
+            getSupportLoaderManager().initLoader(FUND_UNITS_LOADER, null, this).forceLoad();
+            //getSupportLoaderManager().initLoader(ONLINE_CURRENCY_UNITS_LOADER, null, this).forceLoad();
+
+            //
+            findViewById(R.id.progressBarLinearLayout).setVisibility(View.VISIBLE);
+            findViewById(R.id.sourceLinearLayout).setVisibility(View.INVISIBLE);
+            findViewById(R.id.convertLinearLayout).setVisibility(View.INVISIBLE);
+            findViewById(R.id.targetLinearLayout).setVisibility(View.INVISIBLE);
+        }
+    }
+
+    private void postLoadSetup() {
+        findViewById(R.id.progressBarLinearLayout).setVisibility(View.GONE);
+        findViewById(R.id.sourceLinearLayout).setVisibility(View.VISIBLE);
+        findViewById(R.id.convertLinearLayout).setVisibility(View.VISIBLE);
+        findViewById(R.id.targetLinearLayout).setVisibility(View.VISIBLE);
+    }
+
+    ///Listeners Methods
+    private void setListenersOnMainButtons() {
+
+        sourceUnitBrowseButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent i = new Intent(MainActivity.this, UnitBrowserActivity.class);
+                i.putExtra("buttonName", SOURCE_NAME);
+                startActivity(i);
+            }
+        });
+
+        targetUnitBrowseButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent i = new Intent(MainActivity.this, UnitBrowserActivity.class);
+                i.putExtra("buttonName", TARGET_NAME);
+                startActivity(i);
+            }
+        });
+
+        sourceUnitViewInfoButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                unitInfoDialog.setTitle(SOURCE_NAME + " Unit Details");
+                unitInfoDialog.setMessage(getUnitDetailsMessage(sourceQuantity.getUnits()));
+                unitInfoDialog.show();
+            }
+        });
+
+        targetUnitViewInfoButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                unitInfoDialog.setTitle(TARGET_NAME + " Unit Details");
+                unitInfoDialog.setMessage(getUnitDetailsMessage(targetQuantity.getUnits()));
+                unitInfoDialog.show();
+            }
+        });
+
+        sourceValueExpressionToggleButton.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                //TODO: Make necessary preparation to use an expression evaluator some third party library. Possibly, the JEL third party library
+
+                if (multiModeMenuItem.isChecked()) {//Disable multi-unit group to prevent interference with expression evaluation
+                    onOptionsItemSelected(multiModeMenuItem);
+                    sourceValueTextView.setInputType(InputType.TYPE_CLASS_TEXT);
+                } else {
+                    sourceValueTextView.setInputType(InputType.TYPE_NUMBER_FLAG_DECIMAL
+                            | InputType.TYPE_NUMBER_FLAG_SIGNED);
+                }
+
+                //
+            }
+        });
+
+        convertButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                setSourceUnitsIntoQuantity();
+                setTargetUnitIntoQuantity();
+
+                if (checkUnits() && checkNSetSourceValuesIntoQuantity())
+                    processConversion();
+            }
+        });
+    }
+
+    private String getUnitDetailsMessage(Collection<Unit> unitGroup) {
+        Unit firstUnit = unitGroup.iterator().next(); //Assumption is that all units in collection are similar
+
+        String unitSystem = firstUnit.getUnitSystem();
+        String category = firstUnit.getCategory();
+        String aliases = Arrays.toString(firstUnit.getAliases().toArray());
+        String fundamentalTypesDim = null;
+        try {
+            fundamentalTypesDim = ContentDeterminer.determineGeneralDataModelCategory(firstUnit) != DATA_MODEL_CATEGORY.UNKNOWN
+                    ? "" : fundamentalUnitTypesDimensionSerializer.serialize(firstUnit.getFundamentalUnitTypesDimension());
+        } catch (SerializingException e) {
+            fundamentalTypesDim = "";
+        }
+        String description = unitGroup.size() == 1 ? firstUnit.getDescription() : "";
+
+        return (firstUnit.getAliases().size() == 0 ? "" : "\n\nAliases: " + aliases)
+                + "\n\nUnit System: " + unitSystem
+                + (category.equals(fundamentalTypesDim) ? "" : "\n\nCategory: " + category) //Prevent display of duplicate data in case of complex units
+                + (description.isEmpty() ? "" : "\n\nDescription: " + description)
+                + (fundamentalTypesDim.isEmpty() ? "" : "\n\nFundamental Types Dimension: " + fundamentalTypesDim);
+
+    }
+
+    private void setListenersOnTextViews() {
+        sourceUnitTextView.setOnFocusChangeListener(new OnFocusChangeListener() {
+
+            @Override
+            public void onFocusChange(View view, boolean hasFocus) {
+                if (!hasFocus) {
+
+                    if (multiModeMenuItem.isChecked()) {
+                        ((TextView) view).setText(unitNamesGroupingFormatter.format(((TextView) view).getText().toString()));
+                        adjustTextViewGroupingsCount(sourceValueTextView, sourceQuantity.getUnits().size(), " {1}");
+                    }
+
+                    try {
+                        setSourceUnitsIntoQuantity();
+
+                        checkUnits();
+
+                        checkNSetSourceValuesIntoQuantity();
+                    }
+                    catch(Exception e){
+                        sourceUnitTextView.setTextColor(Color.rgb(180, 0, 0));
+                    }
+                }
+            }
+
+        });
+
+        targetUnitTextView.setOnFocusChangeListener(new OnFocusChangeListener() {
+
+            @Override
+            public void onFocusChange(View view, boolean hasFocus) {
+                if (!hasFocus) {
+
+                    if (multiModeMenuItem.isChecked())
+                        ((TextView) view).setText(unitNamesGroupingFormatter.format(((TextView) view).getText().toString()));
+
+                    try {
+                        setTargetUnitIntoQuantity();
+
+                        checkUnits();
+
+                        checkNSetSourceValuesIntoQuantity();
+                    }
+                    catch(Exception e){
+                        targetUnitTextView.setTextColor(Color.rgb(180, 0, 0));
+                    }
+                }
+            }
+        });
+
+        sourceValueTextView.setOnFocusChangeListener(new OnFocusChangeListener() {
+
+            @Override
+            public void onFocusChange(View view, boolean hasFocus) {
+                if (!hasFocus) {
+                    if (multiModeMenuItem.isChecked()) {
+                        String sourceValueText = valuesGroupingFormatter.format(((TextView) view).getText().toString());
+                        ((TextView) view).setText(sourceValueText);
+
+                        //Also adjust number of presented unit groupings, add dummy grouping where necessary
+                        adjustTextViewGroupingsCount(sourceUnitTextView, valuesGroupingFormatter.calculateGroupingCount(sourceValueText), " {a}");
+                    }
+
+                    checkNSetSourceValuesIntoQuantity();
+                }
+            }
+        });
+    }
+
+    ///Multi-Unit Grouping Formatting Methods
+    private boolean adjustTextViewGroupingsCount(TextView textViewToBeAdjusted, int referenceGroupCount, String dummyTextForEmptyGroupings) {
+        if (referenceGroupCount > 1) {
+            String initialText = textViewToBeAdjusted.getText().toString();
+            String textWithAdjustedGroupingCount = generalGroupingFormatter.adjustGroupingsCount(initialText, referenceGroupCount);
+            String adjustedTextWithReplacedEmptyGroupings = generalGroupingFormatter.replaceEmptyGroupingsWithDefaultGrouping(textWithAdjustedGroupingCount, dummyTextForEmptyGroupings);
+
+            textViewToBeAdjusted.setText(adjustedTextWithReplacedEmptyGroupings);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    ///Quantity Setting and Validation Methods
+    private void setSourceUnitsIntoQuantity() {
+        setUnitsIntoQuantity(false);
+    }
+
+    private void setTargetUnitIntoQuantity(){
+        setUnitsIntoQuantity(true);
+    }
+
+    private void setUnitsIntoQuantity(boolean isTargetQuantity) {
+        String unitNamesOrDimension = (isTargetQuantity ? targetUnitTextView : sourceUnitTextView).getText().toString().trim();
+
+        Quantity selectedQuantity = (isTargetQuantity) ? targetQuantity : sourceQuantity;
+
+        try {
+            //Only replace anything only if there is difference
+            //User are allowed to enter a singular unit name without grouping brackets if multi-unit mode is not on, there do comparison with grouping removed
+            if (!(selectedQuantity.getUnitNames().replaceAll(String.format("[%s%s]", quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol(), quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol()), "")
+                    .equalsIgnoreCase(unitNamesOrDimension.replaceAll(String.format("[%s%s]", quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol(), quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol()), "")))) {
+                if (unitNamesOrDimension.isEmpty()) {
+                    selectedQuantity.setUnits(Collections.singletonList(unitManager.getUnitsDataModel().getContentMainRetriever().getUnknownUnit()));
+                } else {
+                    selectedQuantity.setUnits(serialGroupingQuantityTokenizer.parseUnitNamesToUnitsList(serialGroupingQuantityTokenizer.parseSerialGroupingToUnitsNamesList(unitNamesOrDimension)));
+                }
+            }
+
+            //Update conversion favorites rank
+            for (Unit unit : (isTargetQuantity ? targetQuantity.getUnits() : sourceQuantity.getUnits())) {
+                unitManager.getConversionFavoritesDataModel().modifySignificanceRankOfMultipleConversions(unit, true);
+            }
+        }
+        catch(Exception e){
+            try {
+                if (isTargetQuantity) {
+                    pSharablesApplication.getTargetQuantity().setUnit(pSharablesApplication.getUnitManager().getUnitsDataModel().getContentMainRetriever().getUnknownUnit());
+                } else {
+                    pSharablesApplication.getSourceQuantity().setUnit(pSharablesApplication.getUnitManager().getUnitsDataModel().getContentMainRetriever().getUnknownUnit());
+                }
+            } catch (Exception e1) { }
+        }
+    }
+
+    private boolean checkNSetSourceValuesIntoQuantity() {
+        try {
+            String selectedSourceValuesText = sourceValueTextView.getText().toString();
+
+            sourceQuantity.setValues(serialGroupingQuantityTokenizer.parseSerialGroupingToValuesList(!quantityGroupingDefiner.hasAnyGrouping(selectedSourceValuesText)
+                    ? String.format("%s%s%s", quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol(), selectedSourceValuesText, quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol())
+                    : selectedSourceValuesText));
+
+            return true;
+
+        }catch(Exception e){
+            sourceValueTextView.setTextColor(Color.rgb(180, 0, 0));
+
+            //
+            setConversionButton(false);
+            return false;
+        }
+    }
+
+    private boolean checkUnits() {
+        boolean sourceUnitIsUnknown = ContentDeterminer.determineGeneralDataModelCategory(sourceQuantity.getLargestUnit()) == DATA_MODEL_CATEGORY.UNKNOWN;
+        boolean targetUnitIsUnknown =ContentDeterminer.determineGeneralDataModelCategory(targetQuantity.getLargestUnit()) == DATA_MODEL_CATEGORY.UNKNOWN;
+        boolean UnitsMatch = QuantityOperators.equalsUnitDimensionOf(sourceQuantity, targetQuantity);
+        boolean UnitsAreOK = !(sourceUnitIsUnknown || targetUnitIsUnknown) && UnitsMatch;
+
+        sourceUnitTextView.setTextColor(Color.rgb(sourceUnitIsUnknown ? 180 : 0, 0, 0));
+        targetUnitTextView.setTextColor(Color.rgb(targetUnitIsUnknown ? 180 : 0, 0, 0));
+        conversionValueTextView.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.fade_in));
+        conversionValueTextView.setTextColor(Color.rgb(UnitsAreOK ? 0 : 200, 0, 0));
+
+        setConversionButton(UnitsAreOK);
+
+        //
+        if (UnitsAreOK) {
+            conversionValueTextView.setText("##:Units Match");
+        } else if (!(sourceUnitIsUnknown || targetUnitIsUnknown) && !UnitsMatch) {
+            conversionValueTextView.setText("XX:Units Don't Match");
+        } else {
+            String unknownName = (sourceUnitIsUnknown ? "'" + SOURCE_NAME + "', " : "") + (targetUnitIsUnknown ? "'" + TARGET_NAME + "', " : "");
+            String unknownSymbol = (sourceUnitIsUnknown ? "?" : "#") + (targetUnitIsUnknown ? "?" : "#");
+
+            conversionValueTextView.setText(String.format("%s: Unit In %s Group(s) is Unkn. or Has Wrong Dim.", unknownSymbol, unknownName));
+        }
+
+        return UnitsAreOK;
+    }
+
+    ///Conversion Methods
+    private void processConversion() {
+        try {
+            List<Unit> targetUnits = Collections.list(Collections.enumeration(targetQuantity.getUnits()));
+            List<Double> values = new ArrayList<>(QuantityConverter.determineConversionQuantityToTargetUnitsGroup(sourceQuantity, targetUnits).getValues());
+
+            targetQuantity.setValues(values);
+
+            conversionValueTextView.startAnimation(AnimationUtils.loadAnimation(MainActivity.this, android.R.anim.slide_in_left));
+            conversionValueTextView.setText(String.valueOf(targetQuantity.getValuesString()));
+
+            //
+            setConversionButton(false);
+        }
+        catch (Exception e) {
+        }
+    }
+
+    private void setConversionButton(boolean triggerFocus) {
+        if (triggerFocus) {
+            convertButton.setTextColor(Color.BLUE);
+            convertButton.startAnimation(convertButtonAnimation);
+        } else {
+            convertButton.setTextColor(Color.BLACK);
+            convertButton.clearAnimation();
+        }
+    }
+
+    ///Loader Manager Methods
+    @Override
+    public Loader<UnitManagerBuilder> onCreateLoader(int id, Bundle arg1) {
+        switch (id) {
+            case LOCAL_UNITS_LOADER:
+                return new UnitsMapXmlLocalReader(this, locale, componentUnitsDimensionSerializer, fundamentalUnitTypesDimensionSerializer);
+            case LOCAL_PREFIXES_LOADER:
+                return new PrefixesMapXmlLocalReader(this, new PrefixesDataModel());
+            case FUND_UNITS_LOADER:
+                return new FundamentalUnitsMapXmlLocalReader(this, new FundamentalUnitsDataModel());
+            case ONLINE_CURRENCY_UNITS_LOADER:
+                return new EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader(this, locale, componentUnitsDimensionSerializer, fundamentalUnitTypesDimensionSerializer);
+            case ONLINE_PREFIXES_N_UNITS_LOADER:
+                return new PrefixesNUnitsMapXmlOnlineReader(this, locale, new PrefixesDataModel(), componentUnitsDimensionSerializer, fundamentalUnitTypesDimensionSerializer);
+            case POST_LOADER:
+                return new AsyncTaskLoader<UnitManagerBuilder>(this) {
+                    @Override
+                    public UnitManagerBuilder loadInBackground() {
+                        ((PersistentSharablesApplication) getContext().getApplicationContext()).recreateUnitManager();
+                        return null;
+                    }
+                };
+            default:
+                return null;
+        }
+    }
+
+    @Override
+    public void onLoadFinished(Loader<UnitManagerBuilder> loader, UnitManagerBuilder loadedUnitManagerBuilder) {
+        if (loadedUnitManagerBuilder != null) {
+            try {
+                pSharablesApplication.getUnitManagerBuilder().combineWith(loadedUnitManagerBuilder);
+                pSharablesApplication.setNumberOfLoadersCompleted(pSharablesApplication.getNumberOfLoadersCompleted() + 1);
+            }
+            catch (Exception e){
+                postLoadSetup();
+            }
+        }
+
+        if (pSharablesApplication.isUnitManagerPreReqLoadingComplete()) {
+            if (loadedUnitManagerBuilder != null)
+                getSupportLoaderManager().initLoader(POST_LOADER, null, this).forceLoad();
+            else {
+                postLoadSetup(); //Executed when POST_LOADER returns after its completion
+            }
+        }
+    }
+
+    @Override
+    public void onLoaderReset(Loader<UnitManagerBuilder> arg0) {
+    }
 }
