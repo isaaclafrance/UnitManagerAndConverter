@@ -1,0 +1,44 @@
+<resources>
+
+    <!-- Default screen margins, per the Android Design guidelines. -->
+    <dimen name="activity_horizontal_margin">10dp</dimen>
+    <dimen name="activity_vertical_margin">10dp</dimen>
+
+    <dimen name="from_unit_label_text_size">20sp</dimen>
+    <dimen name="from_value_label_text_size">20sp</dimen>
+    <dimen name="to_unit_label_text_size">20sp</dimen>
+    <dimen name="conversion_value_label_text_size">15sp</dimen>
+    
+    <dimen name="from_unit_text_size">10sp</dimen>
+    <dimen name="from_value_text_size">20sp</dimen>
+    <dimen name="to_unit_text_size">10sp</dimen>
+    <dimen name="conversion_value_text_size">20sp</dimen>
+    
+    <dimen name="from_linearlayout_padding">20dp</dimen>
+    <dimen name="to_linearlayout_padding">20dp</dimen>    
+    <dimen name="from_unit_text_bottom_padding">5dp</dimen>
+    <dimen name="from_unit_button_top_padding">0dp</dimen>
+    <dimen name="from_value_text_top_bottom_padding">0dp</dimen>
+    <dimen name="switch_bottom_padding">5dp</dimen>
+    <dimen name="to_unit_text_bottom_padding">5dp</dimen>
+    <dimen name="to_unit_button_top_padding">0dp</dimen>
+    <dimen name="conversion_value_label_top_bottom_padding">2.5dp</dimen>
+    <dimen name="conversion_value_bottom_padding">5dp</dimen>
+    
+    <dimen name="from_linearlayout_radius">60dp</dimen>
+    <dimen name="to_linearlayout_radius">60dp</dimen>
+    <dimen name="from_unit_text_radius">50dp</dimen>
+    <dimen name="from_value_text_radius">50dp</dimen>
+    
+    <dimen name="from_linearlayout_thickness">5dp</dimen>
+    <dimen name="to_linearlayout_thickness">5dp</dimen>
+    
+    <dimen name="from_unit_browse_button_width">100dp</dimen>
+    <dimen name="to_unit_browse_button_width">100dp</dimen>
+    <dimen name="switch_button_width">60dp</dimen>
+
+    <dimen name="from_unit_browse_button_text_size">15sp</dimen>
+    <dimen name="to_unit_browse_button_text_size">15sp</dimen>
+    <dimen name="switch_button_text_size">15dp</dimen>    
+        
+</resources>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="activity_horizontal_margin">12dp</dimen>
+    <dimen name="activity_vertical_margin">12dp</dimen>
+    
+    <dimen name="from_unit_label_text_size">48sp</dimen>
+    <dimen name="from_value_label_text_size">48sp</dimen>
+    <dimen name="to_unit_label_text_size">48sp</dimen>
+    <dimen name="conversion_value_label_text_size">30sp</dimen>
+    
+    <dimen name="from_unit_text_size">16sp</dimen>
+    <dimen name="from_value_text_size">48sp</dimen>
+    <dimen name="to_unit_text_size">16sp</dimen>
+    <dimen name="conversion_value_text_size">35sp</dimen>    
+    
+    <dimen name="from_linearlayout_padding">30dp</dimen>
+    <dimen name="to_linearlayout_padding">30dp</dimen>    
+    <dimen name="from_unit_text_bottom_padding">12dp</dimen>
+    <dimen name="from_unit_button_top_padding">8dp</dimen>
+    <dimen name="from_value_text_top_bottom_padding">5dp</dimen>
+    <dimen name="switch_bottom_padding">10dp</dimen>
+    <dimen name="to_unit_text_bottom_padding">5dp</dimen>
+    <dimen name="to_unit_button_top_padding">8dp</dimen>
+    <dimen name="conversion_value_label_top_bottom_padding">5dp</dimen>
+    <dimen name="conversion_value_bottom_padding">5dp</dimen>
+    
+    <dimen name="from_linearlayout_radius">100dp</dimen>
+    <dimen name="to_linearlayout_radius">100dp</dimen>
+    <dimen name="from_unit_text_radius">50dp</dimen>
+    <dimen name="from_value_text_radius">50dp</dimen>
+    
+    <dimen name="from_linearlayout_thickness">5dp</dimen>
+    <dimen name="to_linearlayout_thickness">5dp</dimen>
+    
+    <dimen name="from_unit_browse_button_width">188dp</dimen>
+    <dimen name="to_unit_browse_button_width">188dp</dimen>
+    <dimen name="switch_button_width">115dp</dimen>
+
+    <dimen name="from_unit_browse_button_text_size">28sp</dimen>
+    <dimen name="to_unit_browse_button_text_size">28sp</dimen>
+    <dimen name="switch_button_text_size">35dp</dimen>    
+     
+</resources>

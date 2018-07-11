@@ -1,0 +1,305 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mainLinearLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/main_activity_background"
+    android:animateLayoutChanges="true"
+    android:dividerPadding="22dp"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:showDividers="middle"
+    android:textAlignment="gravity"
+    tools:context=".MainActivity" >
+
+    <LinearLayout
+        android:id="@+id/progressBarLinearLayout"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:visibility="gone" >
+"
+
+	    <ProgressBar
+	        android:id="@+id/unitManagerLoaderProgressBar"
+	        style="@android:style/Widget.ProgressBar.Horizontal"
+	        android:layout_width="match_parent"
+	        android:layout_height="0dp"
+	        android:layout_weight="1"
+	        android:indeterminate="true"
+	        android:indeterminateBehavior="repeat"
+	        android:max="100"
+	        android:progress="0"
+	        android:visibility="visible" />
+
+	    <TextView
+	        android:id="@+id/progressBarTextView"
+	        android:layout_width="match_parent"
+	        android:layout_height="0dp"
+	        android:layout_weight="0.5"
+	        android:gravity="center_vertical|center_horizontal"
+	        android:text="Please Wait ... Loading Units"
+	        android:textSize="@dimen/from_unit_label_text_size"
+	        android:textAppearance="?android:attr/textAppearanceLarge" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/sourceLinearLayout"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@drawable/from_linearlayout_border"
+        android:orientation="vertical"
+        android:padding="@dimen/from_linearlayout_padding" >
+
+        <TextView
+            android:id="@+id/sourceUnitLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:paddingBottom="@dimen/from_unit_text_bottom_padding"
+            android:text="@string/sourceUnit_label"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textSize="@dimen/from_unit_label_text_size"
+            android:textStyle="bold" />
+
+        <MultiAutoCompleteTextView
+            android:id="@+id/sourceUnitTextView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@drawable/unit_text_background"
+            android:ems="10"
+            android:fadingEdge="horizontal"
+            android:fadingEdgeLength="10dp"
+            android:hint="Format: a, a^#, (prefix-a)^#, (a)^# / (b)^#,  (a)^# * (b)^#, etc"
+            android:paddingLeft="5dp"
+            android:textSize="@dimen/from_unit_text_size"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:id="@+id/sourceUnitBrowseLinearLayout"
+            android:layout_width="fill_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:paddingEnd="20dp"
+            android:paddingStart="20dp"
+            android:gravity="right|fill"
+            android:orientation="horizontal"
+            android:paddingTop="@dimen/from_unit_button_top_padding" >
+
+            <Button
+                android:id="@+id/sourceUnitViewDescButton"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="View Info" />
+
+            <LinearLayout                 
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_weight="0.50">
+                
+            </LinearLayout>
+            
+            <Button
+                android:id="@+id/sourceUnitBrowseButton"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="@dimen/from_unit_browse_button_width"
+                android:layout_height="match_parent"
+                android:layout_weight="0.50"
+                android:text="@string/unitBrowseButton_text"
+                android:textSize="@dimen/from_unit_browse_button_text_size" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/sourceValueLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:paddingBottom="@dimen/from_value_text_top_bottom_padding"
+            android:paddingTop="@dimen/from_value_text_top_bottom_padding"
+            android:text="@string/sourceValue_label"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textSize="@dimen/from_value_label_text_size"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:id="@+id/sourceValueLinearLayout"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" >
+
+            <EditText
+                android:id="@+id/sourceValueTextView"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight=".85"
+                android:background="@drawable/value_text_background"
+                android:ems="10"
+                android:gravity="center"
+                android:inputType="numberDecimal|numberSigned"
+                android:lines="1"
+                android:minLines="1"
+                android:scrollbars="horizontal"
+                android:textAlignment="gravity"
+                android:textSize="@dimen/from_value_text_size"
+                android:textStyle="bold" />
+
+            <ToggleButton
+                android:id="@+id/sourceValueExpressionToggleButton"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight=".15"
+                android:text="ExpressionToggle"
+                android:textSize="6sp"
+                android:textOff="EXP:\nOFF"
+                android:textOn="EXP:\nON" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/convertLinearLayout"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="0.25"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="@dimen/switch_bottom_padding" >
+
+        <Button
+            android:id="@+id/convertButton"
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="0.42"
+            android:drawableLeft="@drawable/ic_action_refresh"
+            android:gravity="left|center_vertical"
+            android:text="CONVERT"
+            android:textSize="@dimen/switch_button_text_size" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/targetLinearLayout"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@drawable/conversion_linearlayout_border"
+        android:orientation="vertical"
+        android:padding="@dimen/to_linearlayout_padding" >
+
+        <TextView
+            android:id="@+id/targetUnitLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:paddingBottom="@dimen/to_unit_text_bottom_padding"
+            android:text="@string/targetUnit_label"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textSize="@dimen/to_unit_label_text_size"
+            android:textStyle="bold" />
+
+        <MultiAutoCompleteTextView
+            android:id="@+id/targetUnitTextView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@drawable/unit_text_background"
+            android:ems="10"
+            android:fadingEdge="horizontal"
+            android:fadingEdgeLength="10dp"
+            android:hint="Format: a, a^#, (prefix-a)^#, (a)^# / (b)^#,  (a)^# * (b)^#, etc"
+            android:paddingLeft="5dp"
+            android:textSize="@dimen/to_unit_text_size"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:id="@+id/targetUnitBrowseLinearLayout"
+            android:layout_width="fill_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:paddingEnd="20dp"
+            android:paddingStart="20dp"
+            android:gravity="right|fill"
+            android:orientation="horizontal"
+            android:paddingTop="@dimen/to_unit_button_top_padding" >
+
+            <Button
+                android:id="@+id/targetUnitViewDescButton"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="View Info" />
+
+            <LinearLayout                 
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_weight="0.50"> </LinearLayout>
+            
+            <Button
+                android:id="@+id/targetUnitBrowseButton"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="@dimen/from_unit_browse_button_width"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.50"
+                android:text="@string/unitBrowseButton_text"
+                android:textSize="@dimen/to_unit_browse_button_text_size" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/conversionLayout1"
+            android:layout_width="match_parent"
+        	android:layout_height="0dp"
+        	android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/conversionOutputLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:paddingBottom="@dimen/conversion_value_label_top_bottom_padding"
+                android:paddingTop="@dimen/conversion_value_label_top_bottom_padding"
+                android:text="@string/conversionOutput_label"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:textSize="@dimen/conversion_value_label_text_size"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/conversionLayout2"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center_horizontal"
+            android:orientation="vertical" >
+
+            <TextView
+                android:id="@+id/conversionOutputTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"                
+                android:paddingBottom="@dimen/conversion_value_bottom_padding"
+                android:text="@string/preConversionValue_text"
+                android:textAlignment="center"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                android:textSize="@dimen/conversion_value_text_size" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

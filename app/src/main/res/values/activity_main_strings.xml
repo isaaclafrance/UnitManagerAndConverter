@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Unit Converter</string>
+    <string name="action_settings">Settings</string>    
+    
+    <string name="sourceValue_label">Source Value</string>
+    <string name="sourceUnit_label">Source Unit</string>
+    <string name="unitBrowseButton_text">Browse Units</string>
+    <string name="targetUnit_label">Target Unit</string>
+	<string name="conversionOutput_label">Conversion Output</string>
+
+    <string name="unit_hint"></string>
+
+    <string name="preConversionValue_text">###</string>
+
+    <string name="convertButton_text">CONVERT</string>
+		
+</resources>

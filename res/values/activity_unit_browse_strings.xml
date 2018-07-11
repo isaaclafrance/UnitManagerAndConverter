@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="activity_unit_browse_name">Select Unit</string>
-    <string name="dimension_filter_selection"><u>General Filter</u></string>    
-    <string name="unit_system_selection"><u>Unit System Selection</u></string>
-    <string name="category_selection"><u>Category Selection</u></string>
-    <string name="unit_selection"><u>Prefix &amp; Unit Selection</u></string>
-</resources>
