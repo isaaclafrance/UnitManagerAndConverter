@@ -24,7 +24,7 @@ public class PairedValueUnitNameGroupingFormatter extends GroupingFormatter{
     }
 
     /**
-     * Attempts to perform the following transformation: {someUnitA} {someUnitB} --> { [defaultValue] someUnitA} { [defaultValue] someUnitB}
+     * Attempts to perform the following transformation: {someUnitA} {someUnitB} { 5.0 someUnitC } --> { [defaultValue] someUnitA} { [defaultValue] someUnitB} {5.0 someUnitC}
      * @param groupingWithIsolatedUnit
      * @return
      */

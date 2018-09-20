@@ -14,7 +14,7 @@ public class SignificantFiguresFormatter implements IFormatter {
     }
     public SignificantFiguresFormatter(Locale locale, int numberOfSignificantFigures){
         this(locale);
-        numberOfSignificantFigures = numberOfSignificantFigures;
+        this.numberOfSignificantFigures = numberOfSignificantFigures;
     }
 
     @Override

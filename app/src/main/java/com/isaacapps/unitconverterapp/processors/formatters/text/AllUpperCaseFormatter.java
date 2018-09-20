@@ -4,19 +4,14 @@ import com.isaacapps.unitconverterapp.processors.formatters.IFormatter;
 
 import java.util.Locale;
 
-public class GeneralTextFormatter implements IFormatter{
+public class AllUpperCaseFormatter implements IFormatter {
     private Locale locale;
 
-    public GeneralTextFormatter(Locale locale){
-        this.locale = locale;
-    }
+    public AllUpperCaseFormatter(Locale locale){ this.locale = locale; }
 
-    /**
-     * Trims white spaces from beginning and end. Reduces unnecessary white spaces between words.
-     */
     @Override
     public String format(String text) {
-        return String.format(locale,"%s", text).trim().replaceAll("\\s{2,}", " ");
+        return text.toUpperCase();
     }
 
     @Override

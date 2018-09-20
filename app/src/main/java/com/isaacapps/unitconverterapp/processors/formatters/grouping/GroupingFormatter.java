@@ -9,9 +9,10 @@ import java.util.regex.Pattern;
 public class GroupingFormatter implements IFormatter {
     QuantityGroupingDefiner quantityGroupingDefiner;
 
-    private Pattern missingStartBracePattern;
-    private Pattern missingEndBracePattern;
-    private Pattern betweenGroupingPattern;
+    private Pattern missingInternalStartBracePattern;
+    private Pattern missingInternalEndBracePattern;
+    private Pattern missingFinalEndBracePattern;
+    private Pattern missingBeginningStartBracePattern;
     private Pattern extraStartBracePattern;
     private Pattern extraEndBracePattern;
     private Pattern endBraceAtBeginningPattern;
@@ -27,25 +28,36 @@ public class GroupingFormatter implements IFormatter {
     }
 
     public void compileGroupingEditingPatterns(){
-        missingStartBracePattern = Pattern.compile(String.format("(?!\\A)%2s(?=[^%1s]+%2s)"
+        missingInternalStartBracePattern = Pattern.compile(String.format("(?!\\A)%2$s(?=[^%1$s]+%2$s)"
                 , quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()
                 , quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol()));
-        missingEndBracePattern = Pattern.compile(String.format("(?<!\\A|%2s)%1s(?=[^%2s]+%2s)" //used to be "(?<!\\A|%2s)%1s(?=[^%2s]+%2s)"
+
+        missingInternalEndBracePattern = Pattern.compile(String.format("(?<!\\A|%1$s|%2$s)%1$s(?=[^%2$s]+%2$s)"
                 , quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()
                 , quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol()));
-        betweenGroupingPattern = Pattern.compile(String.format("%2s[^%1s%2s\\s]+%1s"
+
+        missingFinalEndBracePattern = Pattern.compile(String.format("(?<![%s%s])\\Z"
                 , quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()
                 , quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol()));
-        extraStartBracePattern = Pattern.compile(String.format("%s[%s]+"
+
+        missingBeginningStartBracePattern = Pattern.compile(String.format("\\A(?=[^%s%s])"
+                , quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()
+                , quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol()));
+
+        extraStartBracePattern = Pattern.compile(String.format("(%s){2,}"
                 , quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()));
-        extraEndBracePattern = Pattern.compile(String.format("%s[%s]+"
+
+        extraEndBracePattern = Pattern.compile(String.format("(%s){2,}"
                 , quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol()));
-        endBraceAtBeginningPattern = Pattern.compile(String.format("\\A%2s\\s*%1s"
+
+        endBraceAtBeginningPattern = Pattern.compile(String.format("\\A%2$s\\s*%1$s"
                 , quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()
                 , quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol()));
+
         startingBraceAtEndPattern = Pattern.compile(String.format("%s\\Z"
                 , quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()));
-        edgecasePattern = Pattern.compile(String.format("(?<=%2s)%1s(?=.+%1s)"
+
+        edgecasePattern = Pattern.compile(String.format("(?<=%2$s)%1$s(?=[^%1$s%2$s]+%1$s)"
                 , quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()
                 , quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol()));
     }
@@ -56,13 +68,15 @@ public class GroupingFormatter implements IFormatter {
     public int calculateGroupingCount(String groupings) {
         int groupingCount = 0;
 
-        int index;
-        while ((index = groupings.indexOf(quantityGroupingDefiner.getGroupOpeningSymbol())) != -1) {
+        int index = 0;
+        while ((index = groupings.indexOf(quantityGroupingDefiner.getGroupOpeningSymbol(), index)) != -1) {
             String subText = groupings.substring(index);
 
             // if the braces are not arranged appropriately, then do not tally count
-            if (subText.indexOf("{") < subText.indexOf(quantityGroupingDefiner.getGroupClosingSymbol()))
+            if (subText.indexOf(quantityGroupingDefiner.getGroupOpeningSymbol()) < subText.indexOf(quantityGroupingDefiner.getGroupClosingSymbol()))
                 groupingCount++;
+
+            index++;
         }
 
         return groupingCount;
@@ -110,15 +124,18 @@ public class GroupingFormatter implements IFormatter {
             grouping = format(grouping.replaceAll(startingBraceAtEndPattern.pattern(), "}"));
 
         // Add missing starting brace as long as the adjacent terminating brace is not in the beginning of the string, ie {aa}bb}... --> {aa}{bb}
-        if (missingStartBracePattern.matcher(grouping).find())
-            grouping = format(grouping.replaceAll(missingStartBracePattern.pattern(), "} {"));
+        if (missingInternalStartBracePattern.matcher(grouping).find())
+            grouping = format(grouping.replaceAll(missingInternalStartBracePattern.pattern(), "}{"));
 
         // Add missing terminating brace as long as the adjacent beginning brace is not in the beginning of string or immediately to the right of a terminating brace , ie. {aa{bb}... --> {aa}{bb}
-        if (missingEndBracePattern.matcher(grouping).find())
-            grouping = format(grouping.replaceAll(missingEndBracePattern.pattern(), "} {"));
+        if (missingInternalEndBracePattern.matcher(grouping).find())
+            grouping = format(grouping.replaceAll(missingInternalEndBracePattern.pattern(), "}{"));
 
-        if (betweenGroupingPattern.matcher(grouping).find()) //Nothing should be in between groupings, ie. '} dkfj [too many space characters] {' --> '} {'
-            grouping = format(grouping.replaceAll(betweenGroupingPattern.pattern(), "} {"));
+        if (missingFinalEndBracePattern.matcher(grouping).find()) //Missing end brace at the very end, ie. {aa}{bb --> {aa}{bb}
+            grouping = format(grouping.replaceAll(missingFinalEndBracePattern.pattern(), "}"));
+
+        if (missingBeginningStartBracePattern.matcher(grouping).find()) //Missing start brace at the very beginning, ie. aa}{bb} --> {aa}{bb}
+            grouping = format(grouping.replaceAll(missingFinalEndBracePattern.pattern(), "{"));
 
         if (edgecasePattern.matcher(grouping).find()) //Account for some edge case....
             grouping = format(grouping.replaceAll(edgecasePattern.pattern(), ""));
@@ -132,7 +149,7 @@ public class GroupingFormatter implements IFormatter {
         if (extraStartBracePattern.matcher(grouping).find()) // Remove extra starting braces ie '{{{' --> '{'
             grouping = grouping.replaceAll(extraStartBracePattern.pattern(), "{");
 
-        return grouping;
+        return grouping.replaceAll("\\s{2,}", " ");
     }
 
     @Override
