@@ -1,9 +1,11 @@
 package com.isaacapps.unitconverterapp.processors.operators.measurables.units;
 
 import com.isaacapps.unitconverterapp.models.measurables.unit.Unit;
+import com.isaacapps.unitconverterapp.models.measurables.unit.UnitException;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager;
-import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.FundamentalUnitsDataModel;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentDeterminer;
 import com.isaacapps.unitconverterapp.processors.operators.dimensions.DimensionOperators;
+import com.isaacapps.unitconverterapp.processors.parsers.ParsingException;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -55,56 +57,55 @@ public class UnitOperators {
      */
     private static Unit retrieveExistingUnitWithComparableDimension(Map<String, Double> componentUnitsExponentMap
             , Collection<UnitManager> validUnitManagers) {
-        Unit resultUnit = null;
+        Unit suitableUnit = null;
 
         for (UnitManager unitManager : validUnitManagers) {
-            Collection<Unit> matchedUnits = unitManager.getUnitsDataModel().getContentQuerier()
-                    .getUnitsByComponentUnitsDimension(componentUnitsExponentMap, true);
+            Collection<Unit> matchedUnits = unitManager.getUnitsDataModel().getUnitsContentQuerier()
+                    .queryUnitsByComponentUnitsDimension(componentUnitsExponentMap, true);
 
             if (!matchedUnits.isEmpty()) {
-                resultUnit = matchedUnits.iterator().next();
-                if (!resultUnit.getBaseUnit().getName().equalsIgnoreCase(UNKNOWN_UNIT_NAME)) {
-                    resultUnit = resultUnit.getBaseUnit();
+                suitableUnit = matchedUnits.iterator().next();
+                if (!suitableUnit.getBaseUnit().getName().equalsIgnoreCase(UNKNOWN_UNIT_NAME)) {
+                    suitableUnit = suitableUnit.getBaseUnit();
                     break;
                 }
             }
         }
 
-        if(resultUnit == null && !validUnitManagers.isEmpty()){
-            resultUnit = new Unit(componentUnitsExponentMap, false);
-            resultUnit.setLocale(validUnitManagers.iterator().next().getLocale());
-            return resultUnit;
+        if(suitableUnit == null){
+            try {
+                suitableUnit = new Unit(componentUnitsExponentMap);
+                if( !validUnitManagers.isEmpty())
+                    suitableUnit.setLocale(validUnitManagers.iterator().next().getLocale());
+            } catch (ParsingException e) {
+                e.printStackTrace();
+            }
         }
-        else{
-            return resultUnit;
-        }
+
+        return suitableUnit;
     }
 
     ///
     public static boolean equalsDimension(Unit firstUnit, Unit secondUnit) {
         if (firstUnit.getUnitManagerContext() == secondUnit.getUnitManagerContext()
-                && !secondUnit.getFundamentalUnitTypesDimension().containsKey(FundamentalUnitsDataModel.UNIT_TYPE.UNKNOWN)
-                && !firstUnit.getFundamentalUnitTypesDimension().containsKey(FundamentalUnitsDataModel.UNIT_TYPE.UNKNOWN)) {
+                && UnitsContentDeterminer.determineGeneralDataModelCategory(firstUnit) != UnitsContentDeterminer.DATA_MODEL_CATEGORY.UNKNOWN
+                && UnitsContentDeterminer.determineGeneralDataModelCategory(secondUnit) != UnitsContentDeterminer.DATA_MODEL_CATEGORY.UNKNOWN) {
             //Since the units belong to same unit manager context and the unit manager is assumed to be internally consistent,
             //units with the same dimension are given the same base units
             return firstUnit.getBaseUnit() == secondUnit.getBaseUnit();
         } else {
-            Collection<UnitManager> validUnitManagerContext = retrieveValidUnitManagerContexts(firstUnit, secondUnit);
-
-            return equalsDeepComponentUnitsDimension(firstUnit.getComponentUnitsDimension()
-                    , secondUnit.getComponentUnitsDimension()
-                    , !validUnitManagerContext.isEmpty()?validUnitManagerContext.iterator().next():null );
+            return equalsComponentUnitsDimension(firstUnit, secondUnit) || equalsFundamentalUnitsDimension(firstUnit, secondUnit);
         }
     }
 
     /**
-     * Initially compares the provided component unit dimensions direclty
-     * , then if that fails prcoeeds to tranform the component units to fudamdnetal units dimesnions using one of the unit managers and then compares that.
+     * Initially compares the provided component unit dimensions directly
+     * , then if that fails proceeds to transform the component units to fundamental units dimensions using one of the unit managers and/or the fail-safe unit systems and then compares that.
      */
-    public static boolean equalsDeepComponentUnitsDimension(Map<String, Double> firstComponentUnitsDimension, Map<String, Double> secondComponentUnitsDimension, UnitManager validUnitManagerContext) {
+    public static boolean equalsDeepComponentUnitsDimension(Map<String, Double> firstComponentUnitsDimension, Map<String, Double> secondComponentUnitsDimension, Collection<String> failSafeUnitSystems, UnitManager validUnitManagerContext) {
         if (!DimensionOperators.equalsDimension(firstComponentUnitsDimension, secondComponentUnitsDimension) && validUnitManagerContext != null) {
-            Map<UNIT_TYPE, Double> firstFundamentalUnitsDimension = validUnitManagerContext.getFundamentalUnitsDataModel().transformComponentUnitsDimensionToFundamentalUnitsDimension(firstComponentUnitsDimension);
-            Map<UNIT_TYPE, Double> secondFundamentalUnitsDimension = validUnitManagerContext.getFundamentalUnitsDataModel().transformComponentUnitsDimensionToFundamentalUnitsDimension(secondComponentUnitsDimension);
+            Map<UNIT_TYPE, Double> firstFundamentalUnitsDimension = validUnitManagerContext.getFundamentalUnitsDataModel().transformComponentUnitsDimensionToFundamentalUnitsDimension(firstComponentUnitsDimension, failSafeUnitSystems, true);
+            Map<UNIT_TYPE, Double> secondFundamentalUnitsDimension = validUnitManagerContext.getFundamentalUnitsDataModel().transformComponentUnitsDimensionToFundamentalUnitsDimension(secondComponentUnitsDimension, failSafeUnitSystems, true);
 
             return equalsFundamentalUnitsDimension(firstFundamentalUnitsDimension, secondFundamentalUnitsDimension);
         }
@@ -112,14 +113,14 @@ public class UnitOperators {
     }
 
     /**
-     * Stricly compares the component units dimensions of the provided units.
+     * Strictly compares the component units dimensions of the provided units.
      */
     public static boolean equalsComponentUnitsDimension(Unit firstUnit, Unit secondUnit) {
-        return !DimensionOperators.equalsDimension(firstUnit.getComponentUnitsDimension(), secondUnit.getComponentUnitsDimension());
+        return DimensionOperators.equalsDimension(firstUnit.getComponentUnitsDimension(), secondUnit.getComponentUnitsDimension());
     }
 
     /**
-     * If either dimension does not have an unknown, then the fundamental unit type dimensions are compared for quality without regard for dimensional items raised to zero.
+     * If neither dimension has an unknown, then the fundamental unit type dimensions are compared for equality without regard for dimensional items raised to zero.
      */
     public static boolean equalsFundamentalUnitsDimension(Map<UNIT_TYPE, Double> firstFundamentalUnitTypesDimension, Map<UNIT_TYPE, Double> secondFundamentalUnitTypesDimension) {
         return !firstFundamentalUnitTypesDimension.containsKey(UNIT_TYPE.UNKNOWN)
@@ -129,4 +130,43 @@ public class UnitOperators {
     public static boolean equalsFundamentalUnitsDimension(Unit firstUnit, Unit secondUnit) {
         return equalsFundamentalUnitsDimension(firstUnit.getFundamentalUnitTypesDimension(), secondUnit.getFundamentalUnitTypesDimension());
     }
+
+    ///
+
+    /**
+     * Compares two units base of the magnitude of their conversion coefficients to the same base unit.
+     * Smaller conversion magnitude siginifies a unit is smaller.
+     * @return -1 if left hand side unit is smaller than right hand side unit, + if vice versa. 0 of units are the same
+     * @throws UnitException
+     */
+    public static int compareTo(Unit lhsUnit, Unit rhsUnit) throws UnitException {
+        List<String> requirements = new ArrayList<>();
+
+        if( lhsUnit.getUnitManagerContext() != null && lhsUnit.getUnitManagerContext() == rhsUnit.getUnitManagerContext())
+            requirements.add(String.format("Units (%s, %s) do not have the same unit manager context."));
+        if( lhsUnit.getBaseUnit() != rhsUnit.getBaseUnit())
+            requirements.add(String.format("Units (%s, %s) do not have the same base unit."));
+        if(lhsUnit.isUsingBaseConversionExpression() && rhsUnit.isUsingBaseConversionExpression())
+            requirements.add(String.format("At least one of units (%s, %s) is using a base conversion expression."));
+
+        UnitException.validateRequiredComponentsCollection(requirements);
+
+        int firstCoeffComparison = Double.compare(lhsUnit.getBaseConversionPolyCoeffs()[0], rhsUnit.getBaseConversionPolyCoeffs()[0]);
+        if(firstCoeffComparison == 0) {
+            int secondCoeffComparison = Double.compare(lhsUnit.getBaseConversionPolyCoeffs()[1], rhsUnit.getBaseConversionPolyCoeffs()[1]);
+            return secondCoeffComparison;
+        }
+        else {
+            return firstCoeffComparison;
+        }
+    }
+
+    public static boolean lessThan(Unit lhsUnit, Unit rhsUnit) throws UnitException {
+        return compareTo(lhsUnit, rhsUnit) < 0;
+    }
+
+    public static boolean greaterThan(Unit lhsUnit, Unit rhsUnit) throws UnitException {
+        return compareTo(lhsUnit, rhsUnit) > 0;
+    }
 }
+

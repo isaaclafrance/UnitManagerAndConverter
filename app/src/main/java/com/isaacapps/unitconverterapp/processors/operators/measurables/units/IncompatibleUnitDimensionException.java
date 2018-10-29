@@ -16,6 +16,7 @@ public class IncompatibleUnitDimensionException extends Exception {
     private ISerializer componentDimensionSerializer;
     private ISerializer fundamentalUnitTypesDimensionSerializer;
 
+    ///
     public IncompatibleUnitDimensionException(Unit firstUnit, Unit secondUnit, Locale locale) {
         this.firstUnit = firstUnit;
         this.secondUnit = secondUnit;
@@ -26,11 +27,12 @@ public class IncompatibleUnitDimensionException extends Exception {
         this(firstUnit, secondUnit, firstUnit.getLocale());
     }
 
+    ///
     public String getFirstComponentDimension() throws SerializingException {
         try {
             return componentDimensionSerializer.serialize(firstUnit.getComponentUnitsDimension());
         } catch (SerializingException e) {
-            throw new SerializingException(String.format("%s :: %s", "First Component dimension could be converted to string.", e.getScenario()), e.getHowToFix());
+            throw new SerializingException(String.format("%s :: %s", "First Component dimension could not be converted to string.", e.getScenario()), e.getHowToFix());
         }
     }
 
@@ -38,7 +40,7 @@ public class IncompatibleUnitDimensionException extends Exception {
         try {
             return componentDimensionSerializer.serialize(secondUnit.getComponentUnitsDimension());
         } catch (SerializingException e) {
-            throw new SerializingException(String.format("%s :: %s", "Second Component dimension could be converted to string.", e.getScenario()), e.getHowToFix());
+            throw new SerializingException(String.format("%s :: %s", "Second Component dimension could not be converted to string.", e.getScenario()), e.getHowToFix());
         }
     }
 
@@ -46,7 +48,7 @@ public class IncompatibleUnitDimensionException extends Exception {
         try {
             return fundamentalUnitTypesDimensionSerializer.serialize(firstUnit.getFundamentalUnitTypesDimension());
         } catch (SerializingException e) {
-            throw new SerializingException(String.format("%s :: %s", "First Fundamental dimension could be converted to string.", e.getScenario()), e.getHowToFix());
+            throw new SerializingException(String.format("%s :: %s", "First Fundamental dimension could not be converted to string.", e.getScenario()), e.getHowToFix());
         }
     }
 
@@ -54,14 +56,15 @@ public class IncompatibleUnitDimensionException extends Exception {
         try {
             return fundamentalUnitTypesDimensionSerializer.serialize(secondUnit.getFundamentalUnitTypesDimension());
         } catch (SerializingException e) {
-            throw new SerializingException(String.format("%s :: %s", "Second Fundamental dimension could be converted to string.", e.getScenario()), e.getHowToFix());
+            throw new SerializingException(String.format("%s :: %s", "Second Fundamental dimension could not be converted to string.", e.getScenario()), e.getHowToFix());
         }
     }
 
+    ///
     @Override
     public String toString() {
         try {
-            return String.format("**The following dimensions are incompatible: \n **First Component Dimension: %s \n **First Fundamental Dimension: %s \n **Second Component Dimension: %s \n **Second Fundamental Dimension: %s "
+            return String.format("**The following dimensions are incompatible: \n**First Component Dimension: %s \n **First Fundamental Dimension: %s \n **Second Component Dimension: %s \n **Second Fundamental Dimension: %s "
                     , getFirstComponentDimension(), getFirstFundamentalDimension(), getSecondComponentDimension(), getSecondFundamentalDimension());
         } catch (SerializingException e) {
             return "Dimensions are Incompatible.";

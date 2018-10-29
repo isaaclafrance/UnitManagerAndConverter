@@ -15,33 +15,37 @@ public class ChainedDimensionOperation<T> {
     }
 
     ///
-    public ChainedDimensionOperation multiply(Map<T, Double> secondDimension) {
-        DimensionOperators.multiply(resultantDimension, secondDimension, false);
+    public ChainedDimensionOperation<T> multiply(Map<T, Double>... dimensions) {
+        for(Map<T, Double> dimension:dimensions)
+            DimensionOperators.multiply(resultantDimension, dimension, false);
         return this;
     }
 
-    public ChainedDimensionOperation divide(Map<T, Double> secondDimension) {
-        DimensionOperators.divide(resultantDimension, secondDimension, false);
+    public ChainedDimensionOperation<T> divide(Map<T, Double>... dimensions) {
+        for(Map<T, Double> dimension:dimensions)
+            DimensionOperators.divide(resultantDimension, dimension, false);
         return this;
     }
 
-    ///
-    public ChainedDimensionOperation exponentiate(Double exponentToBeRaisedTo){
+    public ChainedDimensionOperation<T> exponentiate(Double exponentToBeRaisedTo){
         DimensionOperators.exponentiate(resultantDimension, exponentToBeRaisedTo, false);
         return this;
     }
 
+    ///
     /**
      * Compares two generic map dimensions to see if they have corresponding dimension items with identical
      * dimensions values (exponents). Ignores dimension items with zero dimension values.
      * Default tolerance is 0.00001.
      */
-    public boolean equalsDimension(Map<T, Double> firstDimension
-            , Map<T, Double> secondDimension) {
+    public boolean equalsDimension(Map<T, Double> secondDimension) {
         return DimensionOperators.equalsDimension(resultantDimension, secondDimension, 0.00001);
     }
 
     ///
+    /**
+     * Dimension resulting from the accumulation of all the applied dimension operations.
+     */
     public Map<T, Double> getResultantDimension() {
         return resultantDimension;
     }

@@ -14,18 +14,20 @@ public class ChainedUnitOperation<T> {
     }
 
     ///
-    public ChainedUnitOperation multiply(Unit secondUnit) {
-        resultantUnit = UnitOperators.multiply(resultantUnit, secondUnit);
+    public ChainedUnitOperation<T> multiply(Unit... units) {
+        for(Unit unit:units)
+            resultantUnit = UnitOperators.multiply(resultantUnit, unit);
         return this;
     }
 
-    public ChainedUnitOperation divide(Unit secondUnit) {
-        resultantUnit = UnitOperators.divide(resultantUnit, secondUnit);
+    public ChainedUnitOperation<T> divide(Unit... units) {
+        for(Unit unit:units)
+            resultantUnit = UnitOperators.divide(resultantUnit, unit);
         return this;
     }
 
     ///
-    public ChainedUnitOperation exponentiate(Double exponent){
+    public ChainedUnitOperation<T> exponentiate(Double exponent){
         resultantUnit = UnitOperators.exponentiate(resultantUnit, exponent);
         return this;
     }
@@ -41,7 +43,7 @@ public class ChainedUnitOperation<T> {
 
     public boolean equalsComponentUnitsDimension(Map<String, Double> secondComponentUnitsDimension) {
         return UnitOperators.equalsDeepComponentUnitsDimension(resultantUnit.getComponentUnitsDimension()
-                , secondComponentUnitsDimension, resultantUnit.getUnitManagerContext());
+                , secondComponentUnitsDimension, resultantUnit.getUnitSystemsCollection(), resultantUnit.getUnitManagerContext());
     }
 
     ///

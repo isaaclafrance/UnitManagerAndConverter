@@ -20,9 +20,9 @@ public class QuantityOperators {
     }
 
     private static Quantity quantityOperation(int sign, Quantity firstQuantity, Quantity secondQuantity) throws IncompatibleUnitDimensionException, QuantityException {
-        if ( QuantityOperators.equalsUnitDimensionOf(firstQuantity,secondQuantity)) {
+        if ( equalsUnitDimensionOf(firstQuantity, secondQuantity)) {
             //Coerce the unit of the second quantity to be that of the largest associated with the first quantity.
-            Quantity coercedSecondQuantity = QuantityConverter.determineConversionQuantityToTargetUnit(secondQuantity, firstQuantity.getLargestUnit());
+            Quantity coercedSecondQuantity = QuantityConverter.determineConversionQuantityToTargetUnit(secondQuantity, firstQuantity.getLargestUnit(), true);
             coercedSecondQuantity.setValues(Collections.singletonList(firstQuantity.getWeightedValueWithRespectToLargestUnit() + sign * coercedSecondQuantity.getWeightedValueWithRespectToLargestUnit()));
 
             return coercedSecondQuantity;
@@ -66,22 +66,29 @@ public class QuantityOperators {
 
     ///
     public static boolean greaterThan(Quantity firstQuantity, Quantity secondQuantity) throws IncompatibleUnitDimensionException, QuantityException {
-        if ( QuantityOperators.equalsUnitDimensionOf(firstQuantity,secondQuantity)) {
+        if ( equalsUnitDimensionOf(firstQuantity,secondQuantity)) {
             //Coerce the unit of the second quantity to be that of the largest associated with the first quantity.
-            Quantity coercedSecondQuantity = QuantityConverter.determineConversionQuantityToTargetUnit(secondQuantity, firstQuantity.getLargestUnit());
+            Quantity coercedSecondQuantity = QuantityConverter.determineConversionQuantityToTargetUnit(secondQuantity, firstQuantity.getLargestUnit(), true);
             return firstQuantity.getWeightedValueWithRespectToLargestUnit() > coercedSecondQuantity.getWeightedValueWithRespectToLargestUnit();
         } else {
             throw new IncompatibleUnitDimensionException(firstQuantity.getLargestUnit(), secondQuantity.getLargestUnit());
         }
     }
+    public static boolean greaterThanOrEqual(Quantity firstQuantity, Quantity secondQuantity) throws IncompatibleUnitDimensionException, QuantityException {
+        return greaterThan(firstQuantity, secondQuantity) || equalsValueNUnitDimensionWithRespectToLargestUnitOf(firstQuantity, secondQuantity);
+    }
 
     public static boolean lessThan(Quantity firstQuantity, Quantity secondQuantity) throws IncompatibleUnitDimensionException, QuantityException {
-        if ( QuantityOperators.equalsUnitDimensionOf(firstQuantity,secondQuantity)) {
+        if ( equalsUnitDimensionOf(firstQuantity,secondQuantity)) {
             //Coerce the unit of the second quantity to be that of the largest associated with the first quantity.
-            Quantity coercedSecondQuantity = QuantityConverter.determineConversionQuantityToTargetUnit(secondQuantity, firstQuantity.getLargestUnit());
+            Quantity coercedSecondQuantity = QuantityConverter.determineConversionQuantityToTargetUnit(secondQuantity, firstQuantity.getLargestUnit(), true);
             return firstQuantity.getWeightedValueWithRespectToLargestUnit() < coercedSecondQuantity.getWeightedValueWithRespectToLargestUnit();
         } else {
             throw new IncompatibleUnitDimensionException(firstQuantity.getLargestUnit(), secondQuantity.getLargestUnit());
         }
     }
+    public static boolean lessThanOrEqual(Quantity firstQuantity, Quantity secondQuantity) throws IncompatibleUnitDimensionException, QuantityException {
+        return lessThan(firstQuantity, secondQuantity) || equalsValueNUnitDimensionWithRespectToLargestUnitOf(firstQuantity, secondQuantity);
+    }
+
 }

@@ -1,6 +1,7 @@
 package com.isaacapps.unitconverterapp.processors.operators.dimensions;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public final class DimensionOperators {
@@ -13,6 +14,7 @@ public final class DimensionOperators {
         return new ChainedDimensionOperation<T>().divide(firstDimension);
     }
 
+    ///
     public static <T> Map<T, Double> multiply(Map<T, Double> firstDimension
             , Map<T, Double> secondDimension) {
         return multiply(firstDimension, secondDimension, true);
@@ -34,13 +36,13 @@ public final class DimensionOperators {
     private static <T> Map<T, Double> dimensionOperation(int sign, Map<T, Double> firstDimension
             , Map<T, Double> secondDimension, boolean createNewDimension) {
 
-        Map<T, Double> newDimension = createNewDimension ? new HashMap<>(firstDimension):firstDimension;
+        Map<T, Double> finalDimension = createNewDimension ? new HashMap<>(firstDimension):firstDimension;
 
         //Subtracts or adds the exponents of same component units based on division or multiplication operation respectively.
         for (T key : secondDimension.keySet())
-            alterExponentOfDimensionItem(newDimension, key, sign * secondDimension.get(key));
+            alterExponentOfDimensionItem(finalDimension, key, sign * secondDimension.get(key));
 
-        return newDimension;
+        return finalDimension;
     }
 
     ///
@@ -48,9 +50,9 @@ public final class DimensionOperators {
         Map<T, Double> newDimension = createNewDimension ? new HashMap<>(baseDimension):baseDimension;
 
         for(T key : baseDimension.keySet())
-            alterExponentOfDimensionItem(newDimension, key, baseDimension.get(key) * exponentToBeRaisedTo);
+            alterExponentOfDimensionItem(newDimension, key, (baseDimension.get(key) - 1) * exponentToBeRaisedTo);
 
-        return baseDimension;
+        return newDimension;
     }
     public static <T> Map<T, Double> exponentiate(Map<T, Double> baseDimension, Double exponentToBeRaisedTo){
         return exponentiate(baseDimension, exponentToBeRaisedTo, true);
@@ -62,9 +64,7 @@ public final class DimensionOperators {
      * If the item did not already exist in map, then it first added with initial value of zero before increase.
      */
     public static <T> Map<T, Double> alterExponentOfDimensionItem(Map<T, Double> dimensionMap, T item, Double exponentDelta){
-        dimensionMap.put(item
-                , exponentDelta + (dimensionMap.containsKey(item)
-                        ? dimensionMap.get(item) : 0.0));
+        dimensionMap.put(item, exponentDelta + (dimensionMap.containsKey(item) ? dimensionMap.get(item) : 0.0));
         return dimensionMap;
     }
 
@@ -111,4 +111,23 @@ public final class DimensionOperators {
         return true;
     }
 
+    //
+    public static <T> Map<T, Double> removeDimensionItemsRaisedToZero(Map<T, Double> dimension, double tolerance){
+        Iterator<Map.Entry<T, Double>> dimensionEntryIterator = dimension.entrySet().iterator();
+        while(dimensionEntryIterator.hasNext()){
+            double exp = dimensionEntryIterator.next().getValue();
+            if((exp - Math.floor(exp)) < tolerance)
+                dimensionEntryIterator.remove();
+        }
+        return dimension;
+    }
+
+    public static <T> Map<T, Double> removeDimensionItemsRaisedToZero(Map<T, Double> dimension){
+        return removeDimensionItemsRaisedToZero(dimension, 0.00001);
+    }
+
+    //
+    public static <T> boolean isDimensionaless(Map<T, Double> dimension){
+        return removeDimensionItemsRaisedToZero(new HashMap<>(dimension)).isEmpty();
+    }
 }
