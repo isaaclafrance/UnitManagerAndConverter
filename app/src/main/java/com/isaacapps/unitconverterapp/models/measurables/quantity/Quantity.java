@@ -5,6 +5,9 @@ import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager;
 import com.isaacapps.unitconverterapp.processors.converters.QuantityConverter;
 import com.isaacapps.unitconverterapp.processors.formatters.grouping.UnitNamesGroupingFormatter;
 import com.isaacapps.unitconverterapp.processors.formatters.grouping.ValuesGroupingFormatter;
+import com.isaacapps.unitconverterapp.processors.formatters.numbers.RoundingFormatter;
+import com.isaacapps.unitconverterapp.processors.formatters.text.GeneralTextFormatter;
+import com.isaacapps.unitconverterapp.processors.parsers.ParsingException;
 import com.isaacapps.unitconverterapp.processors.parsers.measurables.quantity.QuantityGroupingDefiner;
 import com.isaacapps.unitconverterapp.processors.serializers.ISerializer;
 import com.isaacapps.unitconverterapp.processors.serializers.SerializingException;
@@ -13,13 +16,13 @@ import com.isaacapps.unitconverterapp.processors.serializers.measurables.quantit
 import com.isaacapps.unitconverterapp.processors.serializers.measurables.quantity.ValuesGroupingCollectionSerializer;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.SortedMap;
+import java.util.TreeMap;
 
 public class Quantity {
     private Locale locale;
@@ -30,7 +33,8 @@ public class Quantity {
     private QuantityAttributesValidator quantityAttributesValidator;
 
     ///
-    public Quantity(Map<Unit, Double> unitValueMap, Locale locale, ISerializer<Collection<Unit>> unitsGroupingCollectionSerializer, ISerializer<Collection<Double>> valuesGroupingCollectionSerializer, ISerializer<Quantity> quantitySerializer, QuantityAttributesValidator quantityAttributesValidator) throws QuantityException {
+    public Quantity(Map<Unit, Double> unitValueMap, Locale locale, ISerializer<Collection<Unit>> unitsGroupingCollectionSerializer
+            , ISerializer<Collection<Double>> valuesGroupingCollectionSerializer, ISerializer<Quantity> quantitySerializer, QuantityAttributesValidator quantityAttributesValidator) throws QuantityException {
         this.quantityAttributesValidator = quantityAttributesValidator;
         this.unitValueMap = quantityAttributesValidator.validatedSortedUnitValueMap(unitValueMap);
 
@@ -41,17 +45,26 @@ public class Quantity {
         setLocale(locale);
     }
 
-    public Quantity(Map<Unit, Double> unitValueMap) throws QuantityException {
-        this(unitValueMap, Locale.getDefault()
-                , new UnitsGroupingCollectionSerializer(Locale.getDefault(), new UnitNamesGroupingFormatter(Locale.getDefault(), new QuantityGroupingDefiner()))
-                , new ValuesGroupingCollectionSerializer(Locale.getDefault(), new ValuesGroupingFormatter(Locale.getDefault(), new QuantityGroupingDefiner()))
-                , new PairedGroupingQuantitySerializer(Locale.getDefault(), new UnitNamesGroupingFormatter(Locale.getDefault(), new QuantityGroupingDefiner())
-                        , new ValuesGroupingFormatter(Locale.getDefault(), new QuantityGroupingDefiner()))
-                , new QuantityAttributesValidator());
+    public Quantity() throws QuantityException {
+        locale = Locale.getDefault();
+
+        quantityAttributesValidator = new QuantityAttributesValidator();
+
+        unitsGroupingCollectionSerializer = new UnitsGroupingCollectionSerializer(locale, new UnitNamesGroupingFormatter(locale, new QuantityGroupingDefiner()));
+        valuesGroupingCollectionSerializer = new ValuesGroupingCollectionSerializer(locale, new ValuesGroupingFormatter(locale, new QuantityGroupingDefiner()));
+        quantitySerializer = new PairedGroupingQuantitySerializer(locale, new GeneralTextFormatter(locale), new RoundingFormatter(locale));
+
+        unitValueMap = new TreeMap<>();
+        try {
+            setUnit(new Unit(), true);
+        } catch (ParsingException e) {
+            e.printStackTrace();
+        }
     }
 
-    public Quantity() throws QuantityException {
-        this(Collections.EMPTY_MAP);
+    public Quantity(Map<Unit, Double> unitValueMap) throws QuantityException {
+        this();
+        this.unitValueMap = quantityAttributesValidator.validatedSortedUnitValueMap(unitValueMap);
     }
 
     public Quantity(List<Double> values, List<Unit> units) throws QuantityException {
@@ -63,7 +76,7 @@ public class Quantity {
         this(Collections.singletonList(value), Collections.singletonList(unit));
     }
 
-    public Quantity(double value) throws QuantityException {
+    public Quantity(double value) throws QuantityException, ParsingException {
         this(Collections.singletonList(value), Collections.singletonList(new Unit()));
     }
 
@@ -73,7 +86,7 @@ public class Quantity {
 
     ///
     public Double getWeightedValueWithRespectToLargestUnit() {
-        return QuantityConverter.calculateReducedValueWithRespectToLargestUnit(unitValueMap);
+        return QuantityConverter.calculateWeightedValueWithRespectToLargestUnit(unitValueMap);
     }
     public Collection<Double> getValues() {
         return unitValueMap.values();
@@ -98,13 +111,25 @@ public class Quantity {
         return unitValueMap.keySet();
     }
     /**
-     * Wipes out the existing unit value associated. Set the specified units with values set to 0.
+     * Wipes out the existing sorted unit value. Set the specified units with initial default values of zero..
      */
     public void setUnits(List<Unit> units) throws QuantityException {
-        this.unitValueMap = quantityAttributesValidator.validatedSortedUnitValueMap(units, Arrays.asList(new Double[units.size()]));
+        setUnits(units, true);
     }
-    public void setUnit(Unit unit) throws QuantityException {
-        setUnits(Collections.singletonList(unit));
+
+    /**
+     *Set the units in the sorted unit-value map. Units will be automatically sorted from largest to least based on base conversion.
+     *
+     * @param units Compatible units. ie same unit manager reference, same dimnesion, etc.
+     * @param setExistingValuesToDefaults Indicates whether to replace with defaults the existing values that were associated with the previous units.
+     * @throws QuantityException
+     */
+    public void setUnits(List<Unit> units, boolean setExistingValuesToDefaults) throws QuantityException {
+        this.unitValueMap = quantityAttributesValidator.validatedSortedUnitValueMap(units
+                , setExistingValuesToDefaults ? Collections.nCopies(units.size(), 0.0): new ArrayList<>(unitValueMap.values()));
+    }
+    public void setUnit(Unit unit, boolean setExistingValuesToDefaults) throws QuantityException {
+        setUnits(Collections.singletonList(unit), setExistingValuesToDefaults);
     }
 
     public SortedMap<Unit, Double> getUnitValueMap() {
