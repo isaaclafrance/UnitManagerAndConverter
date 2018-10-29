@@ -9,6 +9,8 @@ import java.util.regex.Pattern;
 public class GroupingFormatter implements IFormatter {
     QuantityGroupingDefiner quantityGroupingDefiner;
 
+    private Pattern groupingContentSpacingPattern;
+    private Pattern groupingBraceSpacingPattern;
     private Pattern missingInternalStartBracePattern;
     private Pattern missingInternalEndBracePattern;
     private Pattern missingFinalEndBracePattern;
@@ -28,6 +30,12 @@ public class GroupingFormatter implements IFormatter {
     }
 
     public void compileGroupingEditingPatterns(){
+        groupingContentSpacingPattern = Pattern.compile(String.format("(?<=\\w)\\s{2,}(?=\\w)"));
+
+        groupingBraceSpacingPattern = Pattern.compile(String.format("(?<=%1$s|%2$s)\\s+|\\s+(?=%1$s|%2$s)"
+                , quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()
+                , quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol()));
+
         missingInternalStartBracePattern = Pattern.compile(String.format("(?!\\A)%2$s(?=[^%1$s]+%2$s)"
                 , quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()
                 , quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol()));
@@ -68,15 +76,17 @@ public class GroupingFormatter implements IFormatter {
     public int calculateGroupingCount(String groupings) {
         int groupingCount = 0;
 
-        int index = 0;
-        while ((index = groupings.indexOf(quantityGroupingDefiner.getGroupOpeningSymbol(), index)) != -1) {
-            String subText = groupings.substring(index);
-
-            // if the braces are not arranged appropriately, then do not tally count
-            if (subText.indexOf(quantityGroupingDefiner.getGroupOpeningSymbol()) < subText.indexOf(quantityGroupingDefiner.getGroupClosingSymbol()))
+        int startIndex = 0;
+        while ((startIndex = groupings.indexOf(quantityGroupingDefiner.getGroupOpeningSymbol(), startIndex)) != -1) {
+            // if the braces are not arranged appropriately, then do not tally count, but increment position.
+            int endIndex = groupings.indexOf(quantityGroupingDefiner.getGroupClosingSymbol(), startIndex);
+            if (startIndex < endIndex) {
                 groupingCount++;
-
-            index++;
+                startIndex = endIndex;
+            }
+            else{
+                startIndex++;
+            }
         }
 
         return groupingCount;
@@ -99,7 +109,7 @@ public class GroupingFormatter implements IFormatter {
     }
 
     public String replaceEmptyGroupingsWithDefaultGrouping(String textWithEmptyGroupings, String defaultTextInReplacementGrouping){
-        String groupingWithDefaultReplacementText = String.format("%s %s %s"
+        String groupingWithDefaultReplacementText = String.format("%s%s%s"
                 ,quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()
                 , defaultTextInReplacementGrouping
                 , quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol());
@@ -111,7 +121,7 @@ public class GroupingFormatter implements IFormatter {
     ///
 
     /**
-     * Recursively tries to format grouping since fixing one kind of may disrupt an already fixed formatting.
+     * Recursively tries to format grouping since a non terminal transformation may disrupt an already fixed formatting.
      * There is probably a more efficient graph theory algorithmic or context sensitive grammar approach to this.
      * Strict regular expression restrictions that lookbacks (unlike lookaheads) have fixed lengths caused some obstacles and limitations in implementation
      */
@@ -148,6 +158,12 @@ public class GroupingFormatter implements IFormatter {
 
         if (extraStartBracePattern.matcher(grouping).find()) // Remove extra starting braces ie '{{{' --> '{'
             grouping = grouping.replaceAll(extraStartBracePattern.pattern(), "{");
+
+        if(groupingBraceSpacingPattern.matcher(grouping).find()) // Removal all spacings adjacent to a starting and terminating brace.
+            grouping = grouping.replaceAll(groupingBraceSpacingPattern.pattern(), "");
+
+        if(groupingContentSpacingPattern.matcher(grouping).find()) // Collapses spacing between contents in groupings into one.
+            grouping = grouping.replaceAll(groupingContentSpacingPattern.pattern(), " ");
 
         return grouping.replaceAll("\\s{2,}", " ");
     }

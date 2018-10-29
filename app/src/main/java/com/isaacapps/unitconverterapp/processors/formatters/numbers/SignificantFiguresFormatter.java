@@ -1,9 +1,11 @@
 package com.isaacapps.unitconverterapp.processors.formatters.numbers;
 
 import com.isaacapps.unitconverterapp.processors.formatters.IFormatter;
-import com.isaacapps.unitconverterapp.utilities.RegExUtility;
 
 import java.util.Locale;
+import java.util.regex.Matcher;
+
+import static com.isaacapps.unitconverterapp.utilities.RegExUtility.SIGNED_DOUBLE_VALUE_REGEX_PATTERN;
 
 public class SignificantFiguresFormatter implements IFormatter {
     private Locale locale;
@@ -18,11 +20,14 @@ public class SignificantFiguresFormatter implements IFormatter {
     }
 
     @Override
-    public String format(String number) {
-        if(number.matches(RegExUtility.SIGNED_DOUBLE_VALUE_REGEX))
-            return String.format(locale,"%." + numberOfSignificantFigures + "g", number).toString();
-        else
-            return number;
+    public String format(String decimal) {
+        String formattedNumber = decimal;
+
+        Matcher decimalInputMatcher = SIGNED_DOUBLE_VALUE_REGEX_PATTERN.matcher(decimal);
+        while(decimalInputMatcher.find())
+            formattedNumber = decimal.replaceAll(decimalInputMatcher.group(), String.format(locale,"%." + numberOfSignificantFigures + "g", decimalInputMatcher.group()));
+
+        return formattedNumber;
     }
 
     ///

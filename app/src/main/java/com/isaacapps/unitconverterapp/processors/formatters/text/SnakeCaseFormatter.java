@@ -3,15 +3,19 @@ package com.isaacapps.unitconverterapp.processors.formatters.text;
 import com.isaacapps.unitconverterapp.processors.formatters.IFormatter;
 
 import java.util.Locale;
+import java.util.regex.Pattern;
 
-public class AllUpperCaseFormatter implements IFormatter {
+public class SnakeCaseFormatter implements IFormatter {
     private Locale locale;
+    private Pattern multipleWhiteSpacesPattern = Pattern.compile("\\s{2,}");
 
-    public AllUpperCaseFormatter(Locale locale){ this.locale = locale; }
+    public SnakeCaseFormatter(Locale locale){
+        this.locale = locale;
+    }
 
     @Override
     public String format(String text) {
-        return text.toUpperCase(locale);
+        return multipleWhiteSpacesPattern.matcher(text).replaceAll("_");
     }
 
     @Override

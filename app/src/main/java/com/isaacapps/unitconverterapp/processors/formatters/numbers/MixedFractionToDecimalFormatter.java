@@ -12,7 +12,7 @@ public class MixedFractionToDecimalFormatter implements IFormatter {
     public static final Pattern DENOMINATOR_PATTERN = Pattern.compile(String.format("(?<=\\/)s*%s", INTEGER_PATTERN.pattern()));
     public static final Pattern NUMERATOR_PATTERN = Pattern.compile(String.format("%s\\s*(?=\\/)", INTEGER_PATTERN.pattern()));
     public static final Pattern FRACTION_PATTERN = Pattern.compile(String.format("%s\\s*\\/\\s*%<s", INTEGER_PATTERN.pattern()));
-    public static final Pattern MIXED_NUMBER_PATTERN = Pattern.compile(String.format("%s\\s+%s", INTEGER_PATTERN.pattern(), FRACTION_PATTERN.pattern()));
+    public static final Pattern MIXED_PATTERN = Pattern.compile(String.format("%1$s\\s+%2$s|%2$s", INTEGER_PATTERN.pattern(), FRACTION_PATTERN.pattern()));
     private static final Pattern WHOLE_NUMBER_PART_PATTERN = Pattern.compile(String.format("%s(?=\\s*%s\\s*)", INTEGER_PATTERN.pattern(), FRACTION_PATTERN.pattern()));
 
     private IFormatter resultantDecimalFormatter;
@@ -24,27 +24,32 @@ public class MixedFractionToDecimalFormatter implements IFormatter {
 
     ///
     @Override
-    public String format(String mixedNumber) {
-        if (!isMixedNumber(mixedNumber.trim()))
-            return mixedNumber;
+    public String format(String mixedInput) {
+        String formattedMixedInput = mixedInput;
 
-        return convertMixedNumberToDecimal(mixedNumber.trim());
+        Matcher mixedInputMatcher = MIXED_PATTERN.matcher(mixedInput);
+        while(mixedInputMatcher.find())
+            formattedMixedInput = mixedInput.replaceAll(mixedInputMatcher.group(), convertMixedNumberToDecimal(mixedInputMatcher.group()));
+
+        return formattedMixedInput;
     }
 
     ///
-    private String convertMixedNumberToDecimal(String mixedNumber){
-        String fractionPart = extractFractionPart(mixedNumber);
+    private String convertMixedNumberToDecimal(String mixedInput){
+        String fractionPart = extractFractionPart(mixedInput);
         String numerator = extractNumeratorOfFractionPart(fractionPart);
         String denominator = extractDenominatorOfFractionPart(fractionPart);
-        String fractionAsDecimal = Double.toString(Double.parseDouble(numerator)/Double.parseDouble(denominator));
+        String fractionAsDecimal = (!(numerator+denominator).isEmpty())
+                ? Double.toString(Double.parseDouble(numerator)/Double.parseDouble(denominator))
+                :"0.0";
 
-        String wholeNumberPart = extractWholeNumberPart(mixedNumber);
+        String wholeNumberPart = extractWholeNumberPart(mixedInput);
 
-        return String.format("%s%s",wholeNumberPart,fractionAsDecimal.replaceFirst("\\d+(?=\\.)", ""));
+        return String.format("%s%s",wholeNumberPart.isEmpty()?"0":wholeNumberPart,fractionAsDecimal.replaceFirst("\\d+(?=\\.)", ""));
     }
 
-    private String extractFractionPart(String mixedNumber){
-        Matcher fractionPartMatcher = FRACTION_PATTERN.matcher(mixedNumber);
+    private String extractFractionPart(String mixedInput){
+        Matcher fractionPartMatcher = FRACTION_PATTERN.matcher(mixedInput);
         if(fractionPartMatcher.find()){
             return fractionPartMatcher.group();
         }
@@ -84,8 +89,8 @@ public class MixedFractionToDecimalFormatter implements IFormatter {
     public boolean hasFraction(String numberWithPossibleFraction){
         return FRACTION_PATTERN.matcher(numberWithPossibleFraction).find();
     }
-    public boolean isMixedNumber(String possibleMixedNumber){
-        return MIXED_NUMBER_PATTERN.matcher(possibleMixedNumber).find() || hasFraction(possibleMixedNumber);
+    public boolean hasWholeNumber(String numberWithPossiblePart){
+        return WHOLE_NUMBER_PART_PATTERN.matcher(numberWithPossiblePart).find();
     }
 
     ///

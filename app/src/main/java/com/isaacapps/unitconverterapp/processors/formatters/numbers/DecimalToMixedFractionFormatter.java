@@ -6,6 +6,8 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.isaacapps.unitconverterapp.utilities.RegExUtility.SIGNED_DOUBLE_VALUE_REGEX_PATTERN;
+
 public class DecimalToMixedFractionFormatter implements IFormatter {
     /*Product of all successive primes less than and equal to 43. Due to precision limitations chose 43 as cut-off, but the large the number the better
      since it would make it would make it somewhat easier to find reduced fractions for nonterminating and irregular decimals. */
@@ -13,8 +15,9 @@ public class DecimalToMixedFractionFormatter implements IFormatter {
     public final double GCD_TOLERANCE = 0.000001; // used as a precision parameter.
 
     private Locale locale;
-    private final Pattern decimalPartPattern = Pattern.compile("(?<=[.,])\\d+\\Z");
-    private final Pattern nonDecimalPartPattern = Pattern.compile("\\d+(?=[.,])");
+    private final Pattern decimalFractionPartPattern = Pattern.compile("(?<=[.,])\\d+\\Z");
+    private final Pattern wholeNumberPartPattern = Pattern.compile("\\d+(?=[.,])");
+    private final Pattern decimalPattern = SIGNED_DOUBLE_VALUE_REGEX_PATTERN;
     private double nearestDenominator;
     private double gcdTolerance;
 
@@ -32,12 +35,14 @@ public class DecimalToMixedFractionFormatter implements IFormatter {
 
     ///
     @Override
-    public String format(String numWithDecimal) {
-        String formattedNum = convertToMixedNumber(numWithDecimal.trim());
-        if(!formattedNum.isEmpty())
-            return formattedNum.trim();
-        else
-            return numWithDecimal;
+    public String format(String decimalInput) {
+        String formattedDecimal = decimalInput;
+
+        Matcher decimalInputMatcher = decimalPattern.matcher(decimalInput);
+        while(decimalInputMatcher.find())
+            formattedDecimal = decimalInput.replaceAll(decimalInputMatcher.group(), convertToMixedNumber(decimalInputMatcher.group()));
+
+        return formattedDecimal;
     }
 
     ///
@@ -53,7 +58,7 @@ public class DecimalToMixedFractionFormatter implements IFormatter {
     }
 
     private String extractNonDecimalPart(String numWithDecimal){
-        Matcher nonDecimalPartMatcher = nonDecimalPartPattern.matcher(numWithDecimal);
+        Matcher nonDecimalPartMatcher = wholeNumberPartPattern.matcher(numWithDecimal);
         if(nonDecimalPartMatcher.find()){
             return nonDecimalPartMatcher.group();
         }
@@ -63,7 +68,7 @@ public class DecimalToMixedFractionFormatter implements IFormatter {
     }
 
     private String extractDecimalPart(String numWithDecimal){
-        Matcher decimalPartMatcher = decimalPartPattern.matcher(numWithDecimal);
+        Matcher decimalPartMatcher = decimalFractionPartPattern.matcher(numWithDecimal);
         if(decimalPartMatcher.find()){
             return decimalPartMatcher.group();
         }
@@ -90,6 +95,7 @@ public class DecimalToMixedFractionFormatter implements IFormatter {
         }
     }
 
+    ///
     private double determineGreatestCommonFactor(double num1, double num2){
         double remainder = num1 % num2;
         while(remainder != 0){
@@ -115,7 +121,7 @@ public class DecimalToMixedFractionFormatter implements IFormatter {
         return new double[]{numerator/gcd, denominator/gcd};
     }
     private double[] calculateFractionToNearestDenominator(double numerator, double denominator, double currentNearestDenominator){
-        double closestNumeratorForNearestDenominator = Math.round(((currentNearestDenominator) * numerator)/denominator);
+        double closestNumeratorForNearestDenominator = Math.round((currentNearestDenominator * numerator)/denominator);
         return new double[]{closestNumeratorForNearestDenominator, currentNearestDenominator};
     }
 
