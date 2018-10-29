@@ -103,7 +103,7 @@ public class EnglishPluralTextParserTest {
                             ". Input plural compound noun %s" +
                             ". Expected singular conversion: %s"
                     , compoundNoun, expectedSingularizedCompoundNoun)
-                    , englishPluralTextParser.getPossibleSingularCombinations(compoundNoun)
+                    , englishPluralTextParser.generatePossibleSingularCombinations(compoundNoun)
                             .contains(expectedSingularizedCompoundNoun));
         }
     }
@@ -117,7 +117,7 @@ public class EnglishPluralTextParserTest {
             String compoundNoun = String.format("%s %<s_%<s", singularWord);
 
             assertTrue(String.format("Compound noun with no plural is incorrectly identified as containing plural: %s",compoundNoun)
-                    , englishPluralTextParser.getPossibleSingularCombinations(compoundNoun).isEmpty());
+                    , englishPluralTextParser.generatePossibleSingularCombinations(compoundNoun).isEmpty());
         }
     }
 }

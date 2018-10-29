@@ -1,11 +1,12 @@
 package com.isaacapps.unitconverterapp.processors.parsers.dimension.fundamentalunits;
 
-import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.FundamentalUnitsDataModel;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.FundamentalUnitsDataModel.UNIT_TYPE;
 import com.isaacapps.unitconverterapp.processors.operators.dimensions.DimensionOperators;
 import com.isaacapps.unitconverterapp.processors.parsers.ParsingException;
 
 import org.junit.Test;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,74 +18,73 @@ public class FundamentalUnitTypesDimensionParserTest {
     public void parseToFundamentalUnitTypesDimensionFromString_Should_Provide_Correct_Fundamental_Unit_Types_Map_From_String()
             throws ParsingException {
         String fundamentalUnitTypeDefinition;
-        Map<FundamentalUnitsDataModel.UNIT_TYPE, Double> fundamentalUnitTypeDimension;
-        Map<String, Map<FundamentalUnitsDataModel.UNIT_TYPE,Double>> fundamentalUnitDimensionByDefinitionMap = new HashMap<>();
+        Map<UNIT_TYPE, Double> fundamentalUnitTypeDimension;
+        Map<String, Map<UNIT_TYPE,Double>> fundamentalUnitDimensionByDefinitionMap = new HashMap<>();
 
         //
         fundamentalUnitTypeDefinition = "LENGTH";
-        fundamentalUnitDimensionByDefinitionMap.put(fundamentalUnitTypeDefinition, new HashMap<>());
+        fundamentalUnitDimensionByDefinitionMap.put(fundamentalUnitTypeDefinition, new EnumMap<>(UNIT_TYPE.class));
         fundamentalUnitTypeDimension = fundamentalUnitDimensionByDefinitionMap.get(fundamentalUnitTypeDefinition);
-        fundamentalUnitTypeDimension.put(FundamentalUnitsDataModel.UNIT_TYPE.LENGTH, 1.0);
+        fundamentalUnitTypeDimension.put(UNIT_TYPE.LENGTH, 1.0);
 
         //
         fundamentalUnitTypeDefinition = "LENGTH^2";
-        fundamentalUnitDimensionByDefinitionMap.put(fundamentalUnitTypeDefinition, new HashMap<>());
+        fundamentalUnitDimensionByDefinitionMap.put(fundamentalUnitTypeDefinition, new EnumMap<>(UNIT_TYPE.class));
         fundamentalUnitTypeDimension = fundamentalUnitDimensionByDefinitionMap.get(fundamentalUnitTypeDefinition);
-        fundamentalUnitTypeDimension.put(FundamentalUnitsDataModel.UNIT_TYPE.LENGTH, 2.0);
+        fundamentalUnitTypeDimension.put(UNIT_TYPE.LENGTH, 2.0);
 
         //
         fundamentalUnitTypeDefinition = "(MASS)^5.123";
-        fundamentalUnitDimensionByDefinitionMap.put(fundamentalUnitTypeDefinition, new HashMap<>());
+        fundamentalUnitDimensionByDefinitionMap.put(fundamentalUnitTypeDefinition, new EnumMap<>(UNIT_TYPE.class));
         fundamentalUnitTypeDimension = fundamentalUnitDimensionByDefinitionMap.get(fundamentalUnitTypeDefinition);
-        fundamentalUnitTypeDimension.put(FundamentalUnitsDataModel.UNIT_TYPE.MASS, 5.123);
+        fundamentalUnitTypeDimension.put(UNIT_TYPE.MASS, 5.123);
 
         //
         fundamentalUnitTypeDefinition = "(MASS)^5.123 * MASS^3";
-        fundamentalUnitDimensionByDefinitionMap.put(fundamentalUnitTypeDefinition, new HashMap<>());
+        fundamentalUnitDimensionByDefinitionMap.put(fundamentalUnitTypeDefinition, new EnumMap<>(UNIT_TYPE.class));
         fundamentalUnitTypeDimension = fundamentalUnitDimensionByDefinitionMap.get(fundamentalUnitTypeDefinition);
-        fundamentalUnitTypeDimension.put(FundamentalUnitsDataModel.UNIT_TYPE.MASS, 8.123);
+        fundamentalUnitTypeDimension.put(UNIT_TYPE.MASS, 8.123);
 
         //
         fundamentalUnitTypeDefinition = "TIME^-5.123 * TIME^-3.0";
-        fundamentalUnitDimensionByDefinitionMap.put(fundamentalUnitTypeDefinition, new HashMap<>());
+        fundamentalUnitDimensionByDefinitionMap.put(fundamentalUnitTypeDefinition, new EnumMap<>(UNIT_TYPE.class));
         fundamentalUnitTypeDimension = fundamentalUnitDimensionByDefinitionMap.get(fundamentalUnitTypeDefinition);
-        fundamentalUnitTypeDimension.put(FundamentalUnitsDataModel.UNIT_TYPE.TIME, -8.123);
+        fundamentalUnitTypeDimension.put(UNIT_TYPE.TIME, -8.123);
 
         //
         fundamentalUnitTypeDefinition = "(TEMPERATURE)^5.123/TEMPERATURE^3.0";
-        fundamentalUnitDimensionByDefinitionMap.put(fundamentalUnitTypeDefinition, new HashMap<>());
+        fundamentalUnitDimensionByDefinitionMap.put(fundamentalUnitTypeDefinition, new EnumMap<>(UNIT_TYPE.class));
         fundamentalUnitTypeDimension = fundamentalUnitDimensionByDefinitionMap.get(fundamentalUnitTypeDefinition);
-        fundamentalUnitTypeDimension.put(FundamentalUnitsDataModel.UNIT_TYPE.TEMPERATURE, 2.123);
+        fundamentalUnitTypeDimension.put(UNIT_TYPE.TEMPERATURE, 2.123);
 
         //
         fundamentalUnitTypeDefinition = "((LENGTH)^5 x LENGTH^-3.0)**2";
-        fundamentalUnitDimensionByDefinitionMap.put(fundamentalUnitTypeDefinition, new HashMap<>());
+        fundamentalUnitDimensionByDefinitionMap.put(fundamentalUnitTypeDefinition, new EnumMap<>(UNIT_TYPE.class));
         fundamentalUnitTypeDimension = fundamentalUnitDimensionByDefinitionMap.get(fundamentalUnitTypeDefinition);
-        fundamentalUnitTypeDimension.put(FundamentalUnitsDataModel.UNIT_TYPE.LENGTH, 4.0);
+        fundamentalUnitTypeDimension.put(UNIT_TYPE.LENGTH, 4.0);
 
         //
         fundamentalUnitTypeDefinition = "((LENGTH)^2*TIME^-4.0)^2 multiplied by LENGTH / TIME^2 divided by TIME raised to 5";
-        fundamentalUnitDimensionByDefinitionMap.put(fundamentalUnitTypeDefinition, new HashMap<>());
+        fundamentalUnitDimensionByDefinitionMap.put(fundamentalUnitTypeDefinition, new EnumMap<>(UNIT_TYPE.class));
         fundamentalUnitTypeDimension = fundamentalUnitDimensionByDefinitionMap.get(fundamentalUnitTypeDefinition);
-        fundamentalUnitTypeDimension.put(FundamentalUnitsDataModel.UNIT_TYPE.LENGTH, 5.0);
-        fundamentalUnitTypeDimension.put(FundamentalUnitsDataModel.UNIT_TYPE.TIME, -15.0);
+        fundamentalUnitTypeDimension.put(UNIT_TYPE.LENGTH, 5.0);
+        fundamentalUnitTypeDimension.put(UNIT_TYPE.TIME, -15.0);
 
         //
         fundamentalUnitTypeDefinition = "( TIME / (TIME*LENGTH/TEMPERATURE) )";
-        fundamentalUnitDimensionByDefinitionMap.put(fundamentalUnitTypeDefinition, new HashMap<>());
+        fundamentalUnitDimensionByDefinitionMap.put(fundamentalUnitTypeDefinition, new EnumMap<>(UNIT_TYPE.class));
         fundamentalUnitTypeDimension = fundamentalUnitDimensionByDefinitionMap.get(fundamentalUnitTypeDefinition);
-        fundamentalUnitTypeDimension.put(FundamentalUnitsDataModel.UNIT_TYPE.TIME, 0.0);
-        fundamentalUnitTypeDimension.put(FundamentalUnitsDataModel.UNIT_TYPE.LENGTH, -1.0);
-        fundamentalUnitTypeDimension.put(FundamentalUnitsDataModel.UNIT_TYPE.TEMPERATURE, 1.0);
+        fundamentalUnitTypeDimension.put(UNIT_TYPE.TIME, 0.0);
+        fundamentalUnitTypeDimension.put(UNIT_TYPE.LENGTH, -1.0);
+        fundamentalUnitTypeDimension.put(UNIT_TYPE.TEMPERATURE, 1.0);
 
         //
         FundamentalUnitTypesDimensionParser fundamentalUnitTypesDimensionParser = new FundamentalUnitTypesDimensionParser();
         fundamentalUnitTypesDimensionParser.setStrictParsing(true);
 
         //
-        for(Map.Entry<String, Map<FundamentalUnitsDataModel.UNIT_TYPE, Double>> unitDefinitionEntry:fundamentalUnitDimensionByDefinitionMap.entrySet()){
-            Map<FundamentalUnitsDataModel.UNIT_TYPE, Double> parsedUnitComponentDimensionResult =
-                    fundamentalUnitTypesDimensionParser.parse(unitDefinitionEntry.getKey());
+        for(Map.Entry<String, Map<UNIT_TYPE, Double>> unitDefinitionEntry:fundamentalUnitDimensionByDefinitionMap.entrySet()){
+            Map<UNIT_TYPE, Double> parsedUnitComponentDimensionResult = fundamentalUnitTypesDimensionParser.parse(unitDefinitionEntry.getKey());
 
             assertTrue(String.format("Expected parsed fundamental unit definition dimension not correct. " +
                             "Input fundamental unit definition string %s. "
@@ -99,29 +99,29 @@ public class FundamentalUnitTypesDimensionParserTest {
     public void parseToFundamentalUnitTypesDimensionFromString_Should_Provide_Fundamental_Unit_Types_Map_With_Unknown_Dimension_When_Strict_Parsing_False()
             throws ParsingException {
         String unitDefinition;
-        Map<FundamentalUnitsDataModel.UNIT_TYPE,Double> unitComponentDimension;
-        Map<String, Map<FundamentalUnitsDataModel.UNIT_TYPE,Double>> unitComponentDimensionByUnitDefinitionMap = new HashMap<>();
+        Map<UNIT_TYPE,Double> unitComponentDimension;
+        Map<String, Map<UNIT_TYPE,Double>> unitComponentDimensionByUnitDefinitionMap = new HashMap<>();
 
         //
         unitDefinition = "%%%";
-        unitComponentDimensionByUnitDefinitionMap.put(unitDefinition, new HashMap<>());
+        unitComponentDimensionByUnitDefinitionMap.put(unitDefinition, new EnumMap<>(UNIT_TYPE.class));
         unitComponentDimension = unitComponentDimensionByUnitDefinitionMap.get(unitDefinition);
-        unitComponentDimension.put(FundamentalUnitsDataModel.UNIT_TYPE.UNKNOWN, 1.0);
+        unitComponentDimension.put(UNIT_TYPE.UNKNOWN, 1.0);
 
         //
         unitDefinition = "( $$$!% ) / TIME^2";
-        unitComponentDimensionByUnitDefinitionMap.put(unitDefinition, new HashMap<>());
+        unitComponentDimensionByUnitDefinitionMap.put(unitDefinition, new EnumMap<>(UNIT_TYPE.class));
         unitComponentDimension = unitComponentDimensionByUnitDefinitionMap.get(unitDefinition);
-        unitComponentDimension.put(FundamentalUnitsDataModel.UNIT_TYPE.UNKNOWN, 1.0);
-        unitComponentDimension.put(FundamentalUnitsDataModel.UNIT_TYPE.TIME, -2.0);
+        unitComponentDimension.put(UNIT_TYPE.UNKNOWN, 1.0);
+        unitComponentDimension.put(UNIT_TYPE.TIME, -2.0);
 
         //
         FundamentalUnitTypesDimensionParser fundamentalUnitTypesDimensionParser = new FundamentalUnitTypesDimensionParser();
         fundamentalUnitTypesDimensionParser.setStrictParsing(false);
 
         //
-        for(Map.Entry<String, Map<FundamentalUnitsDataModel.UNIT_TYPE, Double>> unitDefinitionEntry:unitComponentDimensionByUnitDefinitionMap.entrySet()){
-            Map<FundamentalUnitsDataModel.UNIT_TYPE, Double> parsedUnitComponentDimensionResult =
+        for(Map.Entry<String, Map<UNIT_TYPE, Double>> unitDefinitionEntry:unitComponentDimensionByUnitDefinitionMap.entrySet()){
+            Map<UNIT_TYPE, Double> parsedUnitComponentDimensionResult =
                     fundamentalUnitTypesDimensionParser.parse(unitDefinitionEntry.getKey());
 
             assertTrue(String.format("Expected parsed unit definition dimension not correct. Input unit definition string %s. "

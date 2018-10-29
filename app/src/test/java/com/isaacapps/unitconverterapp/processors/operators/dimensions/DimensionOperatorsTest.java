@@ -17,7 +17,7 @@ public class DimensionOperatorsTest {
 
     ///
     @Test
-    public void alterExponentOfDimensionItem_Should_Increment_Exponent_Of_Specified__Dimensional_Item_By_Delta(){
+    public void alterExponentOfDimensionItem_Should_Increment_Exponent_Of_Specified_Dimensional_Item_By_Delta(){
         Map<String, Double> templateDimensionMap = new HashMap<>();
         templateDimensionMap.put("item1", 1.0);
 
@@ -38,7 +38,7 @@ public class DimensionOperatorsTest {
 
         assertThat("Dimension item1 is not altered by specified delta", testableDimensionMap.get("item1"), is(templateDimensionMap.get("item1")+delta));
 
-        //Add dimension item to altered if missing
+        //Add dimension item to be altered if missing
         delta = 5.0;
         testableDimensionMap = new HashMap<>(templateDimensionMap);
         DimensionOperators.alterExponentOfDimensionItem(testableDimensionMap, "item2", delta);

@@ -13,14 +13,14 @@ import java.util.List;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
 
-public class DimensionComponentDefinerBuilderTest {
+public class DimensionComponentDefinerTest {
 
     //Subcomponent Tests
     @Test
-    public void createMultiplSymbolsRegex_WithSymbolGroupsArray_Should_Match_Specified_SymbolGroup(){
+    public void createMultiplSymbolsRegex_WithSymbolGroupsArray_Should_Match_Specified_SymbolGroup() throws ParsingException {
         String[] partipantSymbolGroups = new String[]{" x ", "/", "multiply", "*", "^", "."};
 
-        Pattern participantSymbolsGroupPattern = Pattern.compile(DimensionComponentDefinerBuilder
+        Pattern participantSymbolsGroupPattern = Pattern.compile(new DimensionComponentDefiner("\\w")
                 .createMultipleSymbolsRegEx(partipantSymbolGroups));
 
         for(String participantSymbolGroup:partipantSymbolGroups){
@@ -32,11 +32,11 @@ public class DimensionComponentDefinerBuilderTest {
     }
 
     @Test
-    public void createMultiplSymbolsRegex_WithSymbolGroupsArray_Should_Not_Match_Non_Specified_SymbolGroup(){
+    public void createMultiplSymbolsRegex_WithSymbolGroupsArray_Should_Not_Match_Non_Specified_SymbolGroup() throws ParsingException {
         String[] partipantSymbolGroups = new String[]{" x ", "/", "multiply", "*", "^"};
         String[] nonParticipantSymbolGroups = new String[]{"&", "mul", ""};
 
-        Pattern participantSymbolsGroupPattern = Pattern.compile(DimensionComponentDefinerBuilder
+        Pattern participantSymbolsGroupPattern = Pattern.compile(new DimensionComponentDefiner("\\w")
                 .createMultipleSymbolsRegEx(partipantSymbolGroups));
 
         for (String nonParticipantSymbolGroup: nonParticipantSymbolGroups) {
@@ -54,12 +54,11 @@ public class DimensionComponentDefinerBuilderTest {
         String[] partipantDivisionSymbolGroups = new String[]{"/", " divided by ", "%", " per "};
         Matcher participantSymbolGroupMatcher;
 
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder()
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("\\w")
                 .setMultiplicationSymbols(participantMultiplicationSymbolGroups)
                 .setDivisionSymbols(partipantDivisionSymbolGroups);
 
-        Pattern participantSymbolsGroupPattern = Pattern.compile(dimensionComponentDefinerBuilder
-                .createOperationComponentRegEx());
+        Pattern participantSymbolsGroupPattern = Pattern.compile(dimensionComponentDefiner.createOperationComponentRegEx());
 
         for(String participantSymbolGroup:participantMultiplicationSymbolGroups){
             participantSymbolGroupMatcher = participantSymbolsGroupPattern.matcher(participantSymbolGroup);
@@ -83,11 +82,11 @@ public class DimensionComponentDefinerBuilderTest {
         String[] nonParticipantSymbolGroups = new String[]{"(", "mul", "**", "", " "};
         Matcher participantSymbolGroupMatcher;
 
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder()
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("\\w")
                 .setMultiplicationSymbols(partipantMultiplicationSymbolGroups)
                 .setDivisionSymbols(partipantDivisionSymbolGroups);
 
-        Pattern participantSymbolsGroupPattern = Pattern.compile(dimensionComponentDefinerBuilder
+        Pattern participantSymbolsGroupPattern = Pattern.compile(dimensionComponentDefiner
                 .createOperationComponentRegEx());
 
         for (String nonParticipantSymbolGroup: nonParticipantSymbolGroups) {
@@ -105,11 +104,11 @@ public class DimensionComponentDefinerBuilderTest {
         String[] partipantMultiplicationSymbolGroups = new String[]{"*", " x "};
         String[] partipantDivisionSymbolGroups = new String[]{"/"};
 
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder()
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("\\w")
                 .setMultiplicationSymbols(partipantMultiplicationSymbolGroups)
                 .setDivisionSymbols(partipantDivisionSymbolGroups);
 
-        Pattern participantSymbolsGroupPattern = Pattern.compile(dimensionComponentDefinerBuilder.createOperationComponentRegEx());
+        Pattern participantSymbolsGroupPattern = Pattern.compile(dimensionComponentDefiner.createOperationComponentRegEx());
 
         List<String> inputOperationSymbols =  new ArrayList<>(Arrays.asList(partipantDivisionSymbolGroups));
         inputOperationSymbols.addAll(Arrays.asList(partipantMultiplicationSymbolGroups));
@@ -126,15 +125,14 @@ public class DimensionComponentDefinerBuilderTest {
     public void createInteriorGroupComponentRegEx_With_AtomicTypeRegEx_Should_IgnoreWhiteSpaces_ForMatches() throws ParsingException {
         String literalAtomicTypeRegex = "test";
 
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder().setAtomicTypeRegEx(literalAtomicTypeRegex);
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner(literalAtomicTypeRegex);
 
-        String interiorGroupComponentRegex = dimensionComponentDefinerBuilder.createInteriorGroupComponentRegEx();
+        String interiorGroupComponentRegex = dimensionComponentDefiner.createInteriorGroupComponentRegEx();
 
         Pattern interiorGroupComponentPattern = Pattern.compile(interiorGroupComponentRegex);
 
         String input = "   "+literalAtomicTypeRegex+"  ";
-        assertTrue("Input '"+input+"' with whitespaces does not match.", interiorGroupComponentPattern
-                .matcher(input).matches());
+        assertTrue("Input '"+input+"' with whitespaces does not match.", interiorGroupComponentPattern.matcher(input).matches());
     }
 
     @Test
@@ -142,11 +140,11 @@ public class DimensionComponentDefinerBuilderTest {
         String exponentValueRegEx = "123";
         String[] exponentSymbols = new String[]{"^", "**"};
 
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder()
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("\\w")
                 .setExponentValueRegEx(exponentValueRegEx)
                 .setExponentSymbols(exponentSymbols);
 
-        String exponentGroupRegEx = dimensionComponentDefinerBuilder.createExponentGroupRegex();
+        String exponentGroupRegEx = dimensionComponentDefiner.createExponentGroupRegex();
 
         Pattern exponentGroupPattern = Pattern.compile(exponentGroupRegEx);
 
@@ -165,11 +163,11 @@ public class DimensionComponentDefinerBuilderTest {
         String exponentValueRegEx = "123";
         String[] exponentSymbols = new String[]{"^", "**"};
 
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder()
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("\\w")
                 .setExponentValueRegEx(exponentValueRegEx)
                 .setExponentSymbols(exponentSymbols);
 
-        String exponentGroupRegEx = dimensionComponentDefinerBuilder.createExponentGroupRegex();
+        String exponentGroupRegEx = dimensionComponentDefiner.createExponentGroupRegex();
 
         Pattern exponentGroupPattern = Pattern.compile(exponentGroupRegEx);
 
@@ -188,11 +186,11 @@ public class DimensionComponentDefinerBuilderTest {
         String exponentValueRegEx = "123";
         String[] exponentSymbols = new String[]{"**"};
 
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder()
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("\\w")
                 .setExponentValueRegEx(exponentValueRegEx)
                 .setExponentSymbols(exponentSymbols);
 
-        String exponentGroupRegEx = dimensionComponentDefinerBuilder.createExponentGroupRegex();
+        String exponentGroupRegEx = dimensionComponentDefiner.createExponentGroupRegex();
 
         Pattern exponentGroupPattern = Pattern.compile(exponentGroupRegEx);
 
@@ -208,14 +206,13 @@ public class DimensionComponentDefinerBuilderTest {
     @Test
     public void createSingleGroupRegExPattern_Should_Match_Atomic_Type() throws ParsingException {
 
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder()
-                .setAtomicTypeRegEx("aaa")
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("aaa")
                 .setExponentValueRegEx("123")
                 .setExponentSymbols("^")
                 .setMultiplicationSymbols("*")
                 .setDivisionSymbols("/");
 
-        Pattern singleGroupPattern = dimensionComponentDefinerBuilder.createSingleGroupRegExPattern();
+        Pattern singleGroupPattern = dimensionComponentDefiner.createSingleGroupRegExPattern();
 
         String[] inputs = new String[]{"aaa", "(aaa)"};
 
@@ -228,14 +225,13 @@ public class DimensionComponentDefinerBuilderTest {
     @Test
     public void createSingleGroupRegExPattern_Should_Match_Atomic_Type_With_Exponent() throws ParsingException {
 
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder()
-                .setAtomicTypeRegEx("aaa")
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("aaa")
                 .setExponentValueRegEx("123")
                 .setExponentSymbols("^")
                 .setMultiplicationSymbols("*")
                 .setDivisionSymbols("/");
 
-        Pattern singleGroupPattern = dimensionComponentDefinerBuilder.createSingleGroupRegExPattern();
+        Pattern singleGroupPattern = dimensionComponentDefiner.createSingleGroupRegExPattern();
 
         String[] inputs = new String[]{"aaa^123", "(aaa)^123"};
 
@@ -248,14 +244,13 @@ public class DimensionComponentDefinerBuilderTest {
     @Test
     public void createSingleGroupRegExPattern_Should_Match_Atomic_Type_With_Exponent_And_OperationSymbols() throws ParsingException {
 
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder()
-                .setAtomicTypeRegEx("aaa")
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("aaa")
                 .setExponentValueRegEx("123")
                 .setExponentSymbols("^")
                 .setMultiplicationSymbols("*")
                 .setDivisionSymbols("/", " divided by ");
 
-        Pattern singleGroupPattern = dimensionComponentDefinerBuilder.createSingleGroupRegExPattern();
+        Pattern singleGroupPattern = dimensionComponentDefiner.createSingleGroupRegExPattern();
 
         String[] inputs = new String[]{"*aaa^123", "/(aaa)^123", " * (aaa)^123", " divided by ( aaa )^123"};
 
@@ -268,14 +263,13 @@ public class DimensionComponentDefinerBuilderTest {
     @Test
     public void createSingleGroupRegExPattern_ShouldNot_Match_Incorrect_Atomic_Type_Format() throws ParsingException {
 
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder()
-                .setAtomicTypeRegEx("aaa")
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("aaa")
                 .setExponentValueRegEx("123")
                 .setExponentSymbols("^")
                 .setMultiplicationSymbols("*")
                 .setDivisionSymbols("/");
 
-        Pattern singleGroupPattern = dimensionComponentDefinerBuilder.createSingleGroupRegExPattern();
+        Pattern singleGroupPattern = dimensionComponentDefiner.createSingleGroupRegExPattern();
 
         String[] inputs = new String[]{"bab^123", "baa", "(aaaaaa)", "(aaa"};
 
@@ -289,14 +283,13 @@ public class DimensionComponentDefinerBuilderTest {
     @Test
     public void createSingleGroupRegExPattern_ShouldNot_Match_Incorrect_Exponent_Format() throws ParsingException {
 
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder()
-                .setAtomicTypeRegEx("aaa")
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("aaa")
                 .setExponentValueRegEx("123")
                 .setExponentSymbols("^")
                 .setMultiplicationSymbols("*")
                 .setDivisionSymbols("/");
 
-        Pattern singleGroupPattern = dimensionComponentDefinerBuilder.createSingleGroupRegExPattern();
+        Pattern singleGroupPattern = dimensionComponentDefiner.createSingleGroupRegExPattern();
 
         String[] inputs = new String[]{"aaa$123"};
 
@@ -309,14 +302,13 @@ public class DimensionComponentDefinerBuilderTest {
 
     @Test
     public void createSingleGroupRegExPattern_ShouldNot_Match_Complex_Units() throws ParsingException {
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder()
-                .setAtomicTypeRegEx("aaa")
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("aaa")
                 .setExponentValueRegEx("123")
                 .setExponentSymbols("^")
                 .setMultiplicationSymbols("*")
                 .setDivisionSymbols("/");
 
-        Pattern singleGroupPattern = dimensionComponentDefinerBuilder.createSingleGroupRegExPattern();
+        Pattern singleGroupPattern = dimensionComponentDefiner.createSingleGroupRegExPattern();
 
         String[] inputs = new String[]{"(aaa^123)^123", "(aaa*aaa)^123"};
 
@@ -331,14 +323,13 @@ public class DimensionComponentDefinerBuilderTest {
     @Test
     public void createMultiGroupRegExPattern_Should_Match_Trivially_Nested_MultiGroup() throws ParsingException {
 
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder()
-                .setAtomicTypeRegEx("(aaa|bbb)")
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("(aaa|bbb)")
                 .setExponentValueRegEx("123")
                 .setExponentSymbols("^")
                 .setMultiplicationSymbols("*", "x")
                 .setDivisionSymbols("/");
 
-        Pattern multiGroupPattern = dimensionComponentDefinerBuilder.createMultiGroupRegExPattern();
+        Pattern multiGroupPattern = dimensionComponentDefiner.createMultiGroupRegExPattern();
 
         String[] inputs = new String[]{"(aaa*aaa x aaa/bbb)^123", "(aaa x bbb)"};
 
@@ -351,14 +342,13 @@ public class DimensionComponentDefinerBuilderTest {
 
     @Test
     public void createMultiGroupRegExPattern_Should_Match_Obviously_Nested_And_Complex_MultiGroup() throws ParsingException {
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder()
-                .setAtomicTypeRegEx("(aaa|bbb)")
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("(aaa|bbb)")
                 .setExponentValueRegEx("123")
                 .setExponentSymbols("^")
                 .setMultiplicationSymbols("*", "x")
                 .setDivisionSymbols("/");
 
-        Pattern multiGroupPattern = dimensionComponentDefinerBuilder.createMultiGroupRegExPattern();
+        Pattern multiGroupPattern = dimensionComponentDefiner.createMultiGroupRegExPattern();
 
         String[] inputs = new String[]{"( (aaa^123 * bbb / (aaa^123*bbb*aaa) )^123 *aaa x aaa/bbb)^123"
                 , "(aaa/((aaa)*(bbb)))"};
@@ -372,14 +362,13 @@ public class DimensionComponentDefinerBuilderTest {
 
     @Test
     public void createMultiGroupRegExPattern_ShouldNot_Match_Solitary_AtomicType() throws ParsingException {
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder()
-                .setAtomicTypeRegEx("(aaa|bbb)")
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("(aaa|bbb)")
                 .setExponentValueRegEx("123")
                 .setExponentSymbols("^")
                 .setMultiplicationSymbols("*")
                 .setDivisionSymbols("/");
 
-        Pattern multiGroupPattern = dimensionComponentDefinerBuilder.createMultiGroupRegExPattern();
+        Pattern multiGroupPattern = dimensionComponentDefiner.createMultiGroupRegExPattern();
 
         String[] inputs = new String[]{"aaa", "bbb", "*bbb", "aaa^123"}; //Ideally (aaa) and (aaa) ^2 should not match but they do.
 
@@ -398,8 +387,8 @@ public class DimensionComponentDefinerBuilderTest {
 
         for(String input:inputs)
         {
-            assertTrue("Input:"+input+", is falsely be classified as having no balanced parentheses"
-                    , DimensionComponentDefinerBuilder.hasBalancedParentheses(input));
+            assertTrue("Input:"+input+", is falsely classified as having no balanced parentheses"
+                    , DimensionComponentDefiner.hasBalancedParentheses(input));
         }
     }
 
@@ -410,8 +399,8 @@ public class DimensionComponentDefinerBuilderTest {
 
         for(String input:inputs)
         {
-            assertFalse("Input:"+input+", is falsely be classified as having balanced parentheses"
-                    , DimensionComponentDefinerBuilder.hasBalancedParentheses(input));
+            assertFalse("Input:"+input+", is falsely classified as having balanced parentheses"
+                    , DimensionComponentDefiner.hasBalancedParentheses(input));
         }
     }
 
@@ -421,8 +410,8 @@ public class DimensionComponentDefinerBuilderTest {
 
         for(String input:inputs)
         {
-            assertTrue("Input:"+input+", is falsely be classified as having no nested parentheses"
-                    , DimensionComponentDefinerBuilder.hasNestedParentheses(input));
+            assertTrue("Input:"+input+", is falsely classified as having no nested parentheses"
+                    , DimensionComponentDefiner.hasNestedParentheses(input));
         }
     }
 
@@ -432,15 +421,15 @@ public class DimensionComponentDefinerBuilderTest {
 
         for(String input:inputs)
         {
-            assertFalse("Input:"+input+", is falsely be classified as having nested parentheses"
-                    , DimensionComponentDefinerBuilder.hasNestedParentheses(input));
+            assertFalse("Input:"+input+", is falsely classified as having nested parentheses"
+                    , DimensionComponentDefiner.hasNestedParentheses(input));
         }
     }
 
     @Test
-    public void hasComplexDimensions_Should_Be_True_When_Unit_Name_Has_Exponents(){
+    public void hasComplexDimensions_Should_Be_True_When_Unit_Name_Has_Exponents() throws ParsingException {
 
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder()
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("\\w")
                 .setExponentValueRegEx("\\d+")
                 .setExponentSymbols("^")
                 .setMultiplicationSymbols("*")
@@ -450,15 +439,15 @@ public class DimensionComponentDefinerBuilderTest {
 
         for(String input:inputs)
         {
-            assertTrue("Input:"+input+", is falsely be classified as having no complex dimensions"
-                    , dimensionComponentDefinerBuilder.hasComplexDimensions(input));
+            assertTrue("Input:"+input+", is falsely classified as having no complex dimensions"
+                    , dimensionComponentDefiner.hasComplexDimensions(input));
         }
     }
 
     @Test
-    public void hasComplexDimensions_Should_Be_True_When_Unit_Name_Has_Nested_Or_Multiple_Parentheses(){
+    public void hasComplexDimensions_Should_Be_True_When_Unit_Name_Has_Nested_Or_Multiple_Parentheses() throws ParsingException {
 
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder()
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("\\w")
                 .setExponentValueRegEx("\\d+")
                 .setExponentSymbols("^")
                 .setMultiplicationSymbols("*")
@@ -468,15 +457,15 @@ public class DimensionComponentDefinerBuilderTest {
 
         for(String input:inputs)
         {
-            assertTrue("Input:"+input+", is falsely be classified as having no complex dimensions"
-                    , dimensionComponentDefinerBuilder.hasComplexDimensions(input));
+            assertTrue("Input:"+input+", is falsely classified as having no complex dimensions"
+                    , dimensionComponentDefiner.hasComplexDimensions(input));
         }
     }
 
     @Test
-    public void hasComplexDimensions_Should_Be_True_When_Unit_Name_Has_Operation_Symbols(){
+    public void hasComplexDimensions_Should_Be_True_When_Unit_Name_Has_Operation_Symbols() throws ParsingException {
 
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder()
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("\\w")
                 .setExponentValueRegEx("\\d+")
                 .setExponentSymbols("^")
                 .setMultiplicationSymbols("*")
@@ -486,14 +475,14 @@ public class DimensionComponentDefinerBuilderTest {
 
         for(String input:inputs)
         {
-            assertTrue("Input:"+input+", is falsely be classified as having no complex dimensions"
-                    , dimensionComponentDefinerBuilder.hasComplexDimensions(input));
+            assertTrue("Input:"+input+", is falsely classified as having no complex dimensions"
+                    , dimensionComponentDefiner.hasComplexDimensions(input));
         }
     }
 
     @Test
-    public void hasComplexDimensions_Should_Be_False_When_Unit_Name_Is_Atomic(){
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder()
+    public void hasComplexDimensions_Should_Be_False_When_Unit_Name_Is_Atomic() throws ParsingException {
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("\\w")
                 .setExponentValueRegEx("\\d+")
                 .setExponentSymbols("^")
                 .setMultiplicationSymbols("*")
@@ -503,14 +492,14 @@ public class DimensionComponentDefinerBuilderTest {
 
         for(String input:inputs)
         {
-            assertFalse("Input:"+input+", is falsely be classified as having complex dimensions"
-                    , dimensionComponentDefinerBuilder.hasComplexDimensions(input));
+            assertFalse("Input:"+input+", is falsely classified as having complex dimensions"
+                    , dimensionComponentDefiner.hasComplexDimensions(input));
         }
     }
 
     @Test
     public void hasNestedExponents_Should_Be_True_When_Units_Definition_Has_Explicitly_Nested_Exponents() throws ParsingException {
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder()
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("\\w")
                 .setExponentValueRegEx("\\d+")
                 .setExponentSymbols("^");
 
@@ -519,14 +508,14 @@ public class DimensionComponentDefinerBuilderTest {
 
         for(String input:inputs)
         {
-            assertTrue("Input:"+input+", is falsely be classified as not having explicitly  nested exponents"
-                    , dimensionComponentDefinerBuilder.hasNestedExponents(input));
+            assertTrue("Input:"+input+", is falsely classified as not having explicitly nested exponents"
+                    , dimensionComponentDefiner.hasNestedExponents(input));
         }
     }
 
     @Test
     public void hasNestedExponents_Should_Be_False_When_Units_Definition_Has_No_Nested_Exponents() throws ParsingException {
-        DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder = new DimensionComponentDefinerBuilder()
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("\\w")
                 .setExponentValueRegEx("\\d+")
                 .setExponentSymbols("^");
 
@@ -535,8 +524,8 @@ public class DimensionComponentDefinerBuilderTest {
 
         for(String input:inputs)
         {
-            assertFalse("Input:"+input+", is falsely be classified as having nested exponents"
-                    , dimensionComponentDefinerBuilder.hasNestedExponents(input));
+            assertFalse("Input:"+input+", is falsely classified as having nested exponents"
+                    , dimensionComponentDefiner.hasNestedExponents(input));
         }
     }
 
