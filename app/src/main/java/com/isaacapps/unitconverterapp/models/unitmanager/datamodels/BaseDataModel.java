@@ -11,6 +11,14 @@ public class BaseDataModel<T, U, V> {
     }
 
     public boolean combineWith(BaseDataModel<T, U, V> otherDataModel){
+        if(otherDataModel == null)
+            return true;
+
+        if(this.repositoryWithDualKeyNCategory == null){
+            this.repositoryWithDualKeyNCategory = otherDataModel.repositoryWithDualKeyNCategory;
+            return true;
+        }
+
         return this.repositoryWithDualKeyNCategory.combineWith(otherDataModel.repositoryWithDualKeyNCategory);
     }
 

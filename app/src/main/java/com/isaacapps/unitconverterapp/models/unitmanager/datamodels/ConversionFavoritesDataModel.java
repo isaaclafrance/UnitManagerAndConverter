@@ -4,9 +4,7 @@ import com.isaacapps.unitconverterapp.models.measurables.quantity.Quantity;
 import com.isaacapps.unitconverterapp.models.measurables.unit.Unit;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.repositories.IDualKeyNCategoryRepository;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.repositories.hashdriven.SignificanceRankHashedRepository;
-import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.ContentDeterminer;
 import com.isaacapps.unitconverterapp.processors.operators.measurables.quantity.QuantityOperators;
-import com.isaacapps.unitconverterapp.processors.operators.measurables.units.UnitOperators;
 import com.isaacapps.unitconverterapp.processors.serializers.SerializingException;
 
 import java.util.ArrayList;
@@ -25,27 +23,19 @@ public class ConversionFavoritesDataModel extends BaseDataModel<String, String, 
     }
 
     ///
-    public String addConversion(Unit sourceUnit, Unit targetUnit) {
-        String formattedConversion = convertToFormattedConversion(sourceUnit, targetUnit);
-        if (sourceUnit.getUnitManagerContext() == targetUnit.getUnitManagerContext()
-                && UnitOperators.equalsDimension(sourceUnit,targetUnit)
-                && ContentDeterminer.determineGeneralDataModelCategory(sourceUnit) != ContentDeterminer.DATA_MODEL_CATEGORY.UNKNOWN) {
-            return repositoryWithDualKeyNCategory.addItem(sourceUnit.getCategory(), sourceUnit.getName()
-                    , formattedConversion, targetUnit.getName()) != null ? formattedConversion : "";
-        }
-        return "";
-    }
-
-    public String addConversion(String unitCategory, String sourceUnitName, String targetUnitName) {
-        String formattedConversion = convertToFormattedConversion(unitCategory, sourceUnitName, targetUnitName);
-        return repositoryWithDualKeyNCategory.addItem(unitCategory, sourceUnitName, formattedConversion, targetUnitName) != null ? formattedConversion : "";
+    public String addConversion(String unitCategory, String sourceUnitNames, String targetUnitNames) {
+        String formattedConversion = convertToFormattedConversion(unitCategory, sourceUnitNames, targetUnitNames);
+        return repositoryWithDualKeyNCategory.addItem(unitCategory, sourceUnitNames, formattedConversion, targetUnitNames) != null ? formattedConversion : "";
     }
 
     public String addConversion(Quantity sourceQuantity, Quantity targetQuantity) throws SerializingException {
         if (sourceQuantity.getUnitManagerContext() == targetQuantity.getUnitManagerContext()
                 && QuantityOperators.equalsUnitDimensionOf(sourceQuantity, targetQuantity)) {
 
-            //Properly update other conversions based on if they are associated by unit or category
+            String formattedConversion= addConversion(sourceQuantity.getLargestUnit().getCategory()
+                    , sourceQuantity.getUnitNames(), targetQuantity.getUnitNames());
+
+            //Properly updateContent other conversions based on if they are associated by unit or category
             for (Unit sourceUnit : sourceQuantity.getUnits()) {
                 modifySignificanceRankOfMultipleConversions(sourceUnit, true);
             }
@@ -54,8 +44,7 @@ public class ConversionFavoritesDataModel extends BaseDataModel<String, String, 
             }
             modifySignificanceRankOfMultipleConversions(sourceQuantity.getLargestUnit().getCategory(), true);
 
-            return addConversion(sourceQuantity.getLargestUnit().getCategory()
-                    , sourceQuantity.getUnitNames(), targetQuantity.getUnitNames());
+            return formattedConversion;
         }
         return "";
     }
@@ -142,21 +131,14 @@ public class ConversionFavoritesDataModel extends BaseDataModel<String, String, 
     ///
     public Collection<String> getFormattedConversionsAssociatedWithUnit(Unit unit) {
         ArrayList<String> matchingFormattedConversionFavorites = new ArrayList<>();
-        if (repositoryWithDualKeyNCategory.containsKey(unit.getName())) {
-            /*Since bijection is not ensured, there is no guarantee that all related conversions would be retrieved simply by constant time mapped key references.
-             * Therefore, a non constant time is necessary.*/
-            matchingFormattedConversionFavorites.add(repositoryWithDualKeyNCategory.getKey2FromKey1(unit.getName()));
 
-            for (String candidateConversionFavorites : repositoryWithDualKeyNCategory.getKey2sByCategory(repositoryWithDualKeyNCategory.getCategoryOfKey(unit.getName()))) {
-                if (candidateConversionFavorites.contains(unit.getName()))
-                    matchingFormattedConversionFavorites.add(candidateConversionFavorites);
-            }
-        } else if (repositoryWithDualKeyNCategory.containsItem(unit.getName())) {
-            for (String formattedConversionFavorite : repositoryWithDualKeyNCategory.getAllKey2s()) {
-                if (formattedConversionFavorite.contains(unit.getName()))
-                    matchingFormattedConversionFavorites.add(formattedConversionFavorite);
-            }
+        matchingFormattedConversionFavorites.add(repositoryWithDualKeyNCategory.getKey2FromKey1(unit.getName()));
+
+        for (String formattedConversionFavorite : repositoryWithDualKeyNCategory.getKey2sByCategory(unit.getCategory())) {
+            if (formattedConversionFavorite.contains(unit.getName()))
+                matchingFormattedConversionFavorites.add(formattedConversionFavorite);
         }
+
         return matchingFormattedConversionFavorites;
     }
 
