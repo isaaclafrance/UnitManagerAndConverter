@@ -108,11 +108,11 @@ public interface IDualKeyNCategoryRepository<T, U, V> {
     boolean combineWith(IDualKeyNCategoryRepository<T, U, V> otherDataModel);
 
     ///
-    boolean isKeysMustHaveBijectiveRelation();
+    boolean keysMustHaveBijectiveRelation();
 
-    boolean isDuplicateItemsAreRemoved();
+    boolean duplicateItemsAreRemoved();
 
-    boolean isEmptyCategoriesAreRemoved();
+    boolean emptyCategoriesAreRemoved();
 
-    boolean isHasAliases();
+    boolean hasAliases();
 }

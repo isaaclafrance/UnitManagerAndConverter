@@ -226,22 +226,22 @@ public class UnitsDualKeyNCategoryDatabaseRepository<T, U, V> implements IDualKe
     }
 
     @Override
-    public boolean isKeysMustHaveBijectiveRelation() {
+    public boolean keysMustHaveBijectiveRelation() {
         return false;
     }
 
     @Override
-    public boolean isDuplicateItemsAreRemoved() {
+    public boolean duplicateItemsAreRemoved() {
         return false;
     }
 
     @Override
-    public boolean isEmptyCategoriesAreRemoved() {
+    public boolean emptyCategoriesAreRemoved() {
         return false;
     }
 
     @Override
-    public boolean isHasAliases() {
+    public boolean hasAliases() {
         return false;
     }
 }

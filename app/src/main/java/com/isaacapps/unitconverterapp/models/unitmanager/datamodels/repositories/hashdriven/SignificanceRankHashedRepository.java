@@ -10,11 +10,17 @@ public class SignificanceRankHashedRepository {
     public SignificanceRankHashedRepository(){}
 
     ///
+    /**
+     * Add new or updates existing formatted conversions' rank by a specified delta value
+     */
     public void modifySignificanceRankOfMultipleConversions(Iterable<String> formattedConversions, int delta) {
         for (String formattedConversion : formattedConversions)
             modifySignificanceRankOfConversion(formattedConversion, delta);
     }
 
+    /**
+     * Add a new or updates an existing formatted conversion's rank by a specified delta value
+     */
     public void modifySignificanceRankOfConversion(String formattedConversion, int delta) {
         if (!significanceRanks.containsKey(formattedConversion))
             significanceRanks.put(formattedConversion, 0);
@@ -25,6 +31,10 @@ public class SignificanceRankHashedRepository {
 
     ///
     public int getSignificanceRankOfConversion(String formattedConversion) {
-        return significanceRanks.get(formattedConversion);
+        if(significanceRanks.containsKey(formattedConversion)) {
+            return significanceRanks.get(formattedConversion);
+        }else{
+            return 0;
+        }
     }
 }

@@ -4,12 +4,12 @@ import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.repositories
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 /**
  *Generic data structure that bidirectionally and/or invertibly associates two keys (key1 and key2) of identical types with each other
@@ -17,7 +17,7 @@ import java.util.Set;
  *The result is the following Category Theory Diagram of objects and morphism: (AliasKey) ----> (Key1) <---- ----> (Key2) ----> (Item)
  * @param <T> Type of the keys
  * @param <U> Type of the object
- * @param <V> Type of category the that stores a set of key-obejct pairings
+ * @param <V> Type of the category that stores a set of key-object pairings
  */
 public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCategoryRepository<T, U, V> {
     private final Map<V, Map<T, U>> key2ToItemMapsByCategory;
@@ -48,25 +48,20 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
      * @return The provided item if it was successfully added or null otherwise.
      */
     public U addItem(V category, T key1, T key2, U item) {
-        boolean specifiedKeysMaintainBijection = doKeysMaintainBijection(key1, key2);
-
-        if (!keysMustHaveBijectiveRelation || specifiedKeysMaintainBijection && (!containsItem(item) || duplicateItemsAreRemoved))
+        if (!keysMustHaveBijectiveRelation || doKeysMaintainBijection(key1, key2)) //&& (!containsItem(item) || duplicateItemsAreRemoved))
         {
             if (duplicateItemsAreRemoved && containsItem(item)) // Make item is not associated any other keys or categories.
-                removeItem(null, null, item);
+                removeItem(item);
 
             addBidirectionalKeyRelations(key1, key2);
             return addItemToCategory(category, key2, item);
         }
 
-        //Still return the item if it was already associated with specified category and keys
-        // even if it was explicitly not readded tot he data structure because the 'duplicateItemsAreRemoved'
-        // boolean was false. Otherwise return a null in all invalid cases.
-        return specifiedKeysMaintainBijection ? getItem(category, key1) : null;
+        return null;
     }
 
     /**
-     * Determine speocified keys can maintain bijective relationship with regard to other existing keys in data structure.
+     * Determine specified keys can maintain bijective relationship with regard to other existing keys in data structure.
      * Keys can not already be invertibly associated with any other keys except each other.
      */
     private boolean doKeysMaintainBijection(T key1, T key2) {
@@ -81,7 +76,7 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
     }
 
     /**
-     * Updates existing key1 or key2 with a new key so long as existing provided key was not a unidirectional alias
+     * Updates existing key1 or key2 with a new key so long as existing provided key was not an alias pointing to another key, but it can be a key that another alias is pointed to.
      */
     public boolean updateBidirectionalKeyRelations(T existingProvidedKey, T replacementKey) {
         if (containsKey(existingProvidedKey) && !isAliasKey(existingProvidedKey) && !containsKey(replacementKey)) {
@@ -104,7 +99,7 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
     }
 
     /**
-     * Associated an alias with a provided key.
+     * Associates an alias with a provided key.
      *
      * @param aliasKey Alias to associated with provided key 1. Must not already be an existing key 1 or key 2 in data structure.
      * @param key1     Key to associated with alias. Must already exists a a key1 in data structure.
@@ -112,16 +107,15 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
      */
     public boolean addUniDirectionalKeyRelation(T aliasKey, T key1) {
         //The alias must be unique and must be established with an existing key1
-        boolean aliasCouldBeAdded = false;
         if (!isKey1(aliasKey) && !isKey2(aliasKey) && isKey1(key1)) {
             /*Use key2--key1 map for the alias-key1 relation so that another separate map object
              *does not need to be initialized and independently maintained. Also allows for
              *easy integration and the least modification to existing implementations. */
             key2ToKey1Map.put(aliasKey, key1);
 
-            hasAliases = aliasCouldBeAdded = true;
+            hasAliases = true;
         }
-        return aliasCouldBeAdded;
+        return hasAliases;
     }
 
     private U addItemToCategory(V category, T key2, U item) {
@@ -237,7 +231,7 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
     /**
      * Removes key1 to key2 relations as well as relevant aliases. If an alias is te provided key
      * , then the alias relation to key 1 is removed as well as the bidirectional relation of key1 and key 2.
-     * Should only be sparingly used by descendent classes to prevent data integrity inconsistencies.
+     * Should only be sparingly used to prevent data integrity inconsistencies.
      */
     public boolean removeAllKeyRelationsForKey(T providedKey) {
         boolean providedKeyWasAnAlias = isAliasKey(providedKey);
@@ -344,13 +338,13 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
 
     public Collection<U> getItemsByCategory(V category) {
         return key2ToItemMapsByCategory.containsKey(category)
-                ? new HashSet<>(key2ToItemMapsByCategory.get(category).values())
-                : new HashSet<>();
+                ? Collections.unmodifiableCollection(key2ToItemMapsByCategory.get(category).values())
+                : Collections.emptyList();
     }
 
     public Collection<U> getItemsByAnyKey(T anyKey) {
         //All items based on key1 or key2 for any category
-        Set<U> items = new HashSet<>();
+        Collection<U> items = new ArrayList<>();
         for (V category : getAllAssignedCategories()) {
             U item = getItem(category, anyKey);
             if (item != null) {
@@ -364,7 +358,7 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
     }
 
     public Collection<U> getAllItems() {
-        Collection<U> items = new HashSet<>();
+        Collection<U> items = new ArrayList<>();
         for (V category : key2ToItemMapsByCategory.keySet()) {
             items.addAll(getItemsByCategory(category));
         }
@@ -373,7 +367,7 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
 
     public Collection<T> getKey2sByCategory(V category) {
         if (!containsCategory(category))
-            return new ArrayList<>(0);
+            return Collections.emptyList();
 
         return key2ToItemMapsByCategory.get(category).keySet();
     }
@@ -391,7 +385,7 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
     }
 
     public Collection<T> getAllKey2s() {
-        return new ArrayList<>(key1ToKey2Map.values());
+        return key1ToKey2Map.values();
     }
 
     public Collection<T> getAllKeys() {
@@ -474,7 +468,10 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
 
     ///
     public boolean combineWith(IDualKeyNCategoryRepository<T, U, V> otherDataModel) {
-        if (otherDataModel == null ||otherDataModel.getClass() != this.getClass())
+        if(otherDataModel == null)
+            return true;
+
+        if (otherDataModel.getClass() != this.getClass())
             return false;
 
         DualKeyNCategoryHashedRepository otherHashedDataModel = (DualKeyNCategoryHashedRepository) otherDataModel;
@@ -493,19 +490,19 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
     }
 
     ///
-    public boolean isKeysMustHaveBijectiveRelation() {
+    public boolean keysMustHaveBijectiveRelation() {
         return keysMustHaveBijectiveRelation;
     }
 
-    public boolean isDuplicateItemsAreRemoved() {
+    public boolean duplicateItemsAreRemoved() {
         return duplicateItemsAreRemoved;
     }
 
-    public boolean isEmptyCategoriesAreRemoved() {
+    public boolean emptyCategoriesAreRemoved() {
         return emptyCategoriesAreRemoved;
     }
 
-    public boolean isHasAliases() {
+    public boolean hasAliases() {
         return hasAliases;
     }
 }
