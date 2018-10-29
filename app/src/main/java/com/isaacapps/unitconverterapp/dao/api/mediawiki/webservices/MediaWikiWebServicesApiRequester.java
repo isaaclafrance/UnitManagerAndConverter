@@ -19,11 +19,11 @@ public class MediaWikiWebServicesApiRequester extends ApiRequester {
         this.numberOfSearchResultsLimit = numberOfSearchResultsLimit;
     }
 
-    public PageExtractsSearchResult searchPageExtracts(String searchTerm, int numOfSentences) {
+    public PageExtractsSearchResult searchPageExtracts(String searchTerm) {
         try {
             String actionParameter = "&action=query";
-            String pageExtractParameters = "&prop=extracts&exintro&explaintext&exsentences=" + numOfSentences;
-            String searchGeneratorParameters = "&generator=search&gsrlimit=10&gsrsearch=" + searchTerm;
+            String pageExtractParameters = "&prop=extracts&exintro&explaintext&exsentences=" + numberOfSentences;
+            String searchGeneratorParameters = "&generator=search&gsrlimit="+numberOfSearchResultsLimit+"&gsrsearch=" + searchTerm;
             String requestUrl = MEDIA_WIKI_BASE_URL + actionParameter + pageExtractParameters + searchGeneratorParameters;
 
             HttpsURLConnection httpsURLConnection = createHttpURLConnection(requestUrl);

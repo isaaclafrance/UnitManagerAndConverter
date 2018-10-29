@@ -4,24 +4,32 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
-import java.util.List;
 
 public class PageExtractsSearchResult extends JSONObject {
+    Comparator<PageExtract> pageExtractBestMatchComparator;
 
     public PageExtractsSearchResult(String jsonResponse) throws JSONException {
         super(jsonResponse);
+        pageExtractBestMatchComparator = new Comparator<PageExtract>() {
+            @Override
+            public int compare(PageExtract lhsPageExtract, PageExtract rhsPageExtract) {
+                return Long.compare(lhsPageExtract.getIndex(), rhsPageExtract.getIndex());
+            }
+        };
     }
 
     public PageExtractsSearchResult() {
         super();
     }
 
-    public List<PageExtract> getPageExtracts() {
+    public Collection<PageExtract> getPageExtracts() {
         try {
             if (hasContent()) {
-                List<PageExtract> pageExtracts = new ArrayList<>();
+                Collection<PageExtract> pageExtracts = new ArrayList<>();
 
                 JSONObject pagesJObj = getJSONObject("query").getJSONObject("pages");
                 Iterator<String> pageIds = pagesJObj.keys();
@@ -31,12 +39,21 @@ public class PageExtractsSearchResult extends JSONObject {
 
                 return pageExtracts;
             } else {
-                return Collections.EMPTY_LIST;
+                return Collections.emptyList();
             }
 
         } catch (JSONException e) {
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
         }
+    }
+
+
+    /**
+     * Uses uses the index property to rank
+     * @return
+     */
+    public PageExtract getBestMatchPageExtract(){
+        return Collections.min(getPageExtracts(), pageExtractBestMatchComparator);
     }
 
     public boolean hasContent() {

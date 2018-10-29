@@ -17,7 +17,7 @@ public class PageExtract extends JSONObject {
         }
     }
 
-    public String getExtract() {
+    public String getExtractText() {
         try {
             return getString("extract");
         } catch (JSONException e) {
@@ -28,6 +28,14 @@ public class PageExtract extends JSONObject {
     public long getPageId() {
         try {
             return getLong("pageid");
+        } catch (JSONException e) {
+            return -1;
+        }
+    }
+
+    public long getIndex(){
+        try {
+            return getLong("index");
         } catch (JSONException e) {
             return -1;
         }
