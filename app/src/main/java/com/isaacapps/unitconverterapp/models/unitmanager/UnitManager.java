@@ -9,7 +9,7 @@ import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamod
 import java.util.Locale;
 
 /**
- * This class provides access to a set of components sharing the same environment that have grouped functionalitiees allowing for the storage and manipulation of units.
+ * This class provides access to a set of components sharing the same environment that have grouped functionalities allowing for the storage and manipulation of units.
  */
 public class UnitManager {
     private Locale locale;
@@ -22,7 +22,6 @@ public class UnitManager {
     /**
      * Should ideally only be invoked by the UnitManagerBuilder
      */
-
     UnitManager(Locale locale) {
         this.locale = locale;
     }

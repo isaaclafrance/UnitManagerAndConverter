@@ -7,6 +7,8 @@ public class UnitManagerBuilderException extends Exception {
     private final String scenario, howToFix;
 
     public UnitManagerBuilderException(String scenario, String howToFix) {
+        super(String.format("**The following prevented a unit manager for being built successfully: %s " +
+                "\n**The following can resolve the problem: %s", scenario, howToFix));
         this.scenario = scenario;
         this.howToFix = howToFix;
     }
@@ -30,11 +32,4 @@ public class UnitManagerBuilderException extends Exception {
             throw new UnitManagerBuilderException("Some components needed for unit manager building have not been appropriately set."
                     , "Please appropriately set the following components: " + Arrays.deepToString(requireComponentsCollection.toArray()));
     }
-
-    @Override
-    public String toString() {
-        return String.format("**The following prevented a unit manager for being built successfully: %s " +
-                "\n **The following can resolve the problem: %s", scenario, howToFix);
-    }
-
 }

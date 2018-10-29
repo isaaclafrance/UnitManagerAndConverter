@@ -1,6 +1,7 @@
 package com.isaacapps.unitconverterapp.models.unitmanager;
 
 import com.isaacapps.unitconverterapp.models.measurables.unit.Unit;
+import com.isaacapps.unitconverterapp.models.measurables.unit.UnitException;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.ConversionFavoritesDataModel;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.FundamentalUnitsDataModel;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.FundamentalUnitsDataModel.UNIT_TYPE;
@@ -13,12 +14,15 @@ import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.repositories
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.repositories.hashdriven.SignificanceRankHashedRepository;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.repositories.hashdriven.UnitsClassifierDualKeyNCategoryHashedRepository;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.repositories.hashdriven.UnitsDualKeyNCategoryHashedRepository;
-import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.ContentDeterminer;
-import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.ContentMainRetriever;
-import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.ContentModifier;
-import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.ContentQuerier;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentDeterminer;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentMainRetriever;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentModifier;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentQuerier;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsDataModel;
+import com.isaacapps.unitconverterapp.processors.formatters.IFormatter;
+import com.isaacapps.unitconverterapp.processors.formatters.text.AbbreviationFormatter;
 import com.isaacapps.unitconverterapp.processors.formatters.text.GeneralTextFormatter;
+import com.isaacapps.unitconverterapp.processors.parsers.ParsingException;
 import com.isaacapps.unitconverterapp.processors.parsers.dimension.componentunits.ComponentUnitsDimensionParser;
 import com.isaacapps.unitconverterapp.processors.parsers.dimension.fundamentalunits.FundamentalUnitTypesDimensionParser;
 import com.isaacapps.unitconverterapp.processors.parsers.generaltext.EnglishPluralTextParser;
@@ -51,20 +55,21 @@ public class UnitManagerBuilder {
     private FundamentalUnitsDataModel fundamentalUnitsDataModel;
     private ConversionFavoritesDataModel conversionFavoritesDataModel;
 
-    private IDualKeyNCategoryRepository<String, Unit, ContentDeterminer.DATA_MODEL_CATEGORY> unitsRepositoryWithDualKeyNCategory;
-    private IDualKeyNCategoryRepository<String, Double, ContentDeterminer.DATA_MODEL_CATEGORY> prefixsRepositoryWithDualKeyNCategory;
-    private IDualKeyNCategoryRepository<String, UNIT_TYPE, String> fundamentalUnitsRepositoryWithDualKeyNCategory;
-    private IDualKeyNCategoryRepository<String, Collection<String>, String> unitsClassifierRepositoryWithDualKeyNCategory;
-    private IDualKeyNCategoryRepository<String, String, String> conversionFavoritesRepositoryWithDualKeyNCategory;
     private SignificanceRankHashedRepository significanceRankHashedRepository;
+    private IDualKeyNCategoryRepository<String, UNIT_TYPE, String> fundamentalUnitsRepositoryWithDualKeyNCategory;
+    private IDualKeyNCategoryRepository<String, String, String> conversionFavoritesRepositoryWithDualKeyNCategory;
+    private IDualKeyNCategoryRepository<String, Collection<String>, String> unitsClassifierRepositoryWithDualKeyNCategory;
+    private IDualKeyNCategoryRepository<String, Unit, UnitsContentDeterminer.DATA_MODEL_CATEGORY> unitsRepositoryWithDualKeyNCategory;
+    private IDualKeyNCategoryRepository<String, Double, UnitsContentDeterminer.DATA_MODEL_CATEGORY> prefixsRepositoryWithDualKeyNCategory;
 
-    private ContentMainRetriever unitsDataModelContentMainRetriever;
-    private ContentModifier unitsDataModelContentModifier;
-    private ContentQuerier unitsDataModelContentQuerier;
-    private ContentDeterminer unitsDataModelContentDeterminer;
+    private UnitsContentQuerier unitsDataModelUnitsContentQuerier;
+    private UnitsContentModifier unitsDataModelUnitsContentModifier;
+    private UnitsContentDeterminer unitsDataModelUnitsContentDeterminer;
+    private UnitsContentMainRetriever unitsDataModelUnitsContentMainRetriever;
 
-    private PluralTextParser pluralTextParser;
     private UnitParser unitParser;
+    private PluralTextParser pluralTextParser;
+    private IFormatter abbreviationFormatter;
     private ComponentUnitsDimensionParser componentUnitsDimensionParser;
     private ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer;
     private FundamentalUnitTypesDimensionParser fundamentalUnitTypesDimensionParser;
@@ -83,24 +88,26 @@ public class UnitManagerBuilder {
         nonBaseUnits = new ArrayList<>();
 
         //Since there are many structural components that need to be setup, start with some default structural implementations that are most commonly used
-        initializeDataModels().initializeDataModelDependencies().initializeAllDataModelWithHashedRepositories();
+        initializeDataModels();
+        initializeDataModelDependencies();
+        initializeDataModelWithHashedRepositories();
         initializeUnitsDataModelComponents();
     }
 
     ///Default structural implementations
-    public UnitManagerBuilder initializeAllDataModelWithHashedRepositories(){
-        return setPrefixesHashedRepositoryWithDualKeyNCategory(new PrefixesDualKeyNCategoryHashedRepository())
-                .setUnitsHashedRepositoryWithDualKeyNCategory(new UnitsDualKeyNCategoryHashedRepository())
-                .setFundamentalUnitsHashedRepositoryWithDualKeyNCategory(new FundamentalUnitsHashDualKeyNCategoryHashedRepository())
-                .setUnitsClassifierHashedRepositoryWithDualKeyNCategory(new UnitsClassifierDualKeyNCategoryHashedRepository())
-                .setConversionFavoritesHashedRepositoryWithDualKeyNCategory(new ConversionFavoritesDualKeyNCategoryHashedRepository())
+    public UnitManagerBuilder initializeDataModelWithHashedRepositories(){
+        return setPrefixesRepositoryWithDualKeyNCategory(new PrefixesDualKeyNCategoryHashedRepository())
+                .setUnitsRepositoryWithDualKeyNCategory(new UnitsDualKeyNCategoryHashedRepository())
+                .setFundamentalUnitsRepositoryWithDualKeyNCategory(new FundamentalUnitsHashDualKeyNCategoryHashedRepository())
+                .setUnitsClassifierRepositoryWithDualKeyNCategory(new UnitsClassifierDualKeyNCategoryHashedRepository())
+                .setConversionFavoritesRepositoryWithDualKeyNCategory(new ConversionFavoritesDualKeyNCategoryHashedRepository())
                 .setSignificanceRankRepository(new SignificanceRankHashedRepository());
     }
     public UnitManagerBuilder initializeUnitsDataModelComponents(){
-        return setUnitsDataModelContentQuerier(new ContentQuerier())
-                .setUnitsDataModelContentMainRetriever(new ContentMainRetriever())
-                .setUnitsDataModelContentModifier(new ContentModifier())
-                .setUnitsDataModelContentDeterminer(new ContentDeterminer());
+        return setUnitsDataModelUnitsContentQuerier(new UnitsContentQuerier())
+                .setUnitsDataModelUnitsContentMainRetriever(new UnitsContentMainRetriever())
+                .setUnitsDataModelUnitsContentModifier(new UnitsContentModifier())
+                .setUnitsDataModelUnitsContentDeterminer(new UnitsContentDeterminer());
     }
     public UnitManagerBuilder initializeDataModels(){
         return setUnitsDataModel(new UnitsDataModel())
@@ -110,42 +117,59 @@ public class UnitManagerBuilder {
                 .setConversionFavoritesDataModel(new ConversionFavoritesDataModel());
     }
     public UnitManagerBuilder initializeDataModelDependencies(){
-        return setPluralTextParser(new EnglishPluralTextParser())
-                .setUnitParser(new UnitParser(componentUnitsDimensionParser, componentUnitsDimensionSerializer))
-                .setComponentUnitsDimensionParser(new ComponentUnitsDimensionParser())
-                .setComponentUnitsDimensionSerializer(new ComponentUnitsDimensionSerializer(locale, new ComponentUnitsDimensionItemSerializer(locale, new GeneralTextFormatter(locale))))
-                .setFundamentalUnitTypesDimensionParser(new FundamentalUnitTypesDimensionParser())
-                .setFundamentalUnitTypesDimensionSerializer( new FundamentalUnitTypesDimensionSerializer(locale, new FundamentalUnitTypesDimensionItemSerializer(locale, new GeneralTextFormatter(locale))));
+        try {
+            return setPluralTextParser(new EnglishPluralTextParser())
+                    .setAbbreviationFormatter(new AbbreviationFormatter(locale))
+                    .setUnitParser(new UnitParser(componentUnitsDimensionParser))
+                    .setComponentUnitsDimensionParser(new ComponentUnitsDimensionParser())
+                    .setComponentUnitsDimensionSerializer(new ComponentUnitsDimensionSerializer(locale, new ComponentUnitsDimensionItemSerializer(locale, new GeneralTextFormatter(locale))))
+                    .setFundamentalUnitTypesDimensionParser(new FundamentalUnitTypesDimensionParser())
+                    .setFundamentalUnitTypesDimensionSerializer( new FundamentalUnitTypesDimensionSerializer(locale, new FundamentalUnitTypesDimensionItemSerializer(locale, new GeneralTextFormatter(locale))));
+        } catch (ParsingException e) {
+            return this;
+        }
     }
 
     ///
-    public UnitManagerBuilder setPrefixesHashedRepositoryWithDualKeyNCategory(IDualKeyNCategoryRepository<String, Double, ContentDeterminer.DATA_MODEL_CATEGORY> repositoryWithDualKeyNCategory){
-        this.prefixsRepositoryWithDualKeyNCategory = repositoryWithDualKeyNCategory;
+    public UnitManagerBuilder setPrefixesRepositoryWithDualKeyNCategory(IDualKeyNCategoryRepository<String, Double, UnitsContentDeterminer.DATA_MODEL_CATEGORY> repositoryWithDualKeyNCategory){
+        prefixsRepositoryWithDualKeyNCategory = repositoryWithDualKeyNCategory;
+        if(prefixesDataModel != null)
+            prefixesDataModel.setRepositoryWithDualKeyNCategory(repositoryWithDualKeyNCategory);
         return this;
     }
 
-    public UnitManagerBuilder setUnitsHashedRepositoryWithDualKeyNCategory(IDualKeyNCategoryRepository<String, Unit, ContentDeterminer.DATA_MODEL_CATEGORY> repositoryWithDualKeyNCategory){
-        this.unitsRepositoryWithDualKeyNCategory = repositoryWithDualKeyNCategory;
+    public UnitManagerBuilder setUnitsRepositoryWithDualKeyNCategory(IDualKeyNCategoryRepository<String, Unit, UnitsContentDeterminer.DATA_MODEL_CATEGORY> repositoryWithDualKeyNCategory){
+        unitsRepositoryWithDualKeyNCategory = repositoryWithDualKeyNCategory;
+        if(unitsDataModel != null)
+            unitsDataModel.setRepositoryWithDualKeyNCategory(repositoryWithDualKeyNCategory);
         return this;
     }
 
-    public UnitManagerBuilder setFundamentalUnitsHashedRepositoryWithDualKeyNCategory(IDualKeyNCategoryRepository<String, UNIT_TYPE, String> repositoryWithDualKeyNCategory){
-        this.fundamentalUnitsRepositoryWithDualKeyNCategory = repositoryWithDualKeyNCategory;
+    public UnitManagerBuilder setFundamentalUnitsRepositoryWithDualKeyNCategory(IDualKeyNCategoryRepository<String, UNIT_TYPE, String> repositoryWithDualKeyNCategory){
+        fundamentalUnitsRepositoryWithDualKeyNCategory = repositoryWithDualKeyNCategory;
+        if(fundamentalUnitsDataModel != null)
+            fundamentalUnitsDataModel.setRepositoryWithDualKeyNCategory(repositoryWithDualKeyNCategory);
         return this;
     }
 
-    public UnitManagerBuilder setUnitsClassifierHashedRepositoryWithDualKeyNCategory(IDualKeyNCategoryRepository<String, Collection<String>, String> repositoryWithDualKeyNCategory){
-        this.unitsClassifierRepositoryWithDualKeyNCategory = repositoryWithDualKeyNCategory;
+    public UnitManagerBuilder setUnitsClassifierRepositoryWithDualKeyNCategory(IDualKeyNCategoryRepository<String, Collection<String>, String> repositoryWithDualKeyNCategory){
+        unitsClassifierRepositoryWithDualKeyNCategory = repositoryWithDualKeyNCategory;
+        if(unitsClassifierDataModel != null)
+            unitsClassifierDataModel.setRepositoryWithDualKeyNCategory(repositoryWithDualKeyNCategory);
         return this;
     }
 
-    public UnitManagerBuilder setConversionFavoritesHashedRepositoryWithDualKeyNCategory(IDualKeyNCategoryRepository<String, String, String> repositoryWithDualKeyNCategory){
-        this.conversionFavoritesRepositoryWithDualKeyNCategory = repositoryWithDualKeyNCategory;
+    public UnitManagerBuilder setConversionFavoritesRepositoryWithDualKeyNCategory(IDualKeyNCategoryRepository<String, String, String> repositoryWithDualKeyNCategory){
+        conversionFavoritesRepositoryWithDualKeyNCategory = repositoryWithDualKeyNCategory;
+        if(conversionFavoritesDataModel != null)
+            conversionFavoritesDataModel.setRepositoryWithDualKeyNCategory(repositoryWithDualKeyNCategory);
         return this;
     }
 
     public UnitManagerBuilder setSignificanceRankRepository(SignificanceRankHashedRepository significanceRankRepository){
         this.significanceRankHashedRepository = significanceRankRepository;
+        if(conversionFavoritesDataModel != null)
+            conversionFavoritesDataModel.setSignificanceRankRepository(significanceRankRepository);
         return this;
     }
 
@@ -176,26 +200,32 @@ public class UnitManagerBuilder {
     }
 
     ///
-    public UnitManagerBuilder setUnitsDataModelContentMainRetriever(ContentMainRetriever contentMainRetriever){
-        this.unitsDataModelContentMainRetriever = contentMainRetriever;
+    public UnitManagerBuilder setUnitsDataModelUnitsContentMainRetriever(UnitsContentMainRetriever unitsContentMainRetriever){
+        this.unitsDataModelUnitsContentMainRetriever = unitsContentMainRetriever;
+        unitsContentMainRetriever.setLocale(locale);
         return this;
     }
-    public UnitManagerBuilder setUnitsDataModelContentModifier(ContentModifier contentModifier){
-        this.unitsDataModelContentModifier = contentModifier;
+    public UnitManagerBuilder setUnitsDataModelUnitsContentModifier(UnitsContentModifier unitsContentModifier){
+        this.unitsDataModelUnitsContentModifier = unitsContentModifier;
         return this;
     }
-    public UnitManagerBuilder setUnitsDataModelContentQuerier(ContentQuerier contentQuerier){
-        this.unitsDataModelContentQuerier = contentQuerier;
+    public UnitManagerBuilder setUnitsDataModelUnitsContentQuerier(UnitsContentQuerier unitsContentQuerier){
+        this.unitsDataModelUnitsContentQuerier = unitsContentQuerier;
         return this;
     }
-    public UnitManagerBuilder setUnitsDataModelContentDeterminer(ContentDeterminer contentDeterminer){
-        this.unitsDataModelContentDeterminer = contentDeterminer;
+    public UnitManagerBuilder setUnitsDataModelUnitsContentDeterminer(UnitsContentDeterminer unitsContentDeterminer){
+        this.unitsDataModelUnitsContentDeterminer = unitsContentDeterminer;
         return this;
     }
 
     ///
     public UnitManagerBuilder setPluralTextParser(PluralTextParser pluralTextParser){
         this.pluralTextParser = pluralTextParser;
+        return this;
+    }
+
+    public UnitManagerBuilder setAbbreviationFormatter(IFormatter abbreviationFormatter){
+        this.abbreviationFormatter = abbreviationFormatter;
         return this;
     }
 
@@ -287,8 +317,12 @@ public class UnitManagerBuilder {
     }
 
     ///
-    public UnitManagerBuilder addPrefixDataModel(PrefixesDataModel prefixesDataModel) {
-        this.prefixesDataModel.combineWith(prefixesDataModel);
+    public UnitManagerBuilder addPrefixDataModel(PrefixesDataModel prefixesDataModel) throws UnitManagerBuilderException {
+        if(!this.prefixesDataModel.combineWith(prefixesDataModel))
+            throw new UnitManagerBuilderException("Some data models could not be combined due to structural incompatibility"
+                    , "Make sure all the data models in both unit manager builders are structural compatiable. " +
+                    "For example, data models with hashed repository can not combine with those having database repositories");
+
         componentContentStates[2] = this.prefixesDataModel.hasCorePrefixes();
         componentContentStates[3] = this.prefixesDataModel.hasDynamicPrefixes();
         return this;
@@ -319,8 +353,12 @@ public class UnitManagerBuilder {
     }
 
     ///
-    public UnitManagerBuilder addFundamentalUnitsDataModel(FundamentalUnitsDataModel fundamentalUnitsDataModel) {
-        this.fundamentalUnitsDataModel.combineWith(fundamentalUnitsDataModel);
+    public UnitManagerBuilder addFundamentalUnitsDataModel(FundamentalUnitsDataModel fundamentalUnitsDataModel) throws UnitManagerBuilderException {
+        if(!this.fundamentalUnitsDataModel.combineWith(fundamentalUnitsDataModel))
+            throw new UnitManagerBuilderException("Some data models could not be combined due to structural incompatibility"
+                    , "Make sure all the data models in both unit manager builders are structural compatiable. " +
+                    "For example, data models with hashed repository can not combine with those having database repositories");
+
         componentContentStates[4] = true;
         return this;
     }
@@ -352,17 +390,12 @@ public class UnitManagerBuilder {
      * Attempts to merge with the CONTENT of the data models in another unit manager builder if they are structurally compatible.
      */
     public UnitManagerBuilder combineWith(UnitManagerBuilder otherBuilder) throws UnitManagerBuilderException {
-        this.addBaseUnits(otherBuilder.baseUnits);
-        this.addNonBaseUnits(otherBuilder.nonBaseUnits);
+        this.addPrefixDataModel(otherBuilder.prefixesDataModel)
+                .addFundamentalUnitsDataModel(otherBuilder.fundamentalUnitsDataModel)
+                .addBaseUnits(otherBuilder.baseUnits)
+                .addNonBaseUnits(otherBuilder.nonBaseUnits);
 
-        boolean contentOfDataModelsCouldBeCombined = this.prefixesDataModel.combineWith(otherBuilder.prefixesDataModel) &&
-                this.fundamentalUnitsDataModel.combineWith(otherBuilder.fundamentalUnitsDataModel)
-                && this.conversionFavoritesDataModel.combineWith(otherBuilder.conversionFavoritesDataModel);
-
-        if(!contentOfDataModelsCouldBeCombined)
-            throw new UnitManagerBuilderException("Some data models could not be combined due to structural incomatibility"
-                    , "Make sure all the data models in both unit manager builders are structural compatiable. " +
-                    "For example, data models with hashed repositiory can not combine with those having database repositiories");
+        this.conversionFavoritesDataModel.combineWith(otherBuilder.conversionFavoritesDataModel);
 
         return this;
     }
@@ -370,16 +403,16 @@ public class UnitManagerBuilder {
     ///
     public boolean areMinComponentsForCreationAvailable() {
         //Determines if the minimum needed components are available to create an adequately functional unit manager.
-        return componentContentStates[0] && componentContentStates[2] && componentContentStates[4] && fundamentalUnitsAreImplemented();
+        return componentContentStates[0] && componentContentStates[2] && componentContentStates[4] && someFundamentalUnitsAreImplemented();
     }
 
-    private boolean fundamentalUnitsAreImplemented() {
+    private boolean someFundamentalUnitsAreImplemented() {
         //Assumption is that only base units can be be defined as fundamental units.
         for (Unit baseUnit : baseUnits) {
-            if (!fundamentalUnitsDataModel.containsUnitName(baseUnit.getName()))
-                return false;
+            if (fundamentalUnitsDataModel.containsUnitName(baseUnit.getName()))
+                return true;
         }
-        return true;
+        return false;
     }
 
     public boolean areAnyComponentsAvailable() {
@@ -399,7 +432,7 @@ public class UnitManagerBuilder {
             missingNeededComponents.add(" { Core Prefixes } ");
         if (!componentContentStates[4])
             missingNeededComponents.add(" { Fundamental Units } ");
-        if (!fundamentalUnitsAreImplemented())
+        if (!someFundamentalUnitsAreImplemented())
             missingNeededComponents.add(" { All of the defined fundamental units have has not been implemented as base units }");
 
         return missingNeededComponents;
@@ -407,49 +440,64 @@ public class UnitManagerBuilder {
 
     ///
 
-    /**
-     * Constructs a unit manager and populated with user specified data.
-     * @throws UnitManagerBuilderException
-     */
-    public UnitManager build() throws UnitManagerBuilderException {
-
-        UnitManagerBuilderException.validateRequiredComponentsCollection(determineInvalidOrMissingComponentContentNeededForBuilding());
-
-        UnitManager unitManager = new UnitManager(locale);
-
-        //Inject unit manager components
+    private void injectUnitManagerComponents(UnitManager unitManager){
         unitManager.setUnitsModelData(unitsDataModel);
         unitManager.setPrefixesModelData(prefixesDataModel);
         unitManager.setFundamentalUnitsModelData(fundamentalUnitsDataModel);
         unitManager.setUnitsClassifierDataModel(unitsClassifierDataModel);
         unitManager.setConversionFavoritesDataModel(conversionFavoritesDataModel);
+    }
 
-        //Inject repositories
-        unitsDataModel.setRepositoryWithDualKeyNCategory(unitsRepositoryWithDualKeyNCategory);
-        prefixesDataModel.setRepositoryWithDualKeyNCategory(prefixsRepositoryWithDualKeyNCategory);
-        fundamentalUnitsDataModel.setRepositoryWithDualKeyNCategory(fundamentalUnitsRepositoryWithDualKeyNCategory);
-        unitsClassifierDataModel.setRepositoryWithDualKeyNCategory(unitsClassifierRepositoryWithDualKeyNCategory);
-        conversionFavoritesDataModel.setRepositoryWithDualKeyNCategory(conversionFavoritesRepositoryWithDualKeyNCategory);
-        conversionFavoritesDataModel.setSignificanceRankRepository(significanceRankHashedRepository);
+    private void injectUnitManagerDataModelRepositories(UnitManager unitManager){
+        unitManager.getUnitsDataModel().setRepositoryWithDualKeyNCategory(unitsRepositoryWithDualKeyNCategory);
+        unitManager.getPrefixesDataModel().setRepositoryWithDualKeyNCategory(prefixsRepositoryWithDualKeyNCategory);
+        unitManager.getFundamentalUnitsDataModel().setRepositoryWithDualKeyNCategory(fundamentalUnitsRepositoryWithDualKeyNCategory);
+        unitManager.getUnitsClassifierDataModel().setRepositoryWithDualKeyNCategory(unitsClassifierRepositoryWithDualKeyNCategory);
+        unitManager.getConversionFavoritesDataModel().setRepositoryWithDualKeyNCategory(conversionFavoritesRepositoryWithDualKeyNCategory);
+        unitManager.getConversionFavoritesDataModel().setSignificanceRankRepository(significanceRankHashedRepository);
+    }
 
-        //Inject units datamodel components
-        unitsDataModel.setContentMainRetriever(unitsDataModelContentMainRetriever);
-        unitsDataModel.setContentModifier(unitsDataModelContentModifier);
-        unitsDataModel.setContentQuerier(unitsDataModelContentQuerier);
-        unitsDataModel.setContentDeterminer(unitsDataModelContentDeterminer);
-
+    private void injectUnitsDataModelDependencies(UnitsDataModel unitsDataModel){
         unitsDataModel.setPluralTextParser(pluralTextParser);
-        unitsDataModel.setUnitParser(unitParser);
         unitsDataModel.setComponentUnitsDimensionParser(componentUnitsDimensionParser);
         unitsDataModel.setComponentUnitsDimensionSerializer(componentUnitsDimensionSerializer);
         unitsDataModel.setFundamentalUnitTypesDimensionSerializer(fundamentalUnitTypesDimensionSerializer);
+    }
 
-        //Set an unknown base unit to be returned when no other unit in data model matches a query.
-        Unit unknownUnit = new Unit();
-        unknownUnit.setCoreUnitState(true);
-        unitManager.getUnitsDataModel().getContentModifier().addUnit(unknownUnit);
+    private void injectUnitsDataModelSubComponents(UnitsDataModel unitsDataModel){
+        unitsDataModel.setUnitsContentMainRetriever(unitsDataModelUnitsContentMainRetriever);
+        unitsDataModel.setUnitsContentModifier(unitsDataModelUnitsContentModifier);
+        unitsDataModel.setUnitsContentQuerier(unitsDataModelUnitsContentQuerier);
+        unitsDataModel.setUnitsContentDeterminer(unitsDataModelUnitsContentDeterminer);
+    }
 
-        update(unitManager);
+    /**
+     * Constructs a unit manager populated with user specified data.
+     * @throws UnitManagerBuilderException
+     */
+    public UnitManager build() throws UnitManagerBuilderException, UnitException {
+
+        UnitManagerBuilderException.validateRequiredComponentsCollection(determineInvalidOrMissingComponentContentNeededForBuilding());
+
+        UnitManager unitManager = new UnitManager(locale);
+
+        //
+        injectUnitsDataModelDependencies(unitsDataModel);
+        injectUnitsDataModelSubComponents(unitsDataModel);
+        injectUnitManagerComponents(unitManager);
+        injectUnitManagerDataModelRepositories(unitManager);
+
+        //Set an unknown base unit to be returned when no other unit in data model matches a non-bulk query.
+        Unit unknownUnit = null;
+        try {
+            unknownUnit = new Unit();
+            unknownUnit.setCoreUnitState(true);
+            unitsDataModel.getUnitsContentModifier().addUnit(unknownUnit);
+        } catch (ParsingException e) {
+            e.printStackTrace();
+        }
+
+        updateContent(unitManager);
 
         return unitManager;
     }
@@ -458,26 +506,26 @@ public class UnitManagerBuilder {
      * Updates any existing unit manager with the content of this unit manager builder.
      * But does not change the type and structure of the data models.
      */
-    public boolean update(UnitManager unitManager) {
+    public boolean updateContent(UnitManager unitManager) throws UnitException {
         if ((componentContentStates[2] || componentContentStates[3])
-                && unitManager.getPrefixesDataModel() != prefixesDataModel) //If 'update' was called by 'build' then the prefixesDataModel would be identical
+                && unitManager.getPrefixesDataModel() != prefixesDataModel) //If 'updateContent' was called by 'build' then the prefixesDataModel would be identical
         {
             unitManager.getPrefixesDataModel().combineWith(prefixesDataModel);
         }
 
         if (componentContentStates[4]
-                && unitManager.getFundamentalUnitsDataModel() != fundamentalUnitsDataModel)//If 'update' was called by 'build' then the fundamentalUnitsDataModel would be identical
+                && unitManager.getFundamentalUnitsDataModel() != fundamentalUnitsDataModel)//If 'updateContent' was called by 'build' then the fundamentalUnitsDataModel would be identical
         {
             unitManager.getFundamentalUnitsDataModel().combineWith(fundamentalUnitsDataModel);
         }
 
         //Base units depend on the fundamental units map being set first in order to ensure that their types can be determined.
         if (componentContentStates[0])
-            unitManager.getUnitsDataModel().getContentModifier().addUnits(baseUnits);
+            unitManager.getUnitsDataModel().getUnitsContentModifier().addUnits(baseUnits);
 
         //Non base units depend on the base units being set first in order to ensure dimensions and types are properly determined.
         if (componentContentStates[1])
-            unitManager.getUnitsDataModel().getContentModifier().addUnits(nonBaseUnits);
+            unitManager.getUnitsDataModel().getUnitsContentModifier().addUnits(nonBaseUnits);
 
         return areAnyComponentsAvailable();
     }

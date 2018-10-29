@@ -426,9 +426,9 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         for(Unit unit:unitsGroup){
             detailsBuilder.append("Name: ").append(unit.getName()).append("(").append(unit.getAbbreviation()).append(")").append("\n");
             if(!unit.getAliases().isEmpty())
-                detailsBuilder.append("Aliases: ").append(Arrays.toString(unit.getAliases().toArray())).append("\n");
+                detailsBuilder.append("Aliases: ").append(Arrays.toString(unit.getAliases().toArray())).append("\n\n");
             if(!unit.getDescription().isEmpty())
-                detailsBuilder.append("Description: ").append(unit.getDescription()).append("\n");
+                detailsBuilder.append("Description: ").append(unit.getDescription()).append("\n\n");
             detailsBuilder.append("Unit System: ").append(unit.getUnitSystem()).append("\n");
 
             String componentUnitsDimimension = "";

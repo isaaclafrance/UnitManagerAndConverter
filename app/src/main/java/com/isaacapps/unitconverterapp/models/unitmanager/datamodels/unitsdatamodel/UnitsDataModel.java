@@ -4,10 +4,9 @@ import com.isaacapps.unitconverterapp.models.measurables.unit.Unit;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.BaseDataModel;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.repositories.IDualKeyNCategoryRepository;
-import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.ContentDeterminer.DATA_MODEL_CATEGORY;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentDeterminer.DATA_MODEL_CATEGORY;
 import com.isaacapps.unitconverterapp.processors.parsers.dimension.componentunits.ComponentUnitsDimensionParser;
 import com.isaacapps.unitconverterapp.processors.parsers.generaltext.PluralTextParser;
-import com.isaacapps.unitconverterapp.processors.parsers.measurables.unit.UnitParser;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.componentnunit.ComponentUnitsDimensionSerializer;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.fundamentalunit.FundamentalUnitTypesDimensionSerializer;
 
@@ -20,60 +19,57 @@ public class UnitsDataModel extends BaseDataModel<String, Unit, DATA_MODEL_CATEG
     private ComponentUnitsDimensionParser componentUnitsDimensionParser;
     private ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer;
     private FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer;
-    private UnitParser unitParser;
 
-    private ContentMainRetriever contentMainRetriever;
-    private ContentModifier contentModifier;
-    private ContentQuerier contentQuerier;
-    private ContentDeterminer contentDeterminer;
+    private UnitsContentMainRetriever unitsContentMainRetriever;
+    private UnitsContentModifier unitsContentModifier;
+    private UnitsContentQuerier unitsContentQuerier;
+    private UnitsContentDeterminer unitsContentDeterminer;
 
     ///
     public UnitsDataModel() {
     }
 
     ///
-
-    public ContentMainRetriever getContentMainRetriever() {
-        return contentMainRetriever;
+    public UnitsContentMainRetriever getUnitsContentMainRetriever() {
+        return unitsContentMainRetriever;
     }
-    public void setContentMainRetriever(ContentMainRetriever contentMainRetriever) {
-        this.contentMainRetriever = contentMainRetriever;
-        contentMainRetriever.setUnitsDataModel(this);
-        contentMainRetriever.setPluralTextParser(pluralTextParser);
-        contentMainRetriever.setComponentUnitsDimensionParser(componentUnitsDimensionParser);
-        contentMainRetriever.setComponentUnitsDimensionSerializer(componentUnitsDimensionSerializer);
-        contentMainRetriever.setFundamentalUnitTypesDimensionSerializer(fundamentalUnitTypesDimensionSerializer);
-        contentMainRetriever.setLocale(locale);
-    }
-
-    public ContentModifier getContentModifier() {
-        return contentModifier;
-    }
-    public void setContentModifier(ContentModifier contentModifier) {
-        this.contentModifier = contentModifier;
-        contentModifier.setUnitsDataModel(this);
-        contentModifier.setLocale(locale);
-
+    public void setUnitsContentMainRetriever(UnitsContentMainRetriever unitsContentMainRetriever) {
+        this.unitsContentMainRetriever = unitsContentMainRetriever;
+        unitsContentMainRetriever.setUnitsDataModel(this);
+        unitsContentMainRetriever.setPluralTextParser(pluralTextParser);
+        unitsContentMainRetriever.setComponentUnitsDimensionParser(componentUnitsDimensionParser);
+        unitsContentMainRetriever.setComponentUnitsDimensionSerializer(componentUnitsDimensionSerializer);
+        unitsContentMainRetriever.setFundamentalUnitTypesDimensionSerializer(fundamentalUnitTypesDimensionSerializer);
+        unitsContentMainRetriever.setLocale(locale);
     }
 
-    public ContentQuerier getContentQuerier() {
-        return contentQuerier;
+    public UnitsContentModifier getUnitsContentModifier() {
+        return unitsContentModifier;
     }
-    public void setContentQuerier(ContentQuerier contentQuerier) {
-        this.contentQuerier = contentQuerier;
-        contentQuerier.setUnitsDataModel(this);
-        contentQuerier.setComponentUnitsDimensionSerializer(componentUnitsDimensionSerializer);
+    public void setUnitsContentModifier(UnitsContentModifier unitsContentModifier) {
+        this.unitsContentModifier = unitsContentModifier;
+        unitsContentModifier.setUnitsDataModel(this);
+        unitsContentModifier.setLocale(locale);
+
     }
 
-    public ContentDeterminer getContentDeterminer() {
-        return contentDeterminer;
+    public UnitsContentQuerier getUnitsContentQuerier() {
+        return unitsContentQuerier;
     }
-    public void setContentDeterminer(ContentDeterminer contentDeterminer) {
-        this.contentDeterminer = contentDeterminer;
-        contentDeterminer.setUnitsDataModel(this);
-        contentDeterminer.setPluralTextParser(pluralTextParser);
-        contentDeterminer.setComponentUnitsDimensionParser(componentUnitsDimensionParser);
-        contentDeterminer.setComponentUnitsDimensionSerializer(componentUnitsDimensionSerializer);
+    public void setUnitsContentQuerier(UnitsContentQuerier unitsContentQuerier) {
+        this.unitsContentQuerier = unitsContentQuerier;
+        unitsContentQuerier.setUnitsDataModel(this);
+    }
+
+    public UnitsContentDeterminer getUnitsContentDeterminer() {
+        return unitsContentDeterminer;
+    }
+    public void setUnitsContentDeterminer(UnitsContentDeterminer unitsContentDeterminer) {
+        this.unitsContentDeterminer = unitsContentDeterminer;
+        unitsContentDeterminer.setUnitsDataModel(this);
+        unitsContentDeterminer.setPluralTextParser(pluralTextParser);
+        unitsContentDeterminer.setComponentUnitsDimensionParser(componentUnitsDimensionParser);
+        unitsContentDeterminer.setComponentUnitsDimensionSerializer(componentUnitsDimensionSerializer);
     }
 
     ///
@@ -92,10 +88,6 @@ public class UnitsDataModel extends BaseDataModel<String, Unit, DATA_MODEL_CATEG
         this.componentUnitsDimensionParser = componentUnitsDimensionParser;
     }
 
-    public void setUnitParser(UnitParser unitParser) {
-        this.unitParser = unitParser;
-    }
-
     public void setComponentUnitsDimensionSerializer(ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer) {
         this.componentUnitsDimensionSerializer = componentUnitsDimensionSerializer;
     }
@@ -107,7 +99,7 @@ public class UnitsDataModel extends BaseDataModel<String, Unit, DATA_MODEL_CATEG
     public void setLocale(Locale locale) {
         this.locale = locale;
         componentUnitsDimensionSerializer.setLocale(locale);
-        contentModifier.setLocale(locale);
+        unitsContentModifier.setLocale(locale);
     }
 
     ///
