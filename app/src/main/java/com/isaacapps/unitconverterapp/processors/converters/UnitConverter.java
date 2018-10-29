@@ -2,10 +2,11 @@ package com.isaacapps.unitconverterapp.processors.converters;
 
 import com.isaacapps.unitconverterapp.models.measurables.unit.Unit;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager;
-import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.ContentDeterminer;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentDeterminer;
 import com.isaacapps.unitconverterapp.processors.converters.algorithms.AffineConversionAlgorithm;
 import com.isaacapps.unitconverterapp.processors.converters.algorithms.NewtonRaphsonConversionAlgorithm;
 
+import java.util.Collections;
 import java.util.Map;
 
 import static com.isaacapps.unitconverterapp.models.measurables.unit.Unit.UNIT_SYSTEM_DELIMITER;
@@ -23,16 +24,20 @@ public class UnitConverter {
         }
 
         if(sourceUnit.getUnitManagerContext() != null){
-            if(ContentDeterminer.determineGeneralDataModelCategory(sourceUnit) != ContentDeterminer.DATA_MODEL_CATEGORY.UNKNOWN){
+            if(UnitsContentDeterminer.determineGeneralDataModelCategory(sourceUnit) != UnitsContentDeterminer.DATA_MODEL_CATEGORY.UNKNOWN){
                 return sourceUnit.getUnitManagerContext().getFundamentalUnitsDataModel()
                         .transformFundamentalUnitsDimensionToComponentUnitDimension(sourceUnit.getFundamentalUnitTypesDimension(), targetUnitSystem);
             }
             else{
-               return sourceUnit.getUnitManagerContext().getUnitsDataModel().getContentMainRetriever().getUnknownUnit().getComponentUnitsDimension();
+               return sourceUnit.getUnitManagerContext().getUnitsDataModel().getUnitsContentMainRetriever().getUnknownUnit().getComponentUnitsDimension();
             }
         }
         else{
-            return new Unit().getComponentUnitsDimension();
+            try {
+                return new Unit().getComponentUnitsDimension();
+            } catch (Exception e) {
+                return Collections.emptyMap();
+            }
         }
     }
 
@@ -43,20 +48,20 @@ public class UnitConverter {
 
         try {
             if(unitManagerContext != null){
-                return unitManagerContext.getUnitsDataModel().getContentMainRetriever().getUnit(sourceUnit.getComponentUnitsDimensionSerializer()
-                        .serialize(dimensionInTargetUnitSystem), true);
+                return unitManagerContext.getUnitsDataModel().getUnitsContentMainRetriever().getUnit(sourceUnit.getComponentUnitsDimensionSerializer()
+                        .serialize(dimensionInTargetUnitSystem), false);
             }
             else{
-                return new Unit(dimensionInTargetUnitSystem, false);
+                return new Unit(dimensionInTargetUnitSystem);
             }
         } catch (Exception e) {
-            return unitManagerContext != null ? unitManagerContext.getUnitsDataModel().getContentMainRetriever().getUnknownUnit() : new Unit();
+            return unitManagerContext != null ? unitManagerContext.getUnitsDataModel().getUnitsContentMainRetriever().getUnknownUnit() : null;
         }
     }
 
     public static double[] calculateConversionCoeffsToTargetUnit(Double sourceValue, Unit sourceUnit, Unit targetUnit) {
         if (sourceUnit.getUnitManagerContext() == targetUnit.getUnitManagerContext() && equalsDimension(sourceUnit, targetUnit)) {
-            if (sourceUnit.getBaseConversionExpression() != null && targetUnit.getBaseConversionExpression() != null) {
+            if (!sourceUnit.isUsingBaseConversionExpression() && !targetUnit.isUsingBaseConversionExpression()) {
                 return new AffineConversionAlgorithm().calculateConversionCoeffsToTargetUnit(sourceValue, sourceUnit, targetUnit);
             } else {
                 return new NewtonRaphsonConversionAlgorithm().calculateConversionCoeffsToTargetUnit(sourceValue, sourceUnit, targetUnit);
