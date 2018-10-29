@@ -5,7 +5,7 @@ import android.content.Context;
 import com.isaacapps.unitconverterapp.dao.xml.readers.AsyncXmlReader;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManagerBuilder;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.PrefixesDataModel;
-import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.ContentDeterminer;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentDeterminer;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -14,7 +14,7 @@ import java.io.IOException;
 
 ///According to official Google Android documentation, the XmlPullParser that reads one tag at a time is the most efficient way of parsing especially in situations where there are a large number of tags.
 public class PrefixesMapXmlLocalReader extends AsyncXmlReader<PrefixesDataModel, UnitManagerBuilder> {
-    private ContentDeterminer.DATA_MODEL_CATEGORY categoryCurrentlyBeingRead;
+    private UnitsContentDeterminer.DATA_MODEL_CATEGORY categoryCurrentlyBeingRead;
     final PrefixesDataModel prefixesDataModel;
 
     ///
@@ -54,7 +54,7 @@ public class PrefixesMapXmlLocalReader extends AsyncXmlReader<PrefixesDataModel,
                             skip(parser);
                         }
                     }
-                    if (categoryCurrentlyBeingRead == ContentDeterminer.DATA_MODEL_CATEGORY.CORE) {
+                    if (categoryCurrentlyBeingRead == UnitsContentDeterminer.DATA_MODEL_CATEGORY.CORE) {
                         prefixesDataModel.addCorePrefix(prefixName, abbreviation, prefixValue);
                     } else {
                         prefixesDataModel.addDynamicPrefix(prefixName, abbreviation, prefixValue);
@@ -73,11 +73,11 @@ public class PrefixesMapXmlLocalReader extends AsyncXmlReader<PrefixesDataModel,
     public UnitManagerBuilder loadInBackground() {
         UnitManagerBuilder unitManagerBuilderBundle = new UnitManagerBuilder();
         try {
-            categoryCurrentlyBeingRead = ContentDeterminer.DATA_MODEL_CATEGORY.CORE;
+            categoryCurrentlyBeingRead = UnitsContentDeterminer.DATA_MODEL_CATEGORY.CORE;
             unitManagerBuilderBundle.addPrefixDataModel(parseXML(openAssetFile("StandardCorePrefixes.xml")));
-            categoryCurrentlyBeingRead = ContentDeterminer.DATA_MODEL_CATEGORY.DYNAMIC;
+            categoryCurrentlyBeingRead = UnitsContentDeterminer.DATA_MODEL_CATEGORY.DYNAMIC;
             unitManagerBuilderBundle.addPrefixDataModel(parseXML(openXmlFile(getContext().getFilesDir().getPath() + "DynamicPrefixes.xml", false)));
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 

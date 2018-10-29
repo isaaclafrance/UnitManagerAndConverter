@@ -4,7 +4,9 @@ import android.content.Context;
 
 import com.isaacapps.unitconverterapp.dao.xml.readers.AsyncXmlReader;
 import com.isaacapps.unitconverterapp.models.measurables.unit.Unit;
+import com.isaacapps.unitconverterapp.models.measurables.unit.UnitException;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManagerBuilder;
+import com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefiner;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.componentnunit.ComponentUnitsDimensionSerializer;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.fundamentalunit.FundamentalUnitTypesDimensionSerializer;
 
@@ -23,15 +25,19 @@ import java.util.Map;
 ///According to official Google Android documentation, the XmlPullParser that reads one tag at a time is the most efficient way of parsing especially in situations where there are a large number of tags.
 public class EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader extends AsyncXmlReader<List<List<Unit>>, UnitManagerBuilder> {
     private final Locale locale;
-    private final ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer;
-    private final FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer;
     private Map<String, String> currencyAbbreviationNameMap;
 
+    private final DimensionComponentDefiner dimensionComponentDefiner;
+    private final ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer;
+    private final FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer;
+
     ///
-    public EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader(Context context, Locale locale, ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer, FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer) {
+    public EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader(Context context, Locale locale, ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer
+            , FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer, DimensionComponentDefiner dimensionComponentDefiner) {
         super(context);
         setCurrencyAbbreviationNameMap();
         this.locale = locale;
+        this.dimensionComponentDefiner = dimensionComponentDefiner;
         this.componentUnitsDimensionSerializer = componentUnitsDimensionSerializer;
         this.fundamentalUnitTypesDimensionSerializer = fundamentalUnitTypesDimensionSerializer;
     }
@@ -40,71 +46,78 @@ public class EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader extends AsyncXml
     @Override
     protected List<List<Unit>> readEntity(XmlPullParser parser) throws XmlPullParserException, IOException {
         Map<String, Unit> unitsMap = new HashMap<>();
+        List<List<Unit>> unitLists = new ArrayList<>(2);
 
-        String unitSystem = "si", unitCategory = "currency_unit", tagName;
+        try {
+            String unitSystem = "si", unitCategory = "currency_unit", tagName;
 
-        //Create Euro unit that is the basis of all the calculations
-        String baseUnitName = "euro";
-        Unit baseUnit = new Unit(baseUnitName, new HashSet<>(), unitCategory, "", unitSystem, "eur", new HashMap<>(), new Unit(), new double[]{1.0, 0.0f}, locale, componentUnitsDimensionSerializer, fundamentalUnitTypesDimensionSerializer);
-        baseUnit.addComponentUnit(baseUnitName, 1.0, false);
-        baseUnit.setBaseUnit(baseUnit);
-        baseUnit.setCoreUnitState(true);
+            //Create Euro unit that is the basis of all the calculations
+            String baseUnitName = "euro";
+            Unit baseUnit = new Unit(baseUnitName, new HashSet<>(), unitCategory, "", unitSystem, "eur", new HashMap<>()
+                    , new Unit(), new double[]{1.0, 0.0}, locale, componentUnitsDimensionSerializer, fundamentalUnitTypesDimensionSerializer, dimensionComponentDefiner);
+            baseUnit.addComponentUnit(baseUnitName, 1.0, false);
+            baseUnit.setBaseUnit(baseUnit);
+            baseUnit.setCoreUnitState(true);
 
-        //Sift through the too many nested cube tags.
-        tagName = parser.getName();
-        if (tagName.equalsIgnoreCase("gesmes:Envelope")) {
-            parser.require(XmlPullParser.START_TAG, null, "gesmes:Envelope");
-            while (parser.next() != XmlPullParser.END_TAG) {
-                if (parser.getEventType() != XmlPullParser.START_TAG) {
-                    continue;
-                }
-                tagName = parser.getName();
-                if (tagName.equalsIgnoreCase("Cube")) {
-                    parser.require(XmlPullParser.START_TAG, null, "Cube");
-                    while (parser.next() != XmlPullParser.END_TAG) {
-                        if (parser.getEventType() != XmlPullParser.START_TAG) {
-                            continue;
-                        }
-                        tagName = parser.getName();
-                        if (tagName.equalsIgnoreCase("Cube")) {
-                            parser.require(XmlPullParser.START_TAG, null, "Cube");
-
-                            baseUnit.setDescription("Currency updated from European Central Bank at " + readUpdateTime(parser));
-                            while (parser.next() != XmlPullParser.END_TAG) {
-                                if (parser.getEventType() != XmlPullParser.START_TAG) {
-                                    continue;
-                                }
-                                tagName = parser.getName();
-                                if (tagName.equalsIgnoreCase("Cube")) {
-                                    Unit constructedUnit = readUnit(parser, baseUnit, unitSystem, unitCategory);
-                                    constructedUnit.setCoreUnitState(true);
-
-                                    unitsMap.put(constructedUnit.getName(), constructedUnit);
-                                } else {
-                                    skip(parser);
-                                }
-                            }
-                        } else {
-                            skip(parser);
-                        }
+            //Sift through the too many nested cube tags.
+            tagName = parser.getName();
+            if (tagName.equalsIgnoreCase("gesmes:Envelope")) {
+                parser.require(XmlPullParser.START_TAG, null, "gesmes:Envelope");
+                while (parser.next() != XmlPullParser.END_TAG) {
+                    if (parser.getEventType() != XmlPullParser.START_TAG) {
+                        continue;
                     }
-                } else {
-                    skip(parser);
+                    tagName = parser.getName();
+                    if (tagName.equalsIgnoreCase("Cube")) {
+                        parser.require(XmlPullParser.START_TAG, null, "Cube");
+                        while (parser.next() != XmlPullParser.END_TAG) {
+                            if (parser.getEventType() != XmlPullParser.START_TAG) {
+                                continue;
+                            }
+                            tagName = parser.getName();
+                            if (tagName.equalsIgnoreCase("Cube")) {
+                                parser.require(XmlPullParser.START_TAG, null, "Cube");
+
+                                baseUnit.setDescription("Currency updated from European Central Bank at " + readUpdateTime(parser));
+                                while (parser.next() != XmlPullParser.END_TAG) {
+                                    if (parser.getEventType() != XmlPullParser.START_TAG) {
+                                        continue;
+                                    }
+                                    tagName = parser.getName();
+                                    if (tagName.equalsIgnoreCase("Cube")) {
+                                        try {
+                                            Unit constructedUnit = readUnit(parser, baseUnit, unitSystem, unitCategory);
+                                            constructedUnit.setCoreUnitState(true);
+
+                                            unitsMap.put(constructedUnit.getName(), constructedUnit);
+                                        } catch (UnitException e) {
+                                        }
+                                    } else {
+                                        skip(parser);
+                                    }
+                                }
+                            } else {
+                                skip(parser);
+                            }
+                        }
+                    } else {
+                        skip(parser);
+                    }
                 }
             }
-        }
 
-        //
-        List<List<Unit>> unitLists = new ArrayList<>(2);
-        unitLists.add(new ArrayList<>());
-        unitLists.get(0).add(baseUnit);
-        unitLists.add(new ArrayList<>(unitsMap.values()));
+            //
+            unitLists.add(new ArrayList<>());
+            unitLists.get(0).add(baseUnit);
+            unitLists.add(new ArrayList<>(unitsMap.values()));
+
+        } catch (Exception e) { }
 
         return unitLists;
     }
 
     ///
-    private Unit readUnit(XmlPullParser parser, Unit baseUnit, String unitSystem, String unitCategory) throws XmlPullParserException, IOException {
+    private Unit readUnit(XmlPullParser parser, Unit baseUnit, String unitSystem, String unitCategory) throws XmlPullParserException, IOException, UnitException {
         parser.require(XmlPullParser.START_TAG, null, "Cube");
 
         String unitName = readUnitName(parser);
@@ -118,7 +131,7 @@ public class EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader extends AsyncXml
         return new Unit(unitName, new HashSet<>(), unitCategory
                 , baseUnit.getDescription(), unitSystem, abbreviation
                 , componentUnitsDimension, baseUnit, readBaseConversionPolyCoeffs(parser)
-                , locale, componentUnitsDimensionSerializer, fundamentalUnitTypesDimensionSerializer);
+                , locale, componentUnitsDimensionSerializer, fundamentalUnitTypesDimensionSerializer, dimensionComponentDefiner);
     }
 
     ///

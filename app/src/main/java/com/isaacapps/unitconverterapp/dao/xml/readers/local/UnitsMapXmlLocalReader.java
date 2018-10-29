@@ -4,7 +4,9 @@ import android.content.Context;
 
 import com.isaacapps.unitconverterapp.dao.xml.readers.AsyncXmlReader;
 import com.isaacapps.unitconverterapp.models.measurables.unit.Unit;
+import com.isaacapps.unitconverterapp.models.measurables.unit.UnitException;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManagerBuilder;
+import com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefiner;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.componentnunit.ComponentUnitsDimensionSerializer;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.fundamentalunit.FundamentalUnitTypesDimensionSerializer;
 
@@ -13,6 +15,7 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
@@ -22,23 +25,37 @@ import java.util.Set;
 ///According to official Google Android documentation, the XmlPullParser that reads one tag at a time is the most efficient way of parsing especially in situations where there are a large number of tags.
 public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<Unit>>, UnitManagerBuilder> {
     private final Locale locale;
+    private final DimensionComponentDefiner dimensionComponentDefiner;
     private final ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer;
     private final FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer;
 
     private final Map<String, Unit> baseUnitsMap;
     private final Map<String, Unit> nonBaseUnitsMap;
     private final ArrayList<Unit> partiallyConstructedUnits;
+    private final ArrayList<Unit> defectiveUnits;
+
+    private Unit defaultUnit;
 
     ///
-    public UnitsMapXmlLocalReader(Context context, Locale locale, ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer, FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer) {
+    public UnitsMapXmlLocalReader(Context context, Locale locale, ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer, FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer, DimensionComponentDefiner dimensionComponentDefiner) {
         super(context);
         this.locale = locale;
+        this.dimensionComponentDefiner = dimensionComponentDefiner;
         this.componentUnitsDimensionSerializer = componentUnitsDimensionSerializer;
         this.fundamentalUnitTypesDimensionSerializer = fundamentalUnitTypesDimensionSerializer;
 
         baseUnitsMap = new HashMap<>();
         nonBaseUnitsMap = new HashMap<>();
         partiallyConstructedUnits = new ArrayList<>();
+        defectiveUnits = new ArrayList<>();
+
+        try {
+            defaultUnit = new Unit("base", Collections.emptySet(), "", "", "", "", Collections.emptyMap()
+                    , new Unit()
+                    , new double[]{1.0, 0.0}, locale, componentUnitsDimensionSerializer, fundamentalUnitTypesDimensionSerializer, dimensionComponentDefiner);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     ///
@@ -55,12 +72,16 @@ public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<U
                 }
                 tagName = parser.getName();
                 if (tagName.equalsIgnoreCase("unit")) {
-                    partiallyConstructedUnit = readUnit(parser);
-                    partiallyConstructedUnits.add(partiallyConstructedUnit);
-                    if (partiallyConstructedUnit.isBaseUnit()) {
-                        baseUnitsMap.put(partiallyConstructedUnit.getName(), partiallyConstructedUnit);
-                    } else {
-                        nonBaseUnitsMap.put(partiallyConstructedUnit.getName(), partiallyConstructedUnit);
+                    try {
+                        partiallyConstructedUnit = readUnit(parser);
+                        partiallyConstructedUnits.add(partiallyConstructedUnit);
+                        if (partiallyConstructedUnit.isBaseUnit()) {
+                            baseUnitsMap.put(partiallyConstructedUnit.getName(), partiallyConstructedUnit);
+                        } else {
+                            nonBaseUnitsMap.put(partiallyConstructedUnit.getName(), partiallyConstructedUnit);
+                        }
+                    }catch(Exception e){
+                        e.printStackTrace();
                     }
                 } else {
                     skip(parser);
@@ -76,6 +97,8 @@ public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<U
         unitsLists.add(new ArrayList<>(baseUnitsMap.values()));
         unitsLists.add(new ArrayList<>(nonBaseUnitsMap.values()));
 
+        unitsLists.removeAll(defectiveUnits);
+
         return unitsLists;
     }
 
@@ -85,17 +108,22 @@ public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<U
      */
     private void completeUnitConstruction() {
         for (Unit unit : partiallyConstructedUnits) {
-            //The implicit assumption, dependent on the organization of the XML, is that the partiallyConstructedUnits list is ordered by sequential base unit dependence.
-            //In other words if unit 'A' needs to set 'B' as a base unit, then 'B' had already had its base units properly set.
-            String baseUnitName = unit.getBaseUnit().getName();
-            unit.setBaseUnit(baseUnitsMap.containsKey(baseUnitName) ? baseUnitsMap.get(baseUnitName) : nonBaseUnitsMap.get(baseUnitName)
-                    , unit.getBaseConversionPolyCoeffs());
+           try {
+               //The implicit assumption, dependent on the organization of the XML, is that the partiallyConstructedUnits list is ordered by sequential base unit dependence.
+               //In other words if unit 'A' needs to set 'B' as a base unit, then 'B' had already had its base units properly set.
+               String baseUnitName = unit.getBaseUnit().getName();
+               unit.setBaseUnit(baseUnitsMap.containsKey(baseUnitName) ? baseUnitsMap.get(baseUnitName) : nonBaseUnitsMap.get(baseUnitName)
+                       , unit.getBaseConversionPolyCoeffs());
+           }
+           catch (UnitException e){
+               defectiveUnits.add(unit);
+           }
         }
     }
 
     ///
-    private Unit readUnit(XmlPullParser parser) throws XmlPullParserException, IOException {
-        Map<String, double[]> baseConversionPolyCoeffs = new HashMap<>();
+    private Unit readUnit(XmlPullParser parser) throws XmlPullParserException, IOException, UnitException{
+        Map<String, double[]> baseUnitNameNConversionPolyCoeffs = new HashMap<>();
         Map<String, Double> componentUnitsExponentsMap = new HashMap<>();
         Set<String> unitNameAliases = new HashSet<>();
         String unitName = "", unitSystem = "", abbreviation = "", unitCategory = "", unitDescription = "", tagName = "";
@@ -121,19 +149,23 @@ public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<U
             } else if (tagName.equalsIgnoreCase("componentUnits")) {
                 componentUnitsExponentsMap = readComponentUnits(parser);
             } else if (tagName.equalsIgnoreCase("baseConversionPolyCoeffs")) {
-                baseConversionPolyCoeffs = readBaseUnitNConversionPolyCoeffs(parser);
+                baseUnitNameNConversionPolyCoeffs = readBaseUnitNConversionPolyCoeffs(parser);
             } else {
                 skip(parser);
             }
         }
 
-        Unit createdUnit = new Unit(unitName, unitNameAliases, unitCategory, unitDescription, unitSystem, abbreviation, componentUnitsExponentsMap
-                , new Unit(baseConversionPolyCoeffs.keySet().iterator().next(), new HashMap<>(), true), baseConversionPolyCoeffs.values().iterator().next()
-                , locale, componentUnitsDimensionSerializer, fundamentalUnitTypesDimensionSerializer);
+        Unit standInNamedBaseUnit = new Unit(baseUnitNameNConversionPolyCoeffs.keySet().iterator().next(), Collections.emptySet(), "", "", "", "", Collections.emptyMap()
+                , defaultUnit
+                , defaultUnit.getBaseConversionPolyCoeffs(), locale, componentUnitsDimensionSerializer, fundamentalUnitTypesDimensionSerializer, dimensionComponentDefiner);
+        standInNamedBaseUnit.setAsBaseUnit();
 
-        if (createdUnit.getBaseUnit().getName().equalsIgnoreCase(createdUnit.getName())) {
-            createdUnit.setBaseUnit(createdUnit);
-        }
+        Unit createdUnit = new Unit(unitName, unitNameAliases, unitCategory, unitDescription, unitSystem, abbreviation, componentUnitsExponentsMap
+                , standInNamedBaseUnit, baseUnitNameNConversionPolyCoeffs.values().iterator().next()
+                , locale, componentUnitsDimensionSerializer, fundamentalUnitTypesDimensionSerializer, dimensionComponentDefiner);
+
+        if (createdUnit.getName().equalsIgnoreCase(standInNamedBaseUnit.getName()))
+            createdUnit.setAsBaseUnit();
 
         return createdUnit;
     }
@@ -157,7 +189,7 @@ public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<U
             }
             tagName = parser.getName();
             if (tagName.equalsIgnoreCase("alias")) {
-                unitNameAliases.add(readText(parser).toLowerCase());
+                unitNameAliases.add(readText(parser));
             } else {
                 skip(parser);
             }

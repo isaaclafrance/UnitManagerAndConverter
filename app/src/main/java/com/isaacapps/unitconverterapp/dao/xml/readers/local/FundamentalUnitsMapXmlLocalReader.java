@@ -117,7 +117,7 @@ public class FundamentalUnitsMapXmlLocalReader extends AsyncXmlReader<Fundamenta
         UnitManagerBuilder unitManagerBuilderBundle = new UnitManagerBuilder();
         try {
             unitManagerBuilderBundle.addFundamentalUnitsDataModel(parseXML(openAssetFile("FundamentalUnits.xml")));
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 

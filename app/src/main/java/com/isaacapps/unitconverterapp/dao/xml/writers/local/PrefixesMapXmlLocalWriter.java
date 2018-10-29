@@ -23,12 +23,15 @@ public class PrefixesMapXmlLocalWriter extends XmlWriter<Map<String, Double>> {
     protected void writeEntity(XmlSerializer xmlSerializer, String namespace, Map<String, Double> prefixes) throws IllegalArgumentException, IllegalStateException, IOException {
         for (Entry<String, Double> entry : prefixes.entrySet()) {
             xmlSerializer.startTag(namespace, "prefix");
+
             xmlSerializer.startTag(namespace, "name");
-            xmlSerializer.text(entry.getKey());
+                xmlSerializer.text(entry.getKey());
             xmlSerializer.endTag(namespace, "name");
+
             xmlSerializer.startTag(namespace, "value");
-            xmlSerializer.text(entry.getValue().toString());
+                xmlSerializer.text(entry.getValue().toString());
             xmlSerializer.endTag(namespace, "value");
+
             xmlSerializer.endTag(namespace, "prefix");
         }
     }

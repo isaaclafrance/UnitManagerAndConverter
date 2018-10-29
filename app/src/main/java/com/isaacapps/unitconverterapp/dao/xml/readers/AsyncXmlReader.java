@@ -103,23 +103,17 @@ public abstract class AsyncXmlReader<S, T> extends AsyncTaskLoader<T> {
 
     protected String readAttribute(XmlPullParser parser, String attributeName) {
         String attributeValue = parser.getAttributeValue(null, attributeName);
-        return (attributeValue == null) ? "" : attributeValue.toLowerCase();
+        return (attributeValue == null) ? "" : attributeValue;
     }
 
     protected void skip(XmlPullParser parser) throws XmlPullParserException, IOException {
         if (parser.getEventType() != XmlPullParser.START_TAG) {
             throw new IllegalStateException();
         }
-        int depth = 1;
-        while (depth != 0) {
-            switch (parser.next()) {
-                case XmlPullParser.END_TAG:
-                    depth--;
-                    break;
-                case XmlPullParser.START_TAG:
-                    depth++;
-                    break;
-            }
+
+        int initialDepth = parser.getDepth();
+        while(!(parser.next() == XmlPullParser.END_TAG && parser.getDepth() == initialDepth))
+        {
         }
     }
 }
