@@ -8,7 +8,7 @@ import java.util.Collection;
 import java.util.Locale;
 
 public class UnitsGroupingCollectionSerializer implements ISerializer<Collection<Unit>> {
-    Locale locale;
+    private Locale locale;
     private IFormatter unitNameFormatter;
 
     public UnitsGroupingCollectionSerializer(Locale locale, IFormatter unitNameFormatter){

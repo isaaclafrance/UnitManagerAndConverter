@@ -34,6 +34,6 @@ public class SerializingException extends Exception {
     ///
     @Override
     public String toString() {
-        return String.format("**Serialization scenario that caused problem: %s \n **The following can resolve the problem: %s", scenario, howToFix);
+        return String.format("**Serialization scenario that caused problem: %s \n**The following can resolve the problem: %s", scenario, howToFix);
     }
 }

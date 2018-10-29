@@ -8,9 +8,9 @@ import com.isaacapps.unitconverterapp.processors.serializers.SerializingExceptio
 import java.util.Locale;
 import java.util.Map;
 
-import static com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefinerBuilder.DEFAULT_DIVISION_SYMBOL_GROUPS;
-import static com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefinerBuilder.DEFAULT_EXPONENT_SYMBOL_GROUPS;
-import static com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefinerBuilder.DEFAULT_MULTIPLICATION_SYMBOL_GROUPS;
+import static com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefiner.DEFAULT_DIVISION_SYMBOL_GROUPS;
+import static com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefiner.DEFAULT_EXPONENT_SYMBOL_GROUPS;
+import static com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefiner.DEFAULT_MULTIPLICATION_SYMBOL_GROUPS;
 
 public class BaseDimensionSerializer<T> implements ISerializer<Map<T, Double>> {
     protected Locale locale;
@@ -20,13 +20,17 @@ public class BaseDimensionSerializer<T> implements ISerializer<Map<T, Double>> {
     ///
     public BaseDimensionSerializer(Locale locale) {
         this.locale = locale;
+
         dimensionSerializerBuilder = new DimensionSerializerBuilder<T>()
-                .setDivisionSymbolGroupsForStringGeneration(DEFAULT_DIVISION_SYMBOL_GROUPS[0])
+                .setDivisionSymbolForStringGeneration(DEFAULT_DIVISION_SYMBOL_GROUPS[0])
                 .setMultiplicationSymbolForStringGeneration(DEFAULT_MULTIPLICATION_SYMBOL_GROUPS[0])
-                .setExponentSymbolGroupsForStringGeneration(DEFAULT_EXPONENT_SYMBOL_GROUPS[0])
+                .setExponentSymbolForStringGeneration(DEFAULT_EXPONENT_SYMBOL_GROUPS[0])
                 .setDimensionKeyFormatter(new GeneralTextFormatter(locale))
-                .setDimensionValueFormatter(new RoundingFormatter(locale))
-                .setLocale(locale);
+                .setDimensionValueFormatter(new RoundingFormatter(locale));
+
+        dimensionSerializerBuilder.setLocale(locale);
+        dimensionSerializerBuilder.setReplaceNegativeExponentWithDivision(true);
+        dimensionSerializerBuilder.setOrderDimensionEntries(true);
     }
     public BaseDimensionSerializer(Locale locale, DimensionSerializerBuilder dimensionSerializerBuilder) {
         this.dimensionSerializerBuilder = dimensionSerializerBuilder;
