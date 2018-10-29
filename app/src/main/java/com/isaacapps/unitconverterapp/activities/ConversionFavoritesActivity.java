@@ -17,21 +17,29 @@ import android.widget.ListView;
 import com.isaacapps.unitconverterapp.dao.xml.readers.local.ConversionFavoritesListXmlLocalReader;
 import com.isaacapps.unitconverterapp.models.measurables.quantity.QuantityException;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.ConversionFavoritesDataModel;
+import com.isaacapps.unitconverterapp.processors.formatters.IFormatter;
+import com.isaacapps.unitconverterapp.processors.formatters.text.StartCaseFormatter;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Locale;
 
 import static com.isaacapps.unitconverterapp.activities.MainActivity.SOURCE_NAME;
 import static com.isaacapps.unitconverterapp.activities.MainActivity.TARGET_NAME;
 
 public class ConversionFavoritesActivity extends FragmentActivity implements LoaderManager.LoaderCallbacks<ConversionFavoritesDataModel> {
+    private Locale locale;
+
     private PersistentSharablesApplication pSharablesApplication;
 
     private ListView conversionsListView;
     private Button selectButton, removeButton, cancelButton;
+
     private ArrayAdapter<String> conversionsListAdapter;
     private String selectedConversion;
     private int pastSelectedConversionPosition;
+
+    private IFormatter conversionFormatter;
 
     private int FAVORITES_LOADER = 1;
 
@@ -44,15 +52,19 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
         pSharablesApplication = (PersistentSharablesApplication) this.getApplication();
         pastSelectedConversionPosition = -1;
 
+        locale = pSharablesApplication.getResources().getConfiguration().locale;
+
         setupUIComponents();
 
-        if (pSharablesApplication.getUnitManager().getConversionFavoritesDataModel()
-                .getAllFormattedConversions().isEmpty()) {
+        if (pSharablesApplication.getUnitManager().getConversionFavoritesDataModel().getAllFormattedConversions().isEmpty())
+        {
             populateList(false);
             loadConversionFavorites();
         } else {
             populateList(true);
         }
+
+        conversionFormatter = new StartCaseFormatter(locale);
 
         addListenerOnConversionFavoritesButtons();
         addListenerOnConversionListView();
@@ -103,15 +115,14 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
             @Override
             public void onClick(View view) {
                 try {
-                    pSharablesApplication.getSourceQuantity().setUnits(Collections.singletonList(pSharablesApplication.getUnitManager().getUnitsDataModel().getContentMainRetriever()
+                    pSharablesApplication.getSourceQuantity().setUnits(Collections.singletonList(pSharablesApplication.getUnitManager().getUnitsDataModel().getUnitsContentMainRetriever()
                             .getUnit(pSharablesApplication.getUnitManager().getConversionFavoritesDataModel()
                                     .getSourceUnitNameFromConversion(selectedConversion))));
-                    pSharablesApplication.getTargetQuantity().setUnits(Collections.singletonList(pSharablesApplication.getUnitManager().getUnitsDataModel().getContentMainRetriever()
-                            .getUnit(pSharablesApplication.getUnitManager().getConversionFavoritesDataModel()
-                                    .getTargetUnitNameFromConversion(selectedConversion))));
+                    pSharablesApplication.getTargetQuantity().setUnits(Collections.singletonList(pSharablesApplication.getUnitManager().getUnitsDataModel().getUnitsContentMainRetriever()
+                            .getUnit(pSharablesApplication.getUnitManager().getConversionFavoritesDataModel().getTargetUnitNameFromConversion(selectedConversion))));
+
                     pSharablesApplication.getUnitManager().getConversionFavoritesDataModel()
-                            .modifySignificanceRankOfMultipleConversions(ConversionFavoritesDataModel
-                                    .parseUnitCategoryFromConversion(selectedConversion), true);
+                            .modifySignificanceRankOfMultipleConversions(ConversionFavoritesDataModel.parseUnitCategoryFromConversion(selectedConversion), true);
                 } catch (QuantityException e) {}
                 finally {
                     finish();
@@ -185,9 +196,14 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
     private void populateList(boolean loaderFinished) {
         ArrayList<String> conversionList = new ArrayList<>();
         if (loaderFinished) {
-            if (conversionList.addAll(pSharablesApplication.getUnitManager()
-                    .getConversionFavoritesDataModel()
-                    .getAllFormattedConversions())) {
+            for(String conversion: pSharablesApplication.getUnitManager().getConversionFavoritesDataModel()
+                    .getAllFormattedConversions())
+            {
+                conversionList.add(conversionFormatter.format(conversion));
+            }
+
+            if (conversionList.isEmpty())
+            {
                 conversionList.add(String.format("No Saved Conversion Favorites Available. Please Add Some By Navigating to the Home Screen, choosing a '%s' and '%s' unit, then pressing the 'Add Fav' menu button.", SOURCE_NAME, TARGET_NAME));
             }
         } else {

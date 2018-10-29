@@ -7,7 +7,6 @@ import com.isaacapps.unitconverterapp.dao.xml.writers.local.UnitsMapXmlLocalWrit
 import com.isaacapps.unitconverterapp.models.measurables.quantity.Quantity;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManagerBuilder;
-import com.isaacapps.unitconverterapp.models.unitmanager.UnitManagerBuilderException;
 
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -29,13 +28,15 @@ public class PersistentSharablesApplication extends Application {
             fromQuantity = new Quantity();
             toQuantity = new Quantity();
         }
-        catch(Exception e){ }
+        catch(Exception e){
+            e.printStackTrace();
+        }
     }
 
     ///
     public void saveUnits() {
         try {
-            new UnitsMapXmlLocalWriter(getApplicationContext()).saveToXML(getUnitManager().getUnitsDataModel().getContentMainRetriever().getDynamicUnits());
+            new UnitsMapXmlLocalWriter(getApplicationContext()).saveToXML(getUnitManager().getUnitsDataModel().getUnitsContentMainRetriever().getDynamicUnits());
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
         } catch (IllegalStateException e) {
@@ -81,7 +82,9 @@ public class PersistentSharablesApplication extends Application {
         try {
             unitManager = unitManagerBuilder.build();
         }
-        catch (UnitManagerBuilderException e){ }
+        catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     public boolean isUnitManagerPreReqLoadingComplete() {
