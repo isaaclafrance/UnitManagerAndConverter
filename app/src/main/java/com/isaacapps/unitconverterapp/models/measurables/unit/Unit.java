@@ -2,23 +2,29 @@ package com.isaacapps.unitconverterapp.models.measurables.unit;
 
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.FundamentalUnitsDataModel.UNIT_TYPE;
-import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.ContentDeterminer;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentDeterminer;
 import com.isaacapps.unitconverterapp.processors.formatters.text.GeneralTextFormatter;
 import com.isaacapps.unitconverterapp.processors.operators.measurables.units.UnitOperators;
+import com.isaacapps.unitconverterapp.processors.parsers.ParsingException;
+import com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefiner;
 import com.isaacapps.unitconverterapp.processors.serializers.SerializingException;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.componentnunit.ComponentUnitsDimensionItemSerializer;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.componentnunit.ComponentUnitsDimensionSerializer;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.fundamentalunit.FundamentalUnitTypesDimensionItemSerializer;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.fundamentalunit.FundamentalUnitTypesDimensionSerializer;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import static com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.ContentDeterminer.determineGeneralDataModelCategory;
+import static com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentDeterminer.determineGeneralDataModelCategory;
+import static com.isaacapps.unitconverterapp.processors.parsers.dimension.componentunits.ComponentUnitsDimensionParser.COMPONENT_NAME_REGEX;
 
 public class Unit {
     ///
@@ -27,7 +33,8 @@ public class Unit {
 
     protected UnitManager unitManagerContext;
 
-    private Locale locale;
+    protected Locale locale;
+    private DimensionComponentDefiner dimensionComponentDefiner;
     private ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer;
     private FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer;
 
@@ -49,19 +56,39 @@ public class Unit {
     private Map<UNIT_TYPE, Double> fundamentalUnitTypesDimension; //Map that associates derivative component fundamental units with the value of their exponential power
 
     ///
-    public Unit() {
+    public Unit() throws ParsingException {
         this(UNKNOWN_UNIT_NAME, UNKNOWN_UNIT_ABBREVIATION);
     }
 
-    public Unit(String name, String abbreviation){
+    public Unit(String name, String abbreviation) throws ParsingException {
         this(name, abbreviation, Locale.getDefault(), new ComponentUnitsDimensionSerializer(Locale.getDefault(), new ComponentUnitsDimensionItemSerializer(Locale.getDefault(), new GeneralTextFormatter(Locale.getDefault())))
-                , new FundamentalUnitTypesDimensionSerializer(Locale.getDefault(), new FundamentalUnitTypesDimensionItemSerializer(Locale.getDefault(), new GeneralTextFormatter(Locale.getDefault()))));
+                , new FundamentalUnitTypesDimensionSerializer(Locale.getDefault(), new FundamentalUnitTypesDimensionItemSerializer(Locale.getDefault(), new GeneralTextFormatter(Locale.getDefault())))
+                , new DimensionComponentDefiner(COMPONENT_NAME_REGEX));
     }
 
-    public Unit(String name, String abbreviation, Locale locale, ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer, FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer) {
+    public Unit(String name, Map<String, Double> componentUnitsDimension) throws ParsingException {
+        this(name, "");
+        this.componentUnitsDimension = componentUnitsDimension;
+    }
+
+    public Unit(Map<String, Double> componentUnitsDimension) throws ParsingException{
+        this(UNKNOWN_UNIT_NAME, componentUnitsDimension);
+        try {
+            this.name = componentUnitsDimensionSerializer.serialize(componentUnitsDimension);
+        } catch (SerializingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public Unit(String name, String abbreviation, Locale locale, ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer, FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer, DimensionComponentDefiner dimensionComponentDefiner) {
+        this.locale = locale;
+        this.dimensionComponentDefiner = dimensionComponentDefiner;
+        this.componentUnitsDimensionSerializer = componentUnitsDimensionSerializer;
+        this.fundamentalUnitTypesDimensionSerializer = fundamentalUnitTypesDimensionSerializer;
+
         type = UNIT_TYPE.UNKNOWN;
 
-        this.name = name.toLowerCase();
+        this.name = name;
         unitNameAliases = new HashSet<>();
         setUnitSystem(UNKNOWN_UNIT_SYSTEM, false);
         setCategory(UNKNOWN_UNIT_CATEGORY, false);
@@ -75,43 +102,22 @@ public class Unit {
         conversionsToDescendents = new HashMap<>();
         componentUnitsDimension = new HashMap<>();
         componentUnitsDimension.put(name, 1.0);
-        fundamentalUnitTypesDimension = new HashMap<>();
+        fundamentalUnitTypesDimension = new EnumMap<>(UNIT_TYPE.class);
         fundamentalUnitTypesDimension.put(UNIT_TYPE.UNKNOWN, 1.0);
 
         isCoreUnit = false;
         isBaseUnit = true;
         baseUnit = this;
         baseConversionPolyCoeffs = new double[]{1.0, 0.0};
-
-        this.locale = locale;
-        this.componentUnitsDimensionSerializer = componentUnitsDimensionSerializer;
-        this.fundamentalUnitTypesDimensionSerializer = fundamentalUnitTypesDimensionSerializer;
-    }
-
-    public Unit(String name, Map<String, Double> componentUnitsDimension, boolean isBaseUnit) {
-        this(name, "");
-        this.componentUnitsDimension = componentUnitsDimension;
-        this.isBaseUnit = isBaseUnit;
-        baseUnit = isBaseUnit ? this : new Unit();
-        baseConversionPolyCoeffs = new double[]{isBaseUnit ? 1.0 : 0.0, 0.0};
-    }
-
-    public Unit(Map<String, Double> componentUnitsDimension, boolean isBaseUnit) {
-        this(UNKNOWN_UNIT_NAME, componentUnitsDimension, isBaseUnit);
-        try {
-            this.name = componentUnitsDimensionSerializer.serialize(componentUnitsDimension);
-        }
-        catch(Exception e){
-
-        }
     }
 
     public Unit(String name, Set<String> unitNameAliases, String category, String description
             , String unitSystem, String abbreviation, Map<String, Double> componentUnitsDimension
-            , Unit baseUnit, double[] baseConversionPolyCoeffs, Locale locale, ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer, FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer) {
-        this(name, abbreviation, locale, componentUnitsDimensionSerializer, fundamentalUnitTypesDimensionSerializer);
+            , Unit baseUnit, double[] baseConversionPolyCoeffs, Locale locale, ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer, FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer, DimensionComponentDefiner dimensionComponentDefiner) throws UnitException {
+        this(name, abbreviation, locale, componentUnitsDimensionSerializer, fundamentalUnitTypesDimensionSerializer, dimensionComponentDefiner);
         this.componentUnitsDimension = componentUnitsDimension;
         this.unitNameAliases = unitNameAliases;
+
         setCategory(category, false);
         setDescription(description);
         setUnitSystem(unitSystem, false);
@@ -140,7 +146,7 @@ public class Unit {
             Unit componentUnit;
 
             for (String componentUnitName : componentUnitsDimension.keySet()) {
-                componentUnit = getUnitManagerContext().getUnitsDataModel().getContentMainRetriever().getUnit(componentUnitName, false);
+                componentUnit = getUnitManagerContext().getUnitsDataModel().getUnitsContentMainRetriever().getUnit(componentUnitName, false);
                 if (componentUnit != null) {
                     String[] unitSystems = componentUnit.getUnitSystem().split(UNIT_SYSTEM_DELIMITER);
                     Collections.addAll(unitSystemsOfComponents, unitSystems);
@@ -158,7 +164,7 @@ public class Unit {
 
             //Use the baseunit's unit system as an alternative if necessary
             if (unitSystemCandidateBuilder.toString()
-                    .equalsIgnoreCase(getUnitManagerContext().getUnitsDataModel().getContentMainRetriever().getUnknownUnit().getUnitSystem())) {
+                    .equalsIgnoreCase(getUnitManagerContext().getUnitsDataModel().getUnitsContentMainRetriever().getUnknownUnit().getUnitSystem())) {
                 if (baseUnit != null) {
                     unitSystemCandidateBuilder.append(baseUnit.getUnitSystem());
                 }
@@ -168,11 +174,17 @@ public class Unit {
         }
     }
 
-    public boolean setAutomaticUnitTypeNFundmtTypesDim() {
+    public boolean setAutomaticUnitTypeNFundamentalTypesDimension() {
         if (getUnitManagerContext() != null) {
-            type = getUnitManagerContext().getUnitsDataModel().getContentDeterminer().determineUnitType(this);
-            fundamentalUnitTypesDimension = getUnitManagerContext().getFundamentalUnitsDataModel()
-                    .transformComponentUnitsDimensionToFundamentalUnitsDimension(this.componentUnitsDimension);
+            type = getUnitManagerContext().getUnitsDataModel().getUnitsContentDeterminer().determineUnitType(this);
+            if(type != UNIT_TYPE.DERIVED_MULTI_UNIT && type != UNIT_TYPE.DERIVED_SINGLE_UNIT && type != UNIT_TYPE.UNKNOWN){
+                fundamentalUnitTypesDimension = new HashMap<>();
+                fundamentalUnitTypesDimension.put(type, 1.0);
+            }
+            else {
+                fundamentalUnitTypesDimension = getUnitManagerContext().getFundamentalUnitsDataModel()
+                        .transformComponentUnitsDimensionToFundamentalUnitsDimension(this.componentUnitsDimension, getUnitSystemsCollection(), !isCoreUnit);
+            }
         } else {
             type = UNIT_TYPE.UNKNOWN;
             fundamentalUnitTypesDimension = new HashMap<>();
@@ -182,37 +194,38 @@ public class Unit {
     }
 
     private void setAutomaticAbbreviation() {
-        Map<String, Double> abbreviatedComponentDimension = new HashMap<>();
         //Create a dimensional string with each of the component units abbreviated. For example, format would be something like 'in^2/sec^5'
         if (getUnitManagerContext() != null) {
+            Map<String, Double> abbreviatedComponentDimension = new HashMap<>();
             for (Map.Entry<String, Double> componentUnitEntry : componentUnitsDimension.entrySet())
-                abbreviatedComponentDimension.put(getUnitManagerContext().getUnitsDataModel().getContentMainRetriever()
+                abbreviatedComponentDimension.put(getUnitManagerContext().getUnitsDataModel().getUnitsContentMainRetriever()
                         .getAbbreviation(componentUnitEntry.getKey()), componentUnitEntry.getValue());
+
+            try {
+                setAbbreviation(componentUnitsDimensionSerializer.serialize(abbreviatedComponentDimension)
+                        .replaceAll("[()]", ""));
+            } catch (SerializingException e) {
+            }
         }
-        try {
-            setAbbreviation(componentUnitsDimensionSerializer.serialize(abbreviatedComponentDimension)
-                    .replaceAll("[()]", ""));
-        }
-        catch(SerializingException e){ }
     }
 
     ///
 
     /**
-     * Automatically finds and sets base unit from Unit Manager context
+     * Automatically finds and sets base unit from own reference of Unit Manager context
      *
      * @return Whether any new base unit was set.
      */
-    public boolean setAutomaticBaseUnit() {
+    public boolean setAutomaticBaseUnit() throws UnitException {
         //Update the unit type and fundamental type dimension so that they are both current since, they will help determine which base unit is selected
-        if (getUnitManagerContext() != null && setAutomaticUnitTypeNFundmtTypesDim()) {
+        if (getUnitManagerContext() != null && setAutomaticUnitTypeNFundamentalTypesDimension()) {
 
-            Unit retrievedBaseUnit = getUnitManagerContext().getUnitsDataModel().getContentQuerier().getBaseUnitMatch(this);
+            Unit retrievedBaseUnit = getUnitManagerContext().getUnitsDataModel().getUnitsContentDeterminer().determineBaseUnit(this);
 
             boolean alreadyHasRetrievedBaseUnit = this.getBaseUnit().equals(retrievedBaseUnit);
 
             if (!alreadyHasRetrievedBaseUnit
-                    && determineGeneralDataModelCategory(retrievedBaseUnit) != ContentDeterminer.DATA_MODEL_CATEGORY.UNKNOWN) {
+                    && determineGeneralDataModelCategory(retrievedBaseUnit) != UnitsContentDeterminer.DATA_MODEL_CATEGORY.UNKNOWN) {
 
                 setBaseUnit(retrievedBaseUnit, true);
                 return true;
@@ -222,25 +235,48 @@ public class Unit {
         return false;
     }
 
-    public void setBaseUnit(Unit baseUnit, double[] baseConversionPolyCoeffs) {
-        if (!isCoreUnit) {
+
+    public void setAsBaseUnit() throws UnitException {
+        setBaseUnit(this);
+    }
+    public void setBaseUnit(Unit baseUnit, double[] baseConversionPolyCoeffs) throws UnitException {
+        if (!isCoreUnit && baseUnit != null) {
             this.baseConversionPolyCoeffs = baseConversionPolyCoeffs;
+            this.baseConversionExpression = null;
+            setBaseUnit(baseUnit, false);
+        }
+    }
+    public void setBaseUnit(Unit baseUnit, String baseConversionExpression) throws UnitException {
+        if (!isCoreUnit && baseUnit != null) {
+            this.baseConversionPolyCoeffs = new double[]{1.0, 0.0};
+            this.baseConversionExpression = baseConversionExpression;
             setBaseUnit(baseUnit, false);
         }
     }
 
-    private void setBaseUnit(Unit specifiedBaseUnit, boolean attemptToSetAutomaticBaseConversionPolyCoeffs) {
-        boolean specifiedBaseUnitIsNotActuallyABaseUnit = !specifiedBaseUnit.isBaseUnit;
-        boolean baseUnitCanBeChanged = this.getUnitManagerContext() == specifiedBaseUnit.getUnitManagerContext()
-                && (UnitOperators.equalsDimension(this, specifiedBaseUnit) || this.getUnitManagerContext() == null)
+    private void setBaseUnit(Unit specifiedBaseUnit, boolean attemptToSetAutomaticBaseConversionPolyCoeffs) throws UnitException {
+        if((!specifiedBaseUnit.isBaseUnit || attemptToSetAutomaticBaseConversionPolyCoeffs) && isUsingBaseConversionExpression())
+            throw new UnitException(String.format("The base unit %s that was originally specified for %s was not an actual base unit, therefore there is a need to a perform a cascaded recalculation of the specified base conversion expression." +
+                    " However, currently there is no capability to perform such calculation for units with arbitrary base conversion expressions", specifiedBaseUnit.getName(), this.getName())
+                    , "Either directly specify a base unit that is an actual base unit or if possible use a suitable conversion that defined in terms of linear coefficients rather than an abitrary expression.");
+
+
+        //If initially assigned base unit is not a base unit, then iteratively retrieve next base unit level and successively cascades base conversion.
+        Unit cascadedBaseUnit = specifiedBaseUnit;
+        while(!cascadedBaseUnit.isBaseUnit && !cascadedBaseUnit.name.equalsIgnoreCase(this.name)) {
+            this.baseConversionPolyCoeffs[0] = this.baseConversionPolyCoeffs[0] * cascadedBaseUnit.baseConversionPolyCoeffs[0];
+            this.baseConversionPolyCoeffs[1] += this.baseConversionPolyCoeffs[1] * cascadedBaseUnit.baseConversionPolyCoeffs[0];
+            cascadedBaseUnit = cascadedBaseUnit.baseUnit;
+        }
+
+        boolean baseUnitCanBeChanged = this.getUnitManagerContext() == cascadedBaseUnit.getUnitManagerContext()
+                && (UnitOperators.equalsDimension(this, cascadedBaseUnit) || this.getUnitManagerContext() == null)
                 && !isCoreUnit;
+
         boolean baseUnitStatusHasChanged = false;
 
-        //Assign base unit and cascade assignment by one level if necessary
         if (baseUnitCanBeChanged) {
-            //Cascade by one level to base unit of base unit except in cases where we explicitly want to set the base unit as the unit itself.
-            this.baseUnit = (specifiedBaseUnitIsNotActuallyABaseUnit && !this.equals(specifiedBaseUnit))
-                    ? specifiedBaseUnit.baseUnit : specifiedBaseUnit;
+            this.baseUnit = cascadedBaseUnit;
 
             if (this.equals(this.baseUnit)) {
                 baseUnitStatusHasChanged = !this.isBaseUnit;
@@ -248,89 +284,81 @@ public class Unit {
             } else {
                 baseUnitStatusHasChanged = this.isBaseUnit;
                 this.isBaseUnit = false;
-                downPropogateBaseUnitModification();
+                downPropogateBaseUnitModification(cascadedBaseUnit);
             }
         }
 
-        //Assign base conversion and cascade conversion when appropriate
-        if (baseUnitCanBeChanged && (attemptToSetAutomaticBaseConversionPolyCoeffs || specifiedBaseUnitIsNotActuallyABaseUnit)) {
+        //
+        if (baseUnitCanBeChanged && (attemptToSetAutomaticBaseConversionPolyCoeffs || !specifiedBaseUnit.isBaseUnit)) {
             if (this.isBaseUnit) {
                 baseConversionPolyCoeffs = new double[]{1.0, 0.0};
             } else {
-                setAutomaticBaseConversionPolyCoeffs(specifiedBaseUnit, specifiedBaseUnitIsNotActuallyABaseUnit);
+                if(baseConversionPolyCoeffs[0] == 1.0 && baseConversionPolyCoeffs[0] == 0.0 && dimensionComponentDefiner != null && dimensionComponentDefiner.hasComplexDimensions(name))
+                    adjustBaseConversionPolyCoeffsByOverallComponentFactor();
             }
         }
 
-        /* This 'setBaseUnit' methods can only deal with one level of base unit cascading. Consequently, if newly assigned base unit is still not a base unit after one level of cascading,
-         * then recursively call this method with newly assigned base unit as the specified base unit until all subsequent levels lead to an actual base unit. */
-        if (!this.baseUnit.isBaseUnit)
-            setBaseUnit(this.baseUnit, attemptToSetAutomaticBaseConversionPolyCoeffs);
-
-        //Now that an actual base unit has been obtained by this point, update this base unit with this unit as its descendant
+        //Now that an actual base unit has been obtained by this point, updateContent this base unit with this unit as its descendant
         this.baseUnit.addDescendentConversion(this, new double[]{1.0 / baseConversionPolyCoeffs[0]
                 , -baseConversionPolyCoeffs[1] / baseConversionPolyCoeffs[0]});
 
         //Modify this unit's properties that may indirectly depend on the on the base unit
         setAutomaticUnitSystem();
-        setAutomaticUnitTypeNFundmtTypesDim();
+        setAutomaticUnitTypeNFundamentalTypesDimension();
         setAutomaticCategory();
 
         //Get unit manager to tell the appropriate data model to notify other units without base units of this unit's base unit status.
-        if (baseUnitStatusHasChanged && this.isBaseUnit && getUnitManagerContext() != null)
-            getUnitManagerContext().getUnitsDataModel().getContentModifier().incorporateBaseUnit(this);
+        if (baseUnitStatusHasChanged && getUnitManagerContext() != null)
+            getUnitManagerContext().getUnitsDataModel().getUnitsContentModifier().incorporateBaseUnit(this, baseUnitStatusHasChanged);
 
     }
 
     /**
      * The primary unit and its specified base are decomposed to their component units.
-     * Then depending on whether primary unit is already a base unit and whether the specified base unit is actually a base unit
-     * , base conversion of the decomposed component units are optionally calculated and recursively cascaded.
+     * The overall factor is calculated from these individual components and is used to determine the base conversion factor of the primary unit.
      */
-    private void setAutomaticBaseConversionPolyCoeffs(Unit specifiedBaseUnit, boolean specifiedBaseUnitIsNotActuallyABaseUnit) {
+    private void adjustBaseConversionPolyCoeffsByOverallComponentFactor() {
         boolean shouldCalculateComponentFactorForThisUnit = !(this.componentUnitsDimension.size() == 1
                 && this.componentUnitsDimension.containsKey(this.name));
-        boolean shouldCalculateComponentFactorForBaseUnit = !(specifiedBaseUnit.componentUnitsDimension.size() == 1
-                && specifiedBaseUnit.componentUnitsDimension.containsKey(specifiedBaseUnit.name));
+        boolean shouldCalculateComponentFactorForBaseUnit = !(baseUnit.componentUnitsDimension.size() == 1
+                && baseUnit.componentUnitsDimension.containsKey(baseUnit.name));
 
-        double baseUnitOverallFactor = (shouldCalculateComponentFactorForThisUnit
-                && shouldCalculateComponentFactorForBaseUnit || specifiedBaseUnitIsNotActuallyABaseUnit)
-                ? specifiedBaseUnit.calculateOverallFactor(!specifiedBaseUnitIsNotActuallyABaseUnit
-                , !this.isBaseUnit && shouldCalculateComponentFactorForBaseUnit)
-                : 1.0;
+        double baseUnitOverallComponentFactor = (shouldCalculateComponentFactorForThisUnit && shouldCalculateComponentFactorForBaseUnit)
+                ? baseUnit.calculateOverallFactor() : 1.0;
 
+        double currentUnitOverallComponentFactor = shouldCalculateComponentFactorForThisUnit ? this.calculateOverallFactor() : 1.0;
 
-        this.baseConversionPolyCoeffs = new double[]{this.calculateOverallFactor(!specifiedBaseUnitIsNotActuallyABaseUnit
-                , !this.isBaseUnit && (shouldCalculateComponentFactorForThisUnit || specifiedBaseUnitIsNotActuallyABaseUnit))
-                * (specifiedBaseUnitIsNotActuallyABaseUnit ? baseUnitOverallFactor : 1 / baseUnitOverallFactor), 0.0};
+        double scaledOverallComponentFactor = currentUnitOverallComponentFactor / baseUnitOverallComponentFactor;
+
+        this.baseConversionPolyCoeffs[0] = scaledOverallComponentFactor * this.baseConversionPolyCoeffs[0];
     }
-
-    private double calculateOverallFactor(boolean specifiedBaseUnitIsActuallyABaseUnit, boolean shouldCalculateComponentFactor) {
+    private double calculateOverallFactor() {
         double overallFactor = 1.0;
 
-        if (shouldCalculateComponentFactor && !this.fundamentalUnitTypesDimension.containsKey(UNIT_TYPE.UNKNOWN) && getUnitManagerContext() != null) {
+        if (!this.fundamentalUnitTypesDimension.containsKey(UNIT_TYPE.UNKNOWN) && getUnitManagerContext() != null) {
             Unit componentUnit;
             double componentFactor = 1.0;
             for (Map.Entry<String, Double> entry : componentUnitsDimension.entrySet()) {
-                componentUnit = getUnitManagerContext().getUnitsDataModel().getContentMainRetriever().getUnit(entry.getKey(), false);
+                componentUnit = getUnitManagerContext().getUnitsDataModel().getUnitsContentMainRetriever().getUnit(entry.getKey(), false);
                 if (componentUnit.getType() == UNIT_TYPE.DERIVED_MULTI_UNIT && componentUnit.getComponentUnitsDimension().keySet().size() > 1) {
-                    componentFactor = componentUnit.calculateOverallFactor(specifiedBaseUnitIsActuallyABaseUnit, true);
+                    componentFactor = componentUnit.calculateOverallFactor();
                 } else if (!componentUnit.isBaseUnit) {
                     componentFactor = this != componentUnit ? componentUnit.getBaseUnit()
-                            .calculateOverallFactor(specifiedBaseUnitIsActuallyABaseUnit, true)
-                            * componentUnit.getBaseConversionPolyCoeffs()[0] : 1.0; //recursively calculate base conversion until absolute base is reached.
+                            .calculateOverallFactor()
+                            * componentUnit.getBaseConversionPolyCoeffs()[0] : 1.0; //recursively calculate component base conversion until absolute base is reached.
                 }
                 overallFactor *= Math.pow(componentFactor, entry.getValue());
             }
         }
 
-        return overallFactor * (specifiedBaseUnitIsActuallyABaseUnit ? 1.0 : baseConversionPolyCoeffs[0]);
+        return overallFactor;
     }
 
     /**
      * Called when this unit switches from being a base unit to not.
      * Changes base unit of the previously dependent units to the new base unit.
      */
-    private void downPropogateBaseUnitModification() {
+    public void downPropogateBaseUnitModification(Unit newBaseUnit) throws UnitException {
         for (Unit depUnit : conversionsToDescendents.keySet()) {
             depUnit.setBaseUnit(this.baseUnit);
         }
@@ -338,7 +366,10 @@ public class Unit {
     }
 
     ///
-    private void addDescendentConversion(Unit targetUnit, double[] polynomialCoeffs) {
+    private boolean addDescendentConversion(Unit targetUnit, double[] polynomialCoeffs) {
+        if(this == targetUnit)
+            return false;
+
         //If the object is a base unit, then the conversion polynomial coefficients are simply stored as is. Otherwise adds appropriately modified conversion to base unit
         if (isBaseUnit) {
             conversionsToDescendents.put(targetUnit, polynomialCoeffs);
@@ -350,6 +381,8 @@ public class Unit {
             baseUnit.addDescendentConversion(targetUnit, new double[]{1.0 / baseUnit.getBaseConversionPolyCoeffs()[0] * polynomialCoeffs[0],
                     1.0 / getBaseConversionPolyCoeffs()[1] * polynomialCoeffs[0] + polynomialCoeffs[1]});
         }
+
+        return true;
     }
 
     public void clearConversionsOfDescendents() {
@@ -357,15 +390,17 @@ public class Unit {
     }
 
     ///
-    public void addComponentUnit(String componentUnitName, double exponent, boolean updateUnitName) {
+    public void addComponentUnit(String componentUnitName, double exponent, boolean updateUnitName) throws UnitException {
         if (!isCoreUnit) {
             String potentiallySingularizedComponentUnitName = getUnitManagerContext() != null
-                    ? getUnitManagerContext().getUnitsDataModel().getContentDeterminer().determineSingularOfUnitName(componentUnitName)
+                    ? getUnitManagerContext().getUnitsDataModel().getUnitsContentDeterminer().determineSingularOfUnitName(componentUnitName)
                     : componentUnitName;
 
             componentUnitsDimension.put(potentiallySingularizedComponentUnitName, exponent);
 
-            if (updateUnitName) {
+            if (updateUnitName
+                    && getUnitManagerContext() == null )  //Data structures in unit manager assume name is constant. Don't want ot break those.
+            {
                 try {
                     name = componentUnitsDimensionSerializer.serialize(componentUnitsDimension);
                 } catch (SerializingException e) { }
@@ -380,7 +415,7 @@ public class Unit {
         }
     }
 
-    public void clearComponentUnitsDimension(boolean updateName) {
+    public void clearComponentUnitsDimension(boolean updateName) throws UnitException {
         if (!isCoreUnit) {
             componentUnitsDimension.clear();
             if (updateName) {
@@ -404,13 +439,19 @@ public class Unit {
         return unitNameAliases;
     }
     public boolean addUnitNameAlias(String alias) {
-        unitNameAliases.add(alias.toLowerCase());
+        unitNameAliases.add(alias);
         return getUnitManagerContext() != null && getUnitManagerContext()
-                .getUnitsDataModel().getContentModifier().mapUnidirectionalAliasToUnitName(name, alias);
+                .getUnitsDataModel().getUnitsContentModifier().mapUnidirectionalAliasToUnitName(name, alias);
     }
 
     public String getUnitSystem() {
         return unitSystem;
+    }
+    public Collection<String> getUnitSystemsCollection(){
+        return getUnitSystemsCollection(unitSystem);
+    }
+    public static Collection<String> getUnitSystemsCollection(String potentiallyMixedUnitSystem){
+        return Arrays.asList(potentiallyMixedUnitSystem.split(UNIT_SYSTEM_DELIMITER));
     }
     public void setUnitSystem(String unitSystem) {
         setUnitSystem(unitSystem, true);
@@ -431,7 +472,7 @@ public class Unit {
         this.abbreviation = abbreviation;
 
         if (getUnitManagerContext() != null)
-            getUnitManagerContext().getUnitsDataModel().getContentModifier()
+            getUnitManagerContext().getUnitsDataModel().getUnitsContentModifier()
                     .mapBidirectionalAbbreviationToUnitName(name, abbreviation);
     }
 
@@ -446,7 +487,7 @@ public class Unit {
      * pre-existing classifications for the same units name are removed.
      *
      * @param unitCategory
-     * @param notifyUnitsClassfier allows for optional messaging of units classifier to update its state
+     * @param notifyUnitsClassfier allows for optional messaging of units classifier to updateContent its state
      */
     private void setCategory(String unitCategory, boolean notifyUnitsClassfier) {
         this.category = unitCategory.toLowerCase();
@@ -475,7 +516,7 @@ public class Unit {
     public Unit getBaseUnit() {
         return baseUnit;
     }
-    public void setBaseUnit(Unit baseUnit) {
+    public void setBaseUnit(Unit baseUnit) throws UnitException {
         if (!isCoreUnit)
             setBaseUnit(baseUnit, true);
     }
@@ -487,14 +528,17 @@ public class Unit {
         return baseConversionExpression;
     }
     private void setBaseConversionExpression(String baseConversionExpression) {
-        if (baseConversionExpression.contains(BASE_VALUE_EXPRESSION_ARGUMENT)) {
+        if (baseConversionExpression != null && baseConversionExpression.contains(BASE_VALUE_EXPRESSION_ARGUMENT)) {
             this.baseConversionExpression = baseConversionExpression;
 
             //Since base conversion expression can not be accurately represented by linear equation for all cases
-            //, simply set coeffiecnt of the linear conversion data structrue to invariant values.
+            //, simply set coefficient of the linear conversion data structuree to invariant values.
             baseConversionPolyCoeffs[0] = 1;
             baseConversionPolyCoeffs[1] = 0;
         }
+    }
+    public boolean isUsingBaseConversionExpression(){
+        return baseConversionExpression != null;
     }
 
     public Map<Unit, double[]> getConversionsToDescendents() {
@@ -514,10 +558,13 @@ public class Unit {
     public UnitManager getUnitManagerContext() {
         return unitManagerContext;
     }
-    public void setUnitManagerContext(UnitManager unitManager) { //Although this is public, it should ideally only be called when the unit is added or removed from a unit data model that is associated with a particular unit manager.
+    public void setUnitManagerContext(UnitManager unitManager) throws UnitException { //Although this is public, it should ideally only be called when the unit is added or removed from a unit data model that is associated with a particular unit manager.
         this.unitManagerContext = unitManager;
 
-        //Automatically update this unit's unimplemented properties based on unit manager if present
+        if(unitManager != null)
+            setLocale(unitManager.getLocale());
+
+        //Automatically updateContent this unit's unimplemented properties based on unit manager if present
         setAutomaticBaseUnit();
         setAutomaticUnitSystem();
         setAutomaticCategory();
@@ -535,9 +582,22 @@ public class Unit {
     public ComponentUnitsDimensionSerializer getComponentUnitsDimensionSerializer() {
         return componentUnitsDimensionSerializer;
     }
+    public void setComponentUnitsDimensionSerializer(ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer){
+        this.componentUnitsDimensionSerializer = componentUnitsDimensionSerializer;
+    }
 
     public FundamentalUnitTypesDimensionSerializer getFundamentalUnitTypesDimensionSerializer() {
         return fundamentalUnitTypesDimensionSerializer;
+    }
+    public void setFundamentalUnitTypesDimensionSerializer(FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer){
+        this.fundamentalUnitTypesDimensionSerializer = fundamentalUnitTypesDimensionSerializer;
+    }
+
+    public DimensionComponentDefiner getDimensionComponentDefiner() {
+        return dimensionComponentDefiner;
+    }
+    public void setDimensionComponentDefiner(DimensionComponentDefiner dimensionComponentDefiner){
+        this.dimensionComponentDefiner = dimensionComponentDefiner;
     }
 
     ///
@@ -546,6 +606,6 @@ public class Unit {
      */
     @Override
     public String toString() {
-        return String.format(locale,"(%s, %s, %s)", name, abbreviation, category);
+        return String.format(locale,"(name: %s, abbr: %s, category: %s, base unit: %s, base conversion poly coeffs: %s)", name, abbreviation, category, baseUnit.name, Arrays.toString(baseConversionPolyCoeffs));
     }
 }

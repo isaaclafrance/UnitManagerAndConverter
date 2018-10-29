@@ -1,5 +1,6 @@
 package com.isaacapps.unitconverterapp.models.measurables.unit;
 
+import com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefiner;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.componentnunit.ComponentUnitsDimensionSerializer;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.fundamentalunit.FundamentalUnitTypesDimensionSerializer;
 
@@ -10,14 +11,18 @@ import java.util.Locale;
 //Encapsulates the prefixed unit creation process
 public class PrefixedUnit extends Unit {
     private String prefix;
+    private Double prefixValue;
 
     ///
     public PrefixedUnit(String prefixFullName, String prefixAbbreviation, Double prefixValue, Unit unit, boolean useAbbreviation
-            ,Locale locale, ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer, FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer) {
+            , Locale locale, ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer, FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer, DimensionComponentDefiner dimensionComponentDefiner) throws UnitException {
         super(prefixFullName + unit.getName(), new HashSet<String>(), unit.getCategory(), unit.getDescription(), unit.getUnitSystem(), prefixAbbreviation + unit.getAbbreviation()
-                , new HashMap<String, Double>(), unit, new double[]{prefixValue, unit.getBaseConversionPolyCoeffs()[1]}, locale, componentUnitsDimensionSerializer, fundamentalUnitTypesDimensionSerializer);
+                , new HashMap<String, Double>(), unit, new double[]{prefixValue, unit.getBaseConversionPolyCoeffs()[1]}, locale, componentUnitsDimensionSerializer, fundamentalUnitTypesDimensionSerializer, dimensionComponentDefiner);
+
         addComponentUnit(useAbbreviation ? unit.getAbbreviation() : unit.getName(), 1.0, false);
+
         prefix = prefixFullName;
+        this.prefixValue = prefixValue;
     }
 
     ///
@@ -29,9 +34,13 @@ public class PrefixedUnit extends Unit {
         return getName().replace(prefix, "");
     }
 
+    public Double getPrefixValue(){
+        return prefixValue;
+    }
+
     ///
     @Override
     public String toString() {
-        return String.format("Prefix: %s; PrefixlessFullName: %s", getPrefix(), getPrefixlessFullName());
+        return String.format(locale,"Prefix: %s; Prefix Value: %s; Prefixless Unit: %s", getPrefix(), getPrefixValue(), super.toString());
     }
 }
