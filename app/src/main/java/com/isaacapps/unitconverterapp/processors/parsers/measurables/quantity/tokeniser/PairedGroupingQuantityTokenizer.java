@@ -4,7 +4,6 @@ import com.isaacapps.unitconverterapp.models.measurables.unit.Unit;
 import com.isaacapps.unitconverterapp.processors.parsers.ParsingException;
 import com.isaacapps.unitconverterapp.processors.parsers.measurables.quantity.QuantityGroupingDefiner;
 import com.isaacapps.unitconverterapp.processors.parsers.measurables.unit.UnitParser;
-import com.isaacapps.unitconverterapp.utilities.RegExUtility;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static com.isaacapps.unitconverterapp.utilities.RegExUtility.SIGNED_DOUBLE_VALUE_REGEX_PATTERN;
 
 public class PairedGroupingQuantityTokenizer {
     private UnitParser unitParser;
@@ -28,12 +29,12 @@ public class PairedGroupingQuantityTokenizer {
 
     /**
      * Extracts a grouping list where each group is a pairing of number followed by unit name
-     * or just a unit with one assumed as the preceding value.
+     * or just a unit with some some default value assumed as the preceding value.
      * If there are serial groupings ie "{1}{2}{meter}{inch}", then an empty list is returned.
      */
-    public Collection<String> extractPairedValueUnitGroupingList(String pairedValueUnitGroupings) {
+    private Collection<String> extractPairedValueUnitGroupingList(String pairedValueUnitGroupings) {
         if (quantityGroupingDefiner.getSingleValueGroupingPattern().matcher(pairedValueUnitGroupings).find())
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
 
         List<String> pairedValueGroupingsList = new ArrayList<>();
         Matcher pairedValueUnitGroupingMatcher = quantityGroupingDefiner.getSinglePairedValueUnitNameGroupingPattern()
@@ -50,7 +51,7 @@ public class PairedGroupingQuantityTokenizer {
      */
     public Map<String, Double> parsePairedValueUnitNameGroupingsToNameValueMap(String pairedValueUnitNameGroupings) {
         Pattern unitNamePattern = Pattern.compile(UnitParser.UNIT_NAME_REGEX);
-        Pattern valuePattern = Pattern.compile(RegExUtility.SIGNED_DOUBLE_VALUE_REGEX);
+        Pattern valuePattern = SIGNED_DOUBLE_VALUE_REGEX_PATTERN;
 
         Map<String, Double> nameValueMap = new HashMap<>();
 
@@ -63,7 +64,7 @@ public class PairedGroupingQuantityTokenizer {
     }
 
     /**
-     * Converts grouping map to map that is easily consumed by a Quantity object.
+     * Converts grouping map to a new map that is accessible for constructing a Quantity object.
      */
     public Map<Unit, Double> convertToQuantityUnitValueMap(Map<String, Double> nameValueMap) {
         Map<Unit, Double> unitValueMap = new HashMap<>();
@@ -72,7 +73,7 @@ public class PairedGroupingQuantityTokenizer {
             try {
                 unitValueMap.put(unitParser.parse(nameValueEntry.getKey()), nameValueEntry.getValue());
             } catch (ParsingException e) {
-                return Collections.EMPTY_MAP;
+                return Collections.emptyMap();
             }
         }
 

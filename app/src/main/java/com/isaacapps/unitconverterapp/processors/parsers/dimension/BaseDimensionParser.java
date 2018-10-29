@@ -1,52 +1,48 @@
 package com.isaacapps.unitconverterapp.processors.parsers.dimension;
 
+import com.isaacapps.unitconverterapp.processors.formatters.ChainedFormatter;
 import com.isaacapps.unitconverterapp.processors.formatters.numbers.MixedFractionToDecimalFormatter;
-import com.isaacapps.unitconverterapp.processors.parsers.IParser;
+import com.isaacapps.unitconverterapp.processors.formatters.numbers.RoundingFormatter;
 import com.isaacapps.unitconverterapp.processors.parsers.ParsingException;
-import com.isaacapps.unitconverterapp.utilities.RegExUtility;
 
 import java.util.Locale;
 import java.util.Map;
 
-import static com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefinerBuilder.DEFAULT_DIVISION_SYMBOL_GROUPS;
-import static com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefinerBuilder.DEFAULT_EXPONENT_SYMBOL_GROUPS;
-import static com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefinerBuilder.DEFAULT_MULTIPLICATION_SYMBOL_GROUPS;
+import static com.isaacapps.unitconverterapp.utilities.RegExUtility.SIGNED_DOUBLE_VALUE_REGEX_PATTERN;
 
-public class BaseDimensionParser<T> implements IParser<Map<T, Double>> {
+public class BaseDimensionParser<T> implements com.isaacapps.unitconverterapp.processors.parsers.IParser {
     protected DimensionParserBuilder<T> dimensionParserBuilder;
-    protected boolean strictParsing;
+    protected DimensionComponentDefiner dimensionComponentDefiner;
 
     ///
-    public BaseDimensionParser() {
-        this(new DimensionParserBuilder<T>()
-                .setDivisionSymbols(DEFAULT_DIVISION_SYMBOL_GROUPS)
-                .setMultiplicationSymbols(DEFAULT_MULTIPLICATION_SYMBOL_GROUPS)
-                .setExponentSymbols(DEFAULT_EXPONENT_SYMBOL_GROUPS)
-                .setExponentValueRegEx(String.format("(?:%s)|(?:%s)", RegExUtility.SIGNED_DOUBLE_VALUE_REGEX, MixedFractionToDecimalFormatter.MIXED_NUMBER_PATTERN ))
-                .setExponentValueFormatter(new MixedFractionToDecimalFormatter(Locale.ENGLISH)));
+    public BaseDimensionParser(Locale locale, DimensionComponentDefiner dimensionComponentDefiner) throws ParsingException {
+        this(locale, new DimensionParserBuilder<T>(), dimensionComponentDefiner);
     }
-    public BaseDimensionParser(DimensionParserBuilder dimensionParserBuilder) {
+    public BaseDimensionParser(Locale locale, DimensionParserBuilder<T> dimensionParserBuilder, DimensionComponentDefiner dimensionComponentDefiner) throws ParsingException {
+        this.dimensionComponentDefiner = dimensionComponentDefiner;
         this.dimensionParserBuilder = dimensionParserBuilder;
+
+        dimensionComponentDefiner.setExponentValueRegEx(String.format("(?:%s)|(?:%s)", SIGNED_DOUBLE_VALUE_REGEX_PATTERN.pattern(), MixedFractionToDecimalFormatter.MIXED_PATTERN));
+        dimensionParserBuilder.setDimensionComponentDefiner(dimensionComponentDefiner);
+        dimensionParserBuilder.setExponentValueFormatter(new ChainedFormatter(locale).AddFormatter(new MixedFractionToDecimalFormatter(locale)).AddFormatter(new RoundingFormatter(locale)));
     }
 
     ///
     @Override
-    public Map<T, Double> parse(String dimensionString)
-            throws ParsingException {
-        return dimensionParserBuilder.setStrictParsing(strictParsing).parse(dimensionString);
+    public Map<T, Double> parse(String dimensionString) throws ParsingException {
+        return dimensionParserBuilder.parse(dimensionString);
     }
 
     ///
     public boolean isStrictParsing() {
-        return strictParsing;
+        return dimensionParserBuilder.isStrictParsing();
     }
-
     public void setStrictParsing(boolean strictParsing) {
-        this.strictParsing = strictParsing;
+        dimensionParserBuilder.setStrictParsing(strictParsing);
     }
 
     ///
-    public DimensionParserBuilder<T> getDimensionParserBuilder() {
+    public DimensionParserBuilder<T> getDimensionParserBuilder(){
         return dimensionParserBuilder;
     }
 }

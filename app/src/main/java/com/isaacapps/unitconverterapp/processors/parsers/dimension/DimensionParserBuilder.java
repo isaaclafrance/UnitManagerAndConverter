@@ -1,7 +1,6 @@
 package com.isaacapps.unitconverterapp.processors.parsers.dimension;
 
 import com.florianingerl.util.regex.Matcher;
-import com.florianingerl.util.regex.Pattern;
 import com.isaacapps.unitconverterapp.processors.formatters.IFormatter;
 import com.isaacapps.unitconverterapp.processors.parsers.IParser;
 import com.isaacapps.unitconverterapp.processors.parsers.ParsingException;
@@ -12,19 +11,31 @@ import java.util.List;
 import java.util.Map;
 
 public class DimensionParserBuilder<T> implements IParser<Map<T, Double>> {
-    private DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder;
+    private Map<T, Double> templateDimensionMap;
+
+    private DimensionComponentDefiner dimensionComponentDefiner;
+
     private IFormatter exponentValueFormatter;
     private IFormatter atomicTypeFormatter;
 
     private IParsedDimensionUpdater<T> parsedDimensionUpdater;
+
     private boolean strictParsing;
+    private boolean isOptimized;
+
+    private Matcher multiGroupRegExMatcher;
+    private Matcher singleGroupRegExMatcher;
+    private Matcher exponentialGroupRegExMatcher;
+    private Matcher exponentValueRegExMatcher;
+    private Matcher atomicTypeGroupRegExMatcher;
+    private Matcher divisionSymbolsRegExMatcher;
 
     ///
     public DimensionParserBuilder(){
-        this(new DimensionComponentDefinerBuilder());
+
     }
-    public DimensionParserBuilder(DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder){
-        this.dimensionComponentDefinerBuilder = dimensionComponentDefinerBuilder;
+    public DimensionParserBuilder(DimensionComponentDefiner dimensionComponentDefiner) {
+        this.dimensionComponentDefiner = dimensionComponentDefiner;
     }
 
     ///
@@ -34,6 +45,7 @@ public class DimensionParserBuilder<T> implements IParser<Map<T, Double>> {
      *
      * @throws ParsingException
      */
+    @Override
     public Map<T, Double> parse(String dimensionString) throws ParsingException {
 
         ParsingException.validateRequiredComponentsCollection(determineInvalidOrMissingComponentsNeededForParsing());
@@ -44,19 +56,18 @@ public class DimensionParserBuilder<T> implements IParser<Map<T, Double>> {
                 throw new ParsingException("Nothing was available to be parsed."
                         , "Make dimension string non-empty by including well formatted content.");
             } else {
-                return parsedDimensionUpdater.updateWithUnknownDimension(new HashMap<>());
+                return parsedDimensionUpdater.updateWithUnknownDimension(getNewTemplateDimensionMap());
             }
         }
 
         ///
-        if (DimensionComponentDefinerBuilder.hasBalancedParentheses(dimensionString)) {
-            return parseNestedMultiGroups(dimensionString, 1.0, new HashMap<>());
+        if (DimensionComponentDefiner.hasBalancedParentheses(dimensionString)) {
+            return parseNestedMultiGroups(dimensionString, 1.0, getNewTemplateDimensionMap());
         }else {
             //Having balanced parenthesis is critical to proper parsing and must always throw an exception.
             throw new ParsingException(dimensionString
                     , "Make sure the number of open parenthesis braces equals the number of closing parenthesis braces in proper order.");
         }
-
     }
 
     /**
@@ -64,7 +75,7 @@ public class DimensionParserBuilder<T> implements IParser<Map<T, Double>> {
      * Uses single group construct as base case.
      * Updates the passed in dimension map with extracted results.
      *
-     * @return Dimension map representing string that satifies type requirement of passed in dimension updater.
+     * @return Dimension map representing string that satisfies type requirement of passed in dimension updater.
      * @throws ParsingException
      */
     private Map<T, Double> parseNestedMultiGroups(String dimensionString, double recursedExponent
@@ -72,32 +83,27 @@ public class DimensionParserBuilder<T> implements IParser<Map<T, Double>> {
 
         String truncatedDimensionString = dimensionString; // During the recursion process matching multigroups will be greedily matched and successively excised from the dimension string.
 
-        Matcher multiGroupDimensionRegExMatcher = dimensionComponentDefinerBuilder.createMultiGroupRegExPattern().matcher(dimensionString);
+        Matcher multiGroupDimensionRegExMatcher = getMultiGroupRegExMatcher(dimensionString);
 
         /*There is exists an edgecase where a unit definition classified as a single groups is also classified as
-         *  a mutltigroup by the respective regexes. This edgecase is explicitly when an atomic type
+         *  a multigroup by the respective regexes. This edgecase is explicitly when an atomic type
          *  is bounded by parentheses and raised to an exponent, ie '(meter)^2'.
-         *  Rather than modify and over complicate the mutligroup regex to not match this special,
+         *  Rather than modify and over complicate the multigroup regex to not match this special,
          *  there will just be a second to make sure that single group regex does not also match the multigroup.
          */
         while (multiGroupDimensionRegExMatcher.find()
-                && !dimensionComponentDefinerBuilder.createSingleGroupRegExPattern().matcher(multiGroupDimensionRegExMatcher.group()).matches()) {
+                && !getSingleGroupRegExMatcher(multiGroupDimensionRegExMatcher.group()).matches()) {
             String multiGroupDimension = multiGroupDimensionRegExMatcher.group();
 
             //
-            String[] parsedExponentGroup = parseExponentGroup(multiGroupDimension);
+            String[] parsedExponentGroup = parseExponentialGroup(multiGroupDimension);
             double currentExponent = Double.valueOf(parsedExponentGroup[1]);
 
             //Force a new nested multigroup search to occur in preparation for recursion.
-            String multiGroupDimensionToBeRecursed = multiGroupDimension.substring(0, multiGroupDimension
-                    .lastIndexOf(parsedExponentGroup[0]))
-                    .replaceFirst("^[^(]*\\(", "").replaceFirst("\\)$", "")
-                    .trim();
+            String multiGroupDimensionToBeRecursed = multiGroupDimension.substring(multiGroupDimension.indexOf('(') + 1, multiGroupDimension.lastIndexOf(')'));
 
             //Passes on multigroup into next level of recursion making sure exponents are properly accumulated and successively passed on.
-            parseNestedMultiGroups(multiGroupDimensionToBeRecursed
-                    , recursedExponent * currentExponent
-                    , dimensionMap);
+            parseNestedMultiGroups(multiGroupDimensionToBeRecursed, recursedExponent * currentExponent, dimensionMap);
 
             truncatedDimensionString = truncatedDimensionString.replace(multiGroupDimension, "");
         }
@@ -105,8 +111,8 @@ public class DimensionParserBuilder<T> implements IParser<Map<T, Double>> {
         /*If for some reason the remaining truncated dimension string still appears to have multi groups,
          *then multigroup parsing had failed due to some incorrectly formatted token somewhere.
          */
-        if (DimensionComponentDefinerBuilder.hasNestedParentheses(truncatedDimensionString)
-                || dimensionComponentDefinerBuilder.hasNestedExponents(truncatedDimensionString)) {
+        if (DimensionComponentDefiner.hasNestedParentheses(truncatedDimensionString)
+                || dimensionComponentDefiner.hasNestedExponents(truncatedDimensionString)) {
             if (strictParsing) {
                 throw new ParsingException("This text appears to be an incorrectly formatted multigroup:"
                         + truncatedDimensionString
@@ -118,7 +124,7 @@ public class DimensionParserBuilder<T> implements IParser<Map<T, Double>> {
             }
         }
 
-        if (!truncatedDimensionString.isEmpty()) {
+        if (!truncatedDimensionString.trim().isEmpty()) {
             return parseSingleGroups(truncatedDimensionString, recursedExponent, dimensionMap);
         } else {
             return dimensionMap;
@@ -135,25 +141,25 @@ public class DimensionParserBuilder<T> implements IParser<Map<T, Double>> {
             , Map<T, Double> dimensionMap)
             throws ParsingException {
 
-        Matcher singleGroupDimensionRegExMatcher = dimensionComponentDefinerBuilder.createSingleGroupRegExPattern().matcher(dimensionString);
+        Matcher singleGroupDimensionRegExMatcher = getSingleGroupRegExMatcher(dimensionString);
 
         while (singleGroupDimensionRegExMatcher.find()) {
             String singleGroupDimension = singleGroupDimensionRegExMatcher.group();
 
             //
-            String[] parsedExponentGroup = parseExponentGroup(singleGroupDimension);
-            double currentExponent = Double.valueOf(parsedExponentGroup[1]);
+            String[] parsedExponentGroup = parseExponentialGroup(singleGroupDimension);
+            double currentExponent = Double.valueOf(exponentValueFormatter.format(parsedExponentGroup[1]));
 
             //
             String atomicType = parseAtomicTypeGroup(singleGroupDimension
-                            .replaceAll(dimensionComponentDefinerBuilder.createDivisionSymbolsRegEx(), "")
-                            .replaceAll(dimensionComponentDefinerBuilder.createMultiplicationSymbolsRegEx(), ""));
+                            .replaceAll(dimensionComponentDefiner.getDivisionSymbolsRegExPattern().pattern(), "")
+                            .replaceAll(dimensionComponentDefiner.getMultiplicationSymbolsRegExPattern().pattern(), ""));
 
             if (atomicType.isEmpty())
                 throw new ParsingException(String.format("No atomic type can be extracted using atomicTypeRegExPattern '%s'" +
-                                " from the group '%s' that was produced by the singleGroupDimensionRegExPattern '%s'."
-                        , dimensionComponentDefinerBuilder.getAtomicTypeRegEx(), singleGroupDimension, dimensionComponentDefinerBuilder.createSingleGroupRegExPattern().pattern())
-                        , "The group regular expression must correspond with atomic type regular expressions.");
+                                " from the group '%s' that was originally produced by the singleGroupDimensionRegExPattern '%s'."
+                        , dimensionComponentDefiner.getAtomicTypeRegExPattern().pattern(), singleGroupDimension, dimensionComponentDefiner.getSingleGroupRegExPattern().pattern())
+                        , "The single group regular expression must correspond with atomic type regular expressions.");
 
             //
             parsedDimensionUpdater.updateDimension(atomicType, outerExponent * currentExponent, dimensionMap);
@@ -161,7 +167,7 @@ public class DimensionParserBuilder<T> implements IParser<Map<T, Double>> {
 
         //All single groups will be successively excised until hopefully there is nothing left.
         String truncatedDimensionString = singleGroupDimensionRegExMatcher.replaceAll("");
-        if (!truncatedDimensionString.isEmpty()) {
+        if (!truncatedDimensionString.trim().isEmpty()) {
             if (strictParsing) {
                 throw new ParsingException("This remaining text could not be properly parsed: "+truncatedDimensionString
                         , "Change this remaining text to fit regular expression requirement for single groups: "
@@ -182,45 +188,46 @@ public class DimensionParserBuilder<T> implements IParser<Map<T, Double>> {
      *
      * @throws ParsingException
      */
-    private String[] parseExponentGroup(String dimension) throws ParsingException {
-        Matcher exponentRegExMatcher =  Pattern.compile(dimensionComponentDefinerBuilder.createExponentGroupRegex()+"$").matcher(dimension);
-        Matcher divisionSymbolRegExMatcher = Pattern.compile(dimensionComponentDefinerBuilder.createDivisionSymbolsRegEx()).matcher(dimension);
+    private String[] parseExponentialGroup(String dimension) throws ParsingException {
+        Matcher exponentialRegExMatcher =  getExponentialGroupRegExMatcher(dimension);
+        Matcher divisionSymbolRegExMatcher = getDivisionSymbolsRegExMatcher(dimension);
 
         //Division inverts the exponent
         String exponentValueSignBasedOnOperation = (divisionSymbolRegExMatcher.find()
                 && dimension.trim().startsWith(divisionSymbolRegExMatcher.group())) ? "-" : "";
 
-        if (exponentRegExMatcher.find()) {
-            String exponentGroup = exponentRegExMatcher.group();
-            Matcher exponentValueRegExMatcher = Pattern.compile(dimensionComponentDefinerBuilder.getExponentValueRegEx()+"$").matcher(exponentGroup);
+        if (exponentialRegExMatcher.find()) {
+            String exponentialGroup = exponentialRegExMatcher.group();
+            Matcher exponentValueRegExMatcher = getExponentValueRegExMatcher(exponentialGroup);
 
             if (!exponentValueRegExMatcher.find())
                 throw new ParsingException(String.format("No value can be extracted using exponentValueRegExPattern '%s' " +
                                 "from the group '%s' that was produced by the exponentRegExPattern '%s'."
-                        , dimensionComponentDefinerBuilder.getExponentValueRegEx(), exponentGroup, dimensionComponentDefinerBuilder.createExponentGroupRegex())
+                        , dimensionComponentDefiner.getExponentValueRegexPattern().pattern(), exponentialGroup, dimensionComponentDefiner.getExponentialRegExPattern().pattern())
                         , "The group regular expression must correspond with value regular expression.");
 
             //By this point the parsing tree any present operation token was already validated as being suitable for division or multiplication
             //Therefore any operation token present other than the division is a multiplication
             String exponentValue = (exponentValueSignBasedOnOperation + exponentValueRegExMatcher.group())
                     .replace("--", ""); //negatives cancel
-            return new String[]{exponentGroup, exponentValueFormatter.format(exponentValue)};
+
+            return new String[]{exponentialGroup, exponentValue};
 
         } else {
             //If not explicitly raised to anything then assume 1 (+/- depending on presence of division)
-            return new String[]{"", exponentValueFormatter.format(exponentValueSignBasedOnOperation + "1")};
+            return new String[]{"", exponentValueSignBasedOnOperation + "1"};
         }
     }
 
     /**
      * Identifies and extract one atomic type. ex. 'meter' if a unit name, LENGTH if a fundamental dimension
-     * @return String of extracted atomic type or an empty string.
+     * @return String of extracted atomic type or an empty string.exponentValueFormatter.format(
      */
     private String parseAtomicTypeGroup(String dimension) {
-        Matcher atomicTypeRegExMatcher = Pattern.compile(dimensionComponentDefinerBuilder.getAtomicTypeRegEx()).matcher(dimension);
+        Matcher atomicTypeRegExMatcher = getAtomicTypeGroupRegExMatcher(dimension);
 
         if (atomicTypeRegExMatcher.find())
-            return exponentValueFormatter.format(atomicTypeRegExMatcher.group());
+            return atomicTypeFormatter.format(atomicTypeRegExMatcher.group());
 
         return "";
     }
@@ -232,8 +239,8 @@ public class DimensionParserBuilder<T> implements IParser<Map<T, Double>> {
         if (parsedDimensionUpdater == null)
             invalidParsingComponents.add("{ An instance satisfying IParsedDimensionUpdater }");
 
-        if (dimensionComponentDefinerBuilder == null)
-            invalidParsingComponents.add("{ An instance satisfying DimensionComponentDefinerBuilder }");
+        if (dimensionComponentDefiner == null)
+            invalidParsingComponents.add("{ An instance satisfying DimensionComponentDefiner }");
 
         if(exponentValueFormatter == null)
             invalidParsingComponents.add("{ A formatter for the parsed exponent value }");
@@ -242,34 +249,6 @@ public class DimensionParserBuilder<T> implements IParser<Map<T, Double>> {
             invalidParsingComponents.add("{ A formatter for the parsed atomic type }");
 
         return invalidParsingComponents;
-    }
-    
-    
-    ///
-    public DimensionParserBuilder<T> setAtomicTypeRegEx(String atomicTypeRegEx) {
-        dimensionComponentDefinerBuilder.setAtomicTypeRegEx(atomicTypeRegEx);
-        return this;
-    }
-
-
-    public DimensionParserBuilder<T> setExponentSymbols(String[] exponentSymbols) {
-        dimensionComponentDefinerBuilder.setExponentSymbols(exponentSymbols);
-        return this;
-    }
-
-    public DimensionParserBuilder<T> setExponentValueRegEx(String exponentValueRegEx) {
-        dimensionComponentDefinerBuilder.setExponentValueRegEx(exponentValueRegEx);
-        return this;
-    }
-
-    public DimensionParserBuilder<T> setDivisionSymbols(String[] divisionSymbols) {
-        dimensionComponentDefinerBuilder.setDivisionSymbols(divisionSymbols);
-        return this;
-    }
-
-    public DimensionParserBuilder<T> setMultiplicationSymbols(String[] multiplicationSymbols) {
-        dimensionComponentDefinerBuilder.setMultiplicationSymbols(multiplicationSymbols);
-        return this;
     }
 
     ///
@@ -281,12 +260,12 @@ public class DimensionParserBuilder<T> implements IParser<Map<T, Double>> {
         return parsedDimensionUpdater;
     }
 
-    public DimensionParserBuilder<T> setDimensionComponentDefinerBuilder(DimensionComponentDefinerBuilder dimensionComponentDefinerBuilder) {
-        this.dimensionComponentDefinerBuilder = dimensionComponentDefinerBuilder;
+    public DimensionParserBuilder<T> setDimensionComponentDefiner(DimensionComponentDefiner dimensionComponentDefiner) throws ParsingException {
+        this.dimensionComponentDefiner = dimensionComponentDefiner;
         return this;
     }
-    public DimensionComponentDefinerBuilder getDimensionComponentDefinerBuilder() {
-        return dimensionComponentDefinerBuilder;
+    public DimensionComponentDefiner getDimensionComponentDefiner() {
+        return dimensionComponentDefiner;
     }
 
     public IFormatter getExponentValueFormatter() {
@@ -305,11 +284,113 @@ public class DimensionParserBuilder<T> implements IParser<Map<T, Double>> {
         return this;
     }
 
+    ///
+
+    /**
+     * Sets the template map implementation upon which parsed dimensions will be added.
+     * This is useful if one wants certain algorithmic benefit of other Map implementations than the default HashMap implementation.
+     */
+    public DimensionParserBuilder<T> setTemplateDimensionMap(Map<T, Double> templateDimensionMap) {
+        this.templateDimensionMap = templateDimensionMap;
+        return this;
+    }
+    private Map<T, Double> getNewTemplateDimensionMap(){
+        if(templateDimensionMap == null)
+            return (templateDimensionMap = new HashMap<>());
+        else {
+            try {
+                return (templateDimensionMap = templateDimensionMap.getClass().newInstance());
+            } catch (Exception e) {
+                return (templateDimensionMap = new HashMap<>());
+            }
+        }
+    }
+
+    //
     public DimensionParserBuilder<T> setStrictParsing(boolean strictParsing) {
         this.strictParsing = strictParsing;
         return this;
     }
     public boolean isStrictParsing() {
         return strictParsing;
+    }
+
+    //
+    public DimensionParserBuilder<T> setIsOptimized(boolean isOptimized) {
+        this.isOptimized = isOptimized;
+        return this;
+    }
+    /**
+     * Determines if certain shortcuts are taken for the sake of performance, whihc may have other unwelcome side effects.
+     * For example, regular expression matcher reuse which pose problems in multi threading
+     */
+    public boolean isOptimized() {
+        return isOptimized;
+    }
+
+    private Matcher getMultiGroupRegExMatcher(String stringToBeMatched){
+        if(!isOptimized || multiGroupRegExMatcher == null || multiGroupRegExMatcher.pattern().pattern()
+                .equalsIgnoreCase(dimensionComponentDefiner.getMultiGroupRegExPattern().pattern()))
+        {
+            return (multiGroupRegExMatcher = dimensionComponentDefiner.getMultiGroupRegExPattern().matcher(stringToBeMatched));
+        }
+        else{
+            return multiGroupRegExMatcher.reset(stringToBeMatched);
+        }
+    }
+
+    private Matcher getSingleGroupRegExMatcher(String stringToBeMatched){
+        if(!isOptimized || singleGroupRegExMatcher == null || singleGroupRegExMatcher.pattern().pattern()
+                .equalsIgnoreCase(dimensionComponentDefiner.getSingleGroupRegExPattern().pattern()))
+        {
+            return (singleGroupRegExMatcher = dimensionComponentDefiner.getSingleGroupRegExPattern().matcher(stringToBeMatched));
+        }
+        else{
+            return singleGroupRegExMatcher.reset(stringToBeMatched);
+        }
+    }
+
+    private Matcher getExponentialGroupRegExMatcher(String stringToBeMatched){
+        if(!isOptimized || exponentialGroupRegExMatcher == null || exponentialGroupRegExMatcher.pattern().pattern()
+                .equalsIgnoreCase(dimensionComponentDefiner.getExponentialRegExPattern().pattern()))
+        {
+            return (exponentialGroupRegExMatcher = dimensionComponentDefiner.getExponentialRegExPattern().matcher(stringToBeMatched));
+        }
+        else{
+            return exponentialGroupRegExMatcher.reset(stringToBeMatched);
+        }
+    }
+
+    private Matcher getExponentValueRegExMatcher(String stringToBeMatched){
+        if(!isOptimized || exponentValueRegExMatcher == null || exponentValueRegExMatcher.pattern().pattern()
+                .equalsIgnoreCase(dimensionComponentDefiner.getExponentValueRegexPattern().pattern()))
+        {
+            return (exponentValueRegExMatcher = dimensionComponentDefiner.getExponentValueRegexPattern().matcher(stringToBeMatched));
+        }
+        else{
+            return exponentValueRegExMatcher.reset(stringToBeMatched);
+        }
+    }
+
+    private Matcher getAtomicTypeGroupRegExMatcher(String stringToBeMatched){
+        if(!isOptimized || atomicTypeGroupRegExMatcher == null || atomicTypeGroupRegExMatcher.pattern().pattern()
+                .equalsIgnoreCase(dimensionComponentDefiner.getAtomicTypeRegExPattern().pattern()))
+        {
+            return (atomicTypeGroupRegExMatcher = dimensionComponentDefiner.getAtomicTypeRegExPattern().matcher(stringToBeMatched));
+        }
+        else{
+            return atomicTypeGroupRegExMatcher.reset(stringToBeMatched);
+        }
+    }
+
+    private Matcher getDivisionSymbolsRegExMatcher(String stringToBeMatched){
+        if(!isOptimized || divisionSymbolsRegExMatcher == null || divisionSymbolsRegExMatcher.pattern().pattern()
+                .equalsIgnoreCase(dimensionComponentDefiner.getDivisionSymbolsRegExPattern().pattern()))
+        {
+            return (divisionSymbolsRegExMatcher = dimensionComponentDefiner.getDivisionSymbolsRegExPattern().matcher(stringToBeMatched));
+        }
+        else{
+            return divisionSymbolsRegExMatcher.reset(stringToBeMatched);
+        }
     }
 }

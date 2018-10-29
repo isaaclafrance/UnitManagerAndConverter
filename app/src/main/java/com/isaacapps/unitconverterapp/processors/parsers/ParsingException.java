@@ -7,6 +7,7 @@ public class ParsingException extends Exception {
     private final String scenario, howToFix;
 
     public ParsingException(String scenario, String howToFix) {
+        super(String.format("**Parsing scenario that caused problem: %s \n**The following can resolve the problem: %s", scenario, howToFix));
         this.scenario = scenario;
         this.howToFix = howToFix;
     }
@@ -29,11 +30,5 @@ public class ParsingException extends Exception {
         if (!requireComponentsCollection.isEmpty())
             throw new ParsingException("Some components needed for parsing have not been appropriately set."
                     , "Please appropriately set the following components: " + Arrays.deepToString(requireComponentsCollection.toArray()));
-    }
-
-    ///
-    @Override
-    public String toString() {
-        return String.format("**Parsing scenario that caused problem: %s \n **The following can resolve the problem: %s", scenario, howToFix);
     }
 }

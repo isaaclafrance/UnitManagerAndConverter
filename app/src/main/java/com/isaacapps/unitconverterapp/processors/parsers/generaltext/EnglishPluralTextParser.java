@@ -17,8 +17,8 @@ public class EnglishPluralTextParser extends PluralTextParser{
     private static final String ONLY_LETTER_WORDS_REGEX = "([a-zA-Z]+" + WORD_SEPERATOR_REGEX + "?)+";
     private static final int MINIMUM_LENGTH = 4;
 
-    //A rule consists of a regular expression to identify the plural ending and what to replace it with
-    //The rules are very simple and do not account for language specific exceptions.
+    //A rule consists of a regular expression to identify the plural ending and what to replace it with.
+    //The rules are very simple and do not account for all language specific exceptions and irregularities.
     private static final String[][] FIRST_PASS_RULES = {{"(?<=ch|sh|x|s|z|ss|o)es\\b", ""}, {"(?<=z)zes\\b", ""}
             , {"ves\\b", "f"}
             , {"ves\\b", "fe"}
@@ -31,42 +31,45 @@ public class EnglishPluralTextParser extends PluralTextParser{
             , {"ia\\b", "ion"}
             , {"ia\\b", "ium"}
             , {"ina\\b", "en"}};
-    private static final String[] SECOND_PASS_RULE = {"(?<=[a-zA-Z]{2,})s\\b", ""}; //Less restrictive. Any word greater three letters that ends in 's'.
+    private static final String[] SECOND_PASS_RULE = {"(?<=[a-zA-Z])s\\b", ""}; //Less restrictive.
+
+    //Transform multidimenional array of rules into one regular expression to be used for matching
+    private static final Pattern FIRST_PASS_RULE_PATTERN = Pattern.compile(Arrays.deepToString(FIRST_PASS_RULES)
+                .replace("]]", ")")
+                .replaceAll(", \\[", ")|(?:")
+                .replaceAll(",[^\\[)]+", "")
+                .replace("[[", "(?:"));
+    private static final Pattern SECOND_PASS_RULE_PATTERN = Pattern.compile(SECOND_PASS_RULE[0]);
 
     /**
-     * Determines whether a text contains possible plurals
+     * Determines whether a text contains possible plurals based on English grammar.
      *
      * @param text                         Noun composed of capitalized or lowercase letters. If a compound noun, then words must be separated by underscore or space. Must be greater than {@value #MINIMUM_LENGTH}
      * @param useLessRestrictiveSecondPass if true, then will check less restrictive case of if the text ends in s. Has more false positives.
      */
+    @Override
     public boolean hasPossiblePlural(String text, boolean useLessRestrictiveSecondPass) {
-        if (!text.matches(ONLY_LETTER_WORDS_REGEX) || text.length() < MINIMUM_LENGTH)
+        if (text.length() < MINIMUM_LENGTH || !text.matches(ONLY_LETTER_WORDS_REGEX))
             return false;
 
         //Since the less restrictive second pass rule catches more cases, it should be tested first if parameter
-        if (useLessRestrictiveSecondPass && Pattern.compile(SECOND_PASS_RULE[0]).matcher(text).find())
+        if (useLessRestrictiveSecondPass && SECOND_PASS_RULE_PATTERN.matcher(text).find())
             return true;
 
-        //Transform multidimenional array of rules into one regular expression to be used for matching
-        return Pattern.compile(Arrays.deepToString(FIRST_PASS_RULES)
-                .replace("]]", ")")
-                .replaceAll(", \\[", ")|(?:")
-                .replaceAll(",[^\\[)]+", "")
-                .replace("[[", "(?:"))
-                .matcher(text)
-                .find();
+        return FIRST_PASS_RULE_PATTERN.matcher(text).find();
     }
 
     /**
-     * Tries to apply the rules to each word in the text. Depending on structure of the words, one or more rules may apply. Rules are simple.
+     * Tries to apply American English plural rules to each word in the text. Depending on structure of the words, one or more rules may apply. Rules are simple.
      *
      * @param text Noun composed of capitalized or lowercase letters. If a compound noun, then words must be separated by underscore or space.
      * @return Collection of combinations where the plural words in the provided text are alternatively replaced with their potential singular forms.
-     * For example, input 'groups of peas' would return 'group of peas', and 'groups of pea'. It up to the what is consuming the results array to determine which one is valid.
+     * For example, input 'groups of peas' would return 'group of peas', and 'groups of pea'. It is up to what is consuming the results array to determine which one is valid.
      */
-    public Collection<String> getPossibleSingularCombinations(String text) {
+    @Override
+    public Collection<String> generatePossibleSingularCombinations(String text) {
         if (!hasPossiblePlural(text, true))
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
 
         Map<String, Set<String>> pluralWordToSingularMap = new HashMap<>();
 
@@ -93,7 +96,7 @@ public class EnglishPluralTextParser extends PluralTextParser{
         }
 
         //Since this implementation is simple and does not regard which word is significant, if more than one word was plural, then a list is returned
-        return createAlternativeSingularCombinations(text, pluralWordToSingularMap);
+        return generateAlternativeSingularCombinations(text, pluralWordToSingularMap);
     }
 
     /**
@@ -103,13 +106,12 @@ public class EnglishPluralTextParser extends PluralTextParser{
      * @param pluralWordToSinglularMap Map of plural words from provided text and singular forms.
      * @return Set of modified texts with individual plurals replaced with possible singulars.
      */
-    private Set<String> createAlternativeSingularCombinations(String providedText, Map<String, Set<String>> pluralWordToSinglularMap) {
+    private Set<String> generateAlternativeSingularCombinations(String providedText, Map<String, Set<String>> pluralWordToSinglularMap) {
         Set<String> textCombinations = new HashSet<>();
 
         for (Map.Entry<String, Set<String>> currentPluralWordToSingularEntry : pluralWordToSinglularMap.entrySet()) {
             for (String singularWord : currentPluralWordToSingularEntry.getValue())
-                textCombinations.add(providedText
-                        .replaceAll(currentPluralWordToSingularEntry.getKey()
+                textCombinations.add(providedText.replaceAll(currentPluralWordToSingularEntry.getKey()
                                 , singularWord));
         }
 

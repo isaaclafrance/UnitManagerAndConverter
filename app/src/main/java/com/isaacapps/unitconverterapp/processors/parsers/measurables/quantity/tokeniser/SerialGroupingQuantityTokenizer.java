@@ -37,12 +37,13 @@ public class SerialGroupingQuantityTokenizer {
      * Extracts an serial association of values grouping, ie {1} {2} {3}.
      * If there are paired value and unit groupings, then empty string is returned
      */
-    public String extractSerialValuesGroupingString(String groupings) {
+    private String extractSerialValuesGroupingString(String groupings) {
         return valuesGroupingFormatter.format(extractExclusivelySerialGrouping(quantityGroupingDefiner.getSerialValuesGroupingsPattern(), groupings));
     }
 
     /**
-     * Extracts a list of values from a grouping of serial value association, ie {1} {2}.
+     * First attempt to clean up the provided grouping using an appropriate grouping formatter
+     * , then attempts to extract a list of values from a grouping of serial value association, ie {1} {2}.
      * If there are pairing grouping ie. "{1 meter} {2 inch}", then empty list is returned
      */
     public List<Double> parseSerialGroupingToValuesList(String groupings) {
@@ -52,23 +53,25 @@ public class SerialGroupingQuantityTokenizer {
                 .matcher(extractSerialValuesGroupingString(groupings));
 
         while (valueGroupingMatcher.find())
-            valueGroupingList.add(Double.parseDouble(valueGroupingMatcher.group()));
+            valueGroupingList.add(Double.parseDouble(quantityGroupingDefiner.removeGroupingSymbol(valueGroupingMatcher.group())));
 
         return valueGroupingList;
     }
 
     /**
-     * Extracts an serial association of units grouping ie "{meter} {inch}".
+     * First attempt to clean up the provided grouping using an appropriate grouping formatter
+     * , then attempts to extract an serial association of units grouping ie "{meter} {inch}".
      * If there are pairing groupings ie. "{1 meter} {2 inch}", then empty string is returned
      */
-    public String extractSerialUnitGroupingsString(String groupings) {
+    private String extractSerialUnitGroupingsString(String groupings) {
         return unitsNameGroupingFormatter.format(
                 extractExclusivelySerialGrouping(quantityGroupingDefiner
                         .getSerialUnitsGroupingsPattern(), groupings));
     }
 
     /**
-     * Extracts a list of unit names from grouping of serial unit association "{meter} {inch}".
+     * First attempt to clean up the provided grouping using an appropriate grouping formatter
+     * , then attempts to extracts a list of unit names from grouping of serial unit association "{meter} {inch}".
      * If there are pairing grouping ie. "{1 meter} {2 inch}", then empty list is returned
      */
     public List<String> parseSerialGroupingToUnitsNamesList(String serialGrouping) {
@@ -80,6 +83,7 @@ public class SerialGroupingQuantityTokenizer {
         while (unitGroupingMatcher.find())
             unitGroupingList.add(unitGroupingMatcher.group());
 
+
         return unitGroupingList;
     }
 
@@ -88,13 +92,17 @@ public class SerialGroupingQuantityTokenizer {
 
         for (String unitName : unitsNames) {
             try {
-                unitsList.add(unitParser.parse (unitName));
+                unitsList.add(unitParser.parse(quantityGroupingDefiner.removeGroupingSymbol(unitName)));
             } catch (ParsingException e) {
-                return Collections.EMPTY_LIST;
+                return Collections.emptyList();
             }
         }
 
         return unitsList;
+    }
+
+    public List<Unit> parseSerialGroupingToUnitsList(String serialGrouping){
+        return parseUnitNamesToUnitsList(parseSerialGroupingToUnitsNamesList(serialGrouping));
     }
 
     /**

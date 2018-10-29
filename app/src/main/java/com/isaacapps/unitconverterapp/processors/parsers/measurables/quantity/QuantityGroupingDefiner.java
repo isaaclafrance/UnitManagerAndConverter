@@ -5,9 +5,11 @@ import com.isaacapps.unitconverterapp.utilities.RegExUtility;
 
 import java.util.regex.Pattern;
 
+import static com.isaacapps.unitconverterapp.utilities.RegExUtility.SIGNED_DOUBLE_VALUE_REGEX_PATTERN;
+
 public class QuantityGroupingDefiner {
     public static final String DEFAULT_OPENING_SYMBOL = "{";
-    public static final String DEFAULT_CLOSING_SYMBOL = ")";
+    public static final String DEFAULT_CLOSING_SYMBOL = "}";
 
     private String groupOpeningSymbol;
     private String groupClosingSymbol;
@@ -32,7 +34,7 @@ public class QuantityGroupingDefiner {
 
     ///
     private void compileGroupingIdentificationPatterns(){
-        regexEscapedGroupOpeningSymbol = RegExUtility.escapeRegexReservedCharacters(groupClosingSymbol);
+        regexEscapedGroupOpeningSymbol = RegExUtility.escapeRegexReservedCharacters(groupOpeningSymbol);
         regexEscapedGroupClosingingSymbol = RegExUtility.escapeRegexReservedCharacters(groupClosingSymbol);
         anyGroupingPattern = Pattern.compile(String.format("%s.+%s", regexEscapedGroupOpeningSymbol, regexEscapedGroupClosingingSymbol));
         emptyGroupingPattern = Pattern.compile(String.format("%s\\s*%s", regexEscapedGroupOpeningSymbol, regexEscapedGroupClosingingSymbol));
@@ -42,14 +44,19 @@ public class QuantityGroupingDefiner {
     private void compileSerialGroupingPatterns(){
         singleUnitGroupingPattern = Pattern.compile(String.format("%s[\\s]*%s[\\s]*%s", regexEscapedGroupOpeningSymbol, UnitParser.UNIT_NAME_REGEX, regexEscapedGroupClosingingSymbol));
         serialUnitsGroupingsPattern = Pattern.compile(String.format("([\\s]*%s[\\s]*)+", singleUnitGroupingPattern.pattern()));
-        singleValueGroupingPattern = Pattern.compile(String.format("%s[\\s]*%s[\\s]*%s", regexEscapedGroupOpeningSymbol, RegExUtility.SIGNED_DOUBLE_VALUE_REGEX, regexEscapedGroupClosingingSymbol));
+        singleValueGroupingPattern = Pattern.compile(String.format("%s[\\s]*%s[\\s]*%s", regexEscapedGroupOpeningSymbol, SIGNED_DOUBLE_VALUE_REGEX_PATTERN.pattern(), regexEscapedGroupClosingingSymbol));
         serialValuesGroupingsPattern = Pattern.compile(String.format("([\\s]*%s[\\s]*)+", singleValueGroupingPattern.pattern()));
     }
     private void compilePairedGroupingPatterns(){
-        singlePairedValueUnitNameGroupingPattern = Pattern.compile(String.format("%s[\\s]*%s[\\s]+%s[\\s]*%s", regexEscapedGroupOpeningSymbol, RegExUtility.SIGNED_DOUBLE_VALUE_REGEX, UnitParser.UNIT_NAME_REGEX, regexEscapedGroupClosingingSymbol));
+        singlePairedValueUnitNameGroupingPattern = Pattern.compile(String.format("%s[\\s]*%s[\\s]+%s[\\s]*%s", regexEscapedGroupOpeningSymbol, SIGNED_DOUBLE_VALUE_REGEX_PATTERN.pattern(), UnitParser.UNIT_NAME_REGEX, regexEscapedGroupClosingingSymbol));
         pairedValueUnitNameGroupingPattern = Pattern.compile(String.format("([\\s]*%s[\\s]*)+", singlePairedValueUnitNameGroupingPattern.pattern()));
     }
 
+    ///
+    public String removeGroupingSymbol(String grouping){
+        return grouping.replaceAll(regexEscapedGroupOpeningSymbol, "")
+                .replaceAll(regexEscapedGroupClosingingSymbol, "");
+    }
 
     ///
     public boolean hasValueUnitPairGrouping(String potentialGroupings) {
