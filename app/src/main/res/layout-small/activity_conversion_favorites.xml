@@ -10,19 +10,19 @@
     android:padding="5dp"
     android:orientation="vertical"
     tools:context=".ConversionFavoritesActivity" >
-    
+
     <LinearLayout
-        android:id="@+id/unitSelectionLinearLayout"
+        android:id="@+id/conversionSelectionLinearLayout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="5"
         android:background="@drawable/unit_selection_linear_layout_border"
         android:gravity="center"
         android:orientation="vertical"
-        android:padding="5dp" >
+        android:padding="5dp">
 
         <TextView
-            android:id="@+id/prefixNUnitSelectionViewLabel"
+            android:id="@+id/conversionSelectionViewLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="4dp"
@@ -30,24 +30,34 @@
             android:textAppearance="?android:attr/textAppearanceSmall"
             android:textStyle="bold" />
 
-        <ListView
-            android:id="@+id/conversionListView"
-            android:animateLayoutChanges="true"
+        <ExpandableListView
+            android:id="@+id/conversionExpandableListView"
             android:layout_width="276dp"
             android:layout_height="match_parent"
+            android:animateLayoutChanges="true"
             android:clickable="true"
             android:divider="#333300"
             android:dividerHeight="0.5dp"
-            android:scrollbarStyle="outsideOverlay"
-            tools:listitem="@android:layout/simple_list_item_checked" >
+            android:indicatorLeft="?android:attr/expandableListPreferredItemIndicatorLeft"
+            android:scrollbarStyle="outsideOverlay" />
 
-        </ListView>
+        <ListView
+            android:id="@+id/conversionListView"
+            android:layout_width="276dp"
+            android:layout_height="match_parent"
+            android:animateLayoutChanges="true"
+            android:clickable="true"
+            android:divider="#333300"
+            android:dividerHeight="0.5dp"
+            android:headerDividersEnabled="true"
+            android:scrollbarStyle="outsideOverlay"
+            android:textAlignment="center" />
 
     </LinearLayout>
 
     <LinearLayout
         android:id="@+id/buttonsLinearLayout"
-            android:animateLayoutChanges="true"
+        android:animateLayoutChanges="true"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="2"
@@ -55,7 +65,7 @@
         android:padding="10dp" >
 
         <Button
-            android:id="@+id/selectUnitButton"
+            android:id="@+id/selectConversionButton"
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
@@ -64,21 +74,21 @@
             android:textSize="5sp" />
 
         <Button
-            android:id="@+id/removeButton"
-            android:layout_width="0dp"
-            android:layout_height="fill_parent"
-            android:layout_weight="1"
-            android:padding="5dp"
-            android:text="REMOVE"
-            android:textSize="5sp" />
-
-        <Button
-            android:id="@+id/cancelUnitButton"
+            android:id="@+id/cancelConversionButton"
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
             android:padding="5dp"
             android:text="CANCEL"
+            android:textSize="5sp" />
+
+        <Button
+            android:id="@+id/removeConversionButton"
+            android:layout_width="0dp"
+            android:layout_height="fill_parent"
+            android:layout_weight="1"
+            android:padding="5dp"
+            android:text="REMOVE"
             android:textSize="5sp" />
 
     </LinearLayout>

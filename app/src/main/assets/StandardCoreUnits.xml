@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <main>
     
-<!-- Unit Types Listing Order: TRIGONOMETRIC, ELECTRICITY AND MAGNETISM, RADIATION, OPTICS, TEMPERATURE, ENERGY, POWER, FORCE, PRESSURE, FLUID MECHANICS, MASS, LENGTH, TIME, AREA, VOLUME, COMPUTER  -->
+<!-- Unit Types Listing Order: TRIGONOMETRIC, ELECTRICITY AND MAGNETISM, RADIATION, OPTICS, TEMPERATURE, ENERGY, POWER, FORCE, PRESSURE, FLUID MECHANICS, MASS, LENGTH, TIME, AREA, VOLUME, COMPUTER, MISC  -->
 
 <!-- TRIGONOMETRIC UNITS -->
 		
@@ -41,11 +41,47 @@
 	    </baseConversionPolyCoeffs>
 	</unit>    	
 
-<!-- ELECTRICITY AND MAGNETISM UNITS -->	
+<!-- ELECTRICITY AND MAGNETISM UNITS -->
+
+	<unit>
+		<unitName>coulomb</unitName>
+		<unitSystem>si</unitSystem>
+		<abbreviation>C</abbreviation>
+		<unitCategory>electricity_n_magnetism_unit</unitCategory>
+		<unitDescription>This SI unit is named after Charles-Augustin de Coulomb. </unitDescription>
+		<componentUnits>
+			<component>
+				<unitName>coulomb</unitName>
+				<exponent>1.0f</exponent>
+			</component>
+		</componentUnits>
+		<baseConversionPolyCoeffs>
+			<baseUnit>coulomb</baseUnit>
+			<polynomialCoeffs>1.0f 0.0f</polynomialCoeffs>
+		</baseConversionPolyCoeffs>
+	</unit>
 
 <!-- RADIATION UNITS-->		
 		
 <!-- OPTICS UNITS -->
+
+	<unit>
+		<unitName>candela</unitName>
+		<unitSystem>si</unitSystem>
+		<abbreviation>cd</abbreviation>
+		<unitCategory>optics_unit</unitCategory>
+		<unitDescription>Luminous intensity is analogous to radiant intensity, but instead of simply adding up the contributions of every wavelength of light in the source's spectrum, the contribution of each wavelength is weighted by the standard luminosity function (a model of the sensitivity of the human eye to different wavelengths)</unitDescription>
+		<componentUnits>
+			<component>
+				<unitName>candela</unitName>
+				<exponent>1.0f</exponent>
+			</component>
+		</componentUnits>
+		<baseConversionPolyCoeffs>
+			<baseUnit>candela</baseUnit>
+			<polynomialCoeffs>1.0f 0.0f</polynomialCoeffs>
+		</baseConversionPolyCoeffs>
+	</unit>
 
 <!-- TEMPERATURE UNITS -->
 	
@@ -70,7 +106,7 @@
 	<unit>
 	   	<unitName>celsius</unitName>
 	    <unitSystem>si</unitSystem>
-	    <abbreviation>C</abbreviation>
+	    <abbreviation>°C</abbreviation>
 	    <unitCategory>temperature_unit</unitCategory>
 	   	<unitDescription>The unit "degree Celsius" and the Celsius scale are currently defined by two different temperatures: absolute zero, and the triple point of purified water.</unitDescription>  
 	    <componentUnits>
@@ -212,7 +248,7 @@
 	        </component>	        
 	        <component>
 	            <unitName>Meter</unitName>
-	            <exponent>2.0f</exponent>
+	            <exponent>1.0f</exponent>
 	        </component>
 	       	<component>
 	            <unitName>second</unitName>
@@ -677,7 +713,7 @@
 	<unit>
 	    <unitName>fluid_ounce</unitName>
 	    <unitNameAliases>
-	   	    <alias>fluid_ounces</alias>
+	   	    <alias>ounce</alias>
 	   	</unitNameAliases>	    
 	    <unitSystem>us customary system</unitSystem>
 	    <abbreviation>fl. oz.</abbreviation>
@@ -712,7 +748,47 @@
 	        <polynomialCoeffs>0.001 0.0</polynomialCoeffs>  	            
 	    </baseConversionPolyCoeffs>
 	</unit>
-	
-<!-- COMPUTER -->		
-		
+
+<!-- COMPUTER -->
+<!-- MISC -->
+
+	<unit>
+		<unitName>mole</unitName>
+		<unitSystem>si</unitSystem>
+		<abbreviation>mol</abbreviation>
+		<unitCategory>num_of_substance_unit</unitCategory>
+		<unitDescription>The unit is defined as the amount or sample of a chemical substance that contains as many constitutive particles, e.g., atoms, molecules, ions, electrons, or photons, as there are atoms in 12 grams of carbon-12 (12C), the isotope of carbon with standard atomic weight 12 by definition.</unitDescription>
+		<componentUnits>
+			<component>
+				<unitName>mole</unitName>
+				<exponent>1.0f</exponent>
+			</component>
+		</componentUnits>
+		<baseConversionPolyCoeffs>
+			<baseUnit>mole</baseUnit>
+			<polynomialCoeffs>1.0 0.0</polynomialCoeffs>
+		</baseConversionPolyCoeffs>
+	</unit>
+
+	<unit>
+		<unitName>euro</unitName>
+		<unitSystem>si</unitSystem>
+		<abbreviation>eur</abbreviation>
+		<unitNameAliases>
+			<alias>€</alias>
+		</unitNameAliases>
+		<unitCategory>currency_unit</unitCategory>
+		<unitDescription>The official currency of the European Union and its territories. Currently, 19 of 28 member states use the euro; this group of states is known as the eurozone or euro area. It is the second largest and second most traded currency in the foreign exchange market after the United States dollar.</unitDescription>
+		<componentUnits>
+			<component>
+				<unitName>euro</unitName>
+				<exponent>1.0f</exponent>
+			</component>
+		</componentUnits>
+		<baseConversionPolyCoeffs>
+			<baseUnit>euro</baseUnit>
+			<polynomialCoeffs>1.0 0.0</polynomialCoeffs>
+		</baseConversionPolyCoeffs>
+	</unit>
+
 </main>

@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="activity_conversion_favorites_name">Select Conversion</string>    
+    <string name="activity_conversion_favorites_name">Select Conversion</string>
+    <string name="sort_by_rank_view">Sort by Rank View</string>
+    <string name="group_by_category_view">Group by Category View</string>
+    <string name="sort_alphabetically_view">Sort Alphabetically View</string>
 </resources>

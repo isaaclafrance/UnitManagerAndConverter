@@ -205,7 +205,11 @@ public class Unit {
                 setAbbreviation(componentUnitsDimensionSerializer.serialize(abbreviatedComponentDimension)
                         .replaceAll("[()]", ""));
             } catch (SerializingException e) {
+                e.printStackTrace();
             }
+        }
+        else{
+            setAbbreviation(UNKNOWN_UNIT_ABBREVIATION);
         }
     }
 
@@ -274,7 +278,6 @@ public class Unit {
                 && !isCoreUnit;
 
         boolean baseUnitStatusHasChanged = false;
-
         if (baseUnitCanBeChanged) {
             this.baseUnit = cascadedBaseUnit;
 

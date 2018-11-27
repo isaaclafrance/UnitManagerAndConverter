@@ -1,10 +1,10 @@
 package com.isaacapps.unitconverterapp.processors.formatters.numbers;
 
+import com.florianingerl.util.regex.Matcher;
+import com.florianingerl.util.regex.Pattern;
 import com.isaacapps.unitconverterapp.processors.formatters.IFormatter;
 
 import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static com.isaacapps.unitconverterapp.utilities.RegExUtility.SIGNED_DOUBLE_VALUE_REGEX_PATTERN;
 
@@ -40,7 +40,7 @@ public class DecimalToMixedFractionFormatter implements IFormatter {
 
         Matcher decimalInputMatcher = decimalPattern.matcher(decimalInput);
         while(decimalInputMatcher.find())
-            formattedDecimal = decimalInput.replaceAll(decimalInputMatcher.group(), convertToMixedNumber(decimalInputMatcher.group()));
+            formattedDecimal = decimalInput.replace(decimalInputMatcher.group(), convertToMixedNumber(decimalInputMatcher.group()));
 
         return formattedDecimal;
     }

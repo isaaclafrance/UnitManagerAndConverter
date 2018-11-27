@@ -75,7 +75,7 @@
             android:ems="10"
             android:fadingEdge="horizontal"
             android:fadingEdgeLength="10dp"
-            android:hint="Format: a, a^#, (prefix-a)^#, (a)^# / (b)^#,  (a)^# * (b)^#, etc"
+            android:hint="Format: a^# / b^#,  a^# * b^#, etc"
             android:padding="5dp"
             android:textSize="@dimen/from_unit_text_size"
             android:textStyle="bold" />
@@ -157,7 +157,8 @@
                 android:text="ExpressionToggle"
                 android:textOff="EXP:\nOFF"
                 android:textOn="EXP:\nON"
-                android:textSize="3sp" />
+                android:textSize="3sp"
+                android:visibility="gone" />
 
         </LinearLayout>
 
@@ -167,10 +168,10 @@
         android:id="@+id/convertLinearLayout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="0.25"
+        android:layout_weight="0.30"
         android:gravity="center"
         android:orientation="vertical"
-        android:padding="@dimen/switch_bottom_padding" >
+        android:padding="@dimen/switch_bottom_padding">
 
         <Button
             android:id="@+id/convertButton"
@@ -178,7 +179,7 @@
             android:layout_width="wrap_content"
             android:layout_height="0dp"
             android:layout_weight="1.0"
-            android:gravity="center_vertical"
+            android:gravity="center_horizontal"
             android:text="CONVERT"
             android:textSize="@dimen/switch_button_text_size" />
 
@@ -213,7 +214,7 @@
             android:ems="10"
             android:fadingEdge="horizontal"
             android:fadingEdgeLength="10dp"
-            android:hint="Format: a, a^#, (prefix-a)^#, (a)^# / (b)^#,  (a)^# * (b)^#, etc"
+            android:hint="Format: a^# / b^#,  a^# * b^#, etc"
             android:padding="5dp"
             android:textSize="@dimen/to_unit_text_size"
             android:textStyle="bold" />

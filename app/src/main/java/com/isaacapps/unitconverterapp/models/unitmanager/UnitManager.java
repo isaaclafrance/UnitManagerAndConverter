@@ -79,10 +79,10 @@ public class UnitManager {
     public Locale getLocale() {
         return locale;
     }
-
     public void setLocale(Locale locale) {
         this.locale = locale;
         this.unitsDataModel.setLocale(locale);
     }
+
 }
 

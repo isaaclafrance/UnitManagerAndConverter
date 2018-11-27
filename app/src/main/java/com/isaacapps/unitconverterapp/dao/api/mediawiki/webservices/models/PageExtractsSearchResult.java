@@ -47,9 +47,8 @@ public class PageExtractsSearchResult extends JSONObject {
         }
     }
 
-
     /**
-     * Uses uses the index property to rank
+     * Uses the index property to rank
      * @return
      */
     public PageExtract getBestMatchPageExtract(){

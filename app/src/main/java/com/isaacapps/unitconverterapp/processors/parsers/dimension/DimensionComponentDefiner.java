@@ -106,9 +106,6 @@ public class DimensionComponentDefiner {
      * Recursively and greedily searches for the existence of largest nested multigroup. All multigroups must satisfy the complex dimension criteria.
      * Form can be satisfied when obviously nested such as '( ((a)^2 * (a)^3)^8 /(b)^4 )^5',  '(a^3/b)^3'
      * When trivially nested and consisting of multiple single groups such as '(a*b*c/d)^5' which is the same as ((a)^1*(b)^1*(c)^1/(d)^1)^5.
-     * The regex also  unfortunately extends to trivial cases where a single atomic type is inclosed in parenthesis
-     * .This is the only case where the single group and multigroup regex's both have matches and for practical aprsing purposes this should not be the case.
-     * but its not worth it to make the nested regex ignore that case.
      */
     Pattern createMultiGroupRegExPattern(){
         String optionalOperationComponent = String.format("(?:%s)?", createOperationComponentRegEx());
@@ -123,15 +120,15 @@ public class DimensionComponentDefiner {
     }
 
     /**
-     * Search for a single group that has one of the three simple formats 'a', 'a^2', '(a)^3', with and without operation symbols.
+     * Search for a single group that has one of the three simple formats 'a', 'a^2', with and without operation symbols.
      * May or may not be complex depending on if there is an exponent.
      */
     Pattern createSingleGroupRegExPattern() {
         String optionalExponentialComponent = String.format("(?:%s)?", createExponentGroupRegex());
-        String optionalOperationalComponent = String.format("(?:(?<=\\s|[()]|\\A)(?:%s)?|%<s)"
+        String optionalOperationalComponent = String.format("(?:(?<=\\s|\\b|[()]|\\A)(?:%s))?"
                 , createOperationComponentRegEx());
 
-        return Pattern.compile(String.format("%s(?<p>[(][\\s]*)?%s(?(p)[\\s]*[)])%s(?=\\b|\\Z)"
+        return Pattern.compile(String.format("(?:%s%s%s(?=\\b|\\Z))"
                 , optionalOperationalComponent, createInteriorGroupComponentRegEx()
                 , optionalExponentialComponent));
     }

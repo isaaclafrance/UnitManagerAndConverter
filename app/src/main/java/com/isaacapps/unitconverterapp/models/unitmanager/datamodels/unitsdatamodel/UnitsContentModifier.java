@@ -28,10 +28,8 @@ public class UnitsContentModifier {
         for (Unit unit : units)
             addUnit(unit);
     }
-
     public Unit addUnit(Unit unit) throws UnitException {
         if (addUnitToDataStructures(unit, true, true)) {
-
             if (!unit.isBaseUnit() && !unit.isCoreUnit()) {
                 //Make the unit be a base unit if its the only one of its kind in the unit manager or if it is a fundamental unit and not already a core base unit
                 boolean isAFundamentalUnit = unitsDataModel.getUnitManagerContext().getFundamentalUnitsDataModel().containsUnitName(unit.getName());
@@ -57,8 +55,13 @@ public class UnitsContentModifier {
 
         return unit;
     }
-
     private boolean addUnitToDataStructures(Unit unit, boolean includeAliases, boolean includeUpdateToUnitsClassifier){
+        Unit unitInDataStructureWithSameName = unitsDataModel.getUnitsContentMainRetriever().getUnit(unit.getName(), false);
+        if( unitInDataStructureWithSameName != null && unitInDataStructureWithSameName != unit && unitInDataStructureWithSameName.isCoreUnit() != unit.isCoreUnit()) {
+            //If a unit of a different instance exists that does not have the same compatible IsCore Unit state, then prevent replacement.
+            return false;
+        }
+
         try {
             unit.setUnitManagerContext(unitsDataModel.getUnitManagerContext());
         }
@@ -69,7 +72,7 @@ public class UnitsContentModifier {
             return false;
         }
 
-        unitsDataModel.getRepositoryWithDualKeyNCategory().removeItem(unit);// Start on clean slate so to speak.
+        unitsDataModel.getRepositoryWithDualKeyNCategory().removeItem(unit);// Blast away previous categorizations for unit and start on clean slate so to speak
 
         Unit addedUnit = null;
         for (DATA_MODEL_CATEGORY dataModelCategory : determineDataModelCategoriesGroup(unit))
@@ -99,7 +102,6 @@ public class UnitsContentModifier {
     public boolean mapUnidirectionalAliasToUnitName(String unitName, String alias) {
         return unitsDataModel.getRepositoryWithDualKeyNCategory().addUniDirectionalKeyRelation(alias.trim(), unitName.trim());
     }
-
     public boolean mapBidirectionalAbbreviationToUnitName(String unitName, String abbreviation) {
         return unitsDataModel.getRepositoryWithDualKeyNCategory().updateBidirectionalKeyRelations(unitName.trim(), abbreviation.trim());
     }
@@ -133,14 +135,13 @@ public class UnitsContentModifier {
         }
         return false;
     }
-
     public boolean removeUnit(Unit unit) throws UnitException {
         return removeUnit(unit.getName());
     }
 
     /**
      * Also removes all UNKNOWN units since they would have been classified as DYNAMIC if some of their properties were known.
-     * TODO: Remove reference to conversion favorites when creating a slimmed down version of unit manager.
+     * TODO: Remove reference to conversion favorites when creating a slimmed down version of unit manager in a standalone library.
      */
     public void removeAllDynamicUnits() {
         for (Unit unitToBeRemoved : unitsDataModel.getRepositoryWithDualKeyNCategory().getItemsByCategory(DATA_MODEL_CATEGORY.DYNAMIC)) {
@@ -156,7 +157,6 @@ public class UnitsContentModifier {
         unitsDataModel.getRepositoryWithDualKeyNCategory().removeCategory(DATA_MODEL_CATEGORY.DYNAMIC);
         unitsDataModel.getRepositoryWithDualKeyNCategory().removeCategory(DATA_MODEL_CATEGORY.UNKNOWN);
     }
-
     public void removeAllUnitNameAliases() {
         Collection<Unit> allUnits = unitsDataModel.getUnitsContentMainRetriever().getAllUnits();
         for (Unit unit : allUnits) {
@@ -169,7 +169,6 @@ public class UnitsContentModifier {
     public void updateAssociationsOfUnknownUnits() throws UnitException {
         updateAssociationsOfUnknownUnits(new ArrayList<>(), new ArrayList<>(unitsDataModel.getRepositoryWithDualKeyNCategory().getItemsByCategory(DATA_MODEL_CATEGORY.UNKNOWN)));
     }
-
     private void updateAssociationsOfUnknownUnits(Collection<Unit> unitsNoLongerUnknown, Collection<Unit> currentUnknownUnits) throws UnitException {
         for (Unit unit : currentUnknownUnits) {
             if (unit != unitsDataModel.getUnitsContentMainRetriever().getUnknownUnit() && unit.setAutomaticBaseUnit()
@@ -188,7 +187,6 @@ public class UnitsContentModifier {
         if (!unknownUnitsToBeReAnalyzed.isEmpty())
             updateAssociationsOfUnknownUnits(unitsNoLongerUnknown, unknownUnitsToBeReAnalyzed);
     }
-
     private Collection<Unit> unknownUnitsToBeReAnalyzed(Collection<Unit> currentUnknownUnits, Iterable<Unit> unitsNoLongerUnknown) {
         Set<String> namesOfUnitsNoLongerUnknown = new HashSet<>();
         for (Unit unit : unitsNoLongerUnknown) {
@@ -203,7 +201,6 @@ public class UnitsContentModifier {
 
         return currentUnknownUnits;
     }
-
     private boolean unknownUnitShouldBeReAnalyzed(Unit currentUnknownUnit, Set<String> namesOfUnitsNoLongerUnknown) {
         if (namesOfUnitsNoLongerUnknown.contains(currentUnknownUnit.getBaseUnit().getName()))
             return true;

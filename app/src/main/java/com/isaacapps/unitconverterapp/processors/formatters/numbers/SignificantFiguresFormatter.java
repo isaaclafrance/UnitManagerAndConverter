@@ -1,9 +1,9 @@
 package com.isaacapps.unitconverterapp.processors.formatters.numbers;
 
+import com.florianingerl.util.regex.Matcher;
 import com.isaacapps.unitconverterapp.processors.formatters.IFormatter;
 
 import java.util.Locale;
-import java.util.regex.Matcher;
 
 import static com.isaacapps.unitconverterapp.utilities.RegExUtility.SIGNED_DOUBLE_VALUE_REGEX_PATTERN;
 
@@ -25,7 +25,7 @@ public class SignificantFiguresFormatter implements IFormatter {
 
         Matcher decimalInputMatcher = SIGNED_DOUBLE_VALUE_REGEX_PATTERN.matcher(decimal);
         while(decimalInputMatcher.find())
-            formattedNumber = decimal.replaceAll(decimalInputMatcher.group(), String.format(locale,"%." + numberOfSignificantFigures + "g", decimalInputMatcher.group()));
+            formattedNumber = decimal.replace(decimalInputMatcher.group(), String.format(locale,"%." + numberOfSignificantFigures + "g", decimalInputMatcher.group()));
 
         return formattedNumber;
     }

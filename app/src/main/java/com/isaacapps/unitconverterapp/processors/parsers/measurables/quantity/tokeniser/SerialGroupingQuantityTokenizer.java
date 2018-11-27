@@ -1,5 +1,8 @@
 package com.isaacapps.unitconverterapp.processors.parsers.measurables.quantity.tokeniser;
 
+import com.florianingerl.util.regex.Pattern;
+import com.florianingerl.util.regex.Matcher;
+
 import com.isaacapps.unitconverterapp.models.measurables.unit.Unit;
 import com.isaacapps.unitconverterapp.processors.formatters.IFormatter;
 import com.isaacapps.unitconverterapp.processors.formatters.grouping.UnitNamesGroupingFormatter;
@@ -12,8 +15,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class SerialGroupingQuantityTokenizer {
     private Locale locale;
@@ -70,8 +71,9 @@ public class SerialGroupingQuantityTokenizer {
     }
 
     /**
-     * First attempt to clean up the provided grouping using an appropriate grouping formatter
-     * , then attempts to extracts a list of unit names from grouping of serial unit association "{meter} {inch}".
+     * First attempts to clean up the provided grouping using an appropriate grouping formatter
+     * , then attempts to extract a list of unit names from grouping of serial unit association "{meter} {inch}".
+     * The unit name can be simple or a complex dimension combination of other unit names.
      * If there are pairing grouping ie. "{1 meter} {2 inch}", then empty list is returned
      */
     public List<String> parseSerialGroupingToUnitsNamesList(String serialGrouping) {

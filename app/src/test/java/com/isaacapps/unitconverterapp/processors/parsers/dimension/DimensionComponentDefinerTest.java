@@ -214,7 +214,7 @@ public class DimensionComponentDefinerTest {
 
         Pattern singleGroupPattern = dimensionComponentDefiner.createSingleGroupRegExPattern();
 
-        String[] inputs = new String[]{"aaa", "(aaa)"};
+        String[] inputs = new String[]{"aaa"};
 
         for(String input:inputs) {
             assertTrue(String.format("No Match for Input:%s. With constructed single group regex %s"
@@ -225,15 +225,15 @@ public class DimensionComponentDefinerTest {
     @Test
     public void createSingleGroupRegExPattern_Should_Match_Atomic_Type_With_Exponent() throws ParsingException {
 
-        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("aaa")
-                .setExponentValueRegEx("123")
+        DimensionComponentDefiner dimensionComponentDefiner = new DimensionComponentDefiner("aaa|b")
+                .setExponentValueRegEx("123|321")
                 .setExponentSymbols("^")
                 .setMultiplicationSymbols("*")
                 .setDivisionSymbols("/");
 
         Pattern singleGroupPattern = dimensionComponentDefiner.createSingleGroupRegExPattern();
 
-        String[] inputs = new String[]{"aaa^123", "(aaa)^123"};
+        String[] inputs = new String[]{"aaa^123", "b  ^  321"};
 
         for(String input:inputs) {
             assertTrue(String.format("No Match for Input:%s. With constructed single group regex %s"
@@ -252,7 +252,7 @@ public class DimensionComponentDefinerTest {
 
         Pattern singleGroupPattern = dimensionComponentDefiner.createSingleGroupRegExPattern();
 
-        String[] inputs = new String[]{"*aaa^123", "/(aaa)^123", " * (aaa)^123", " divided by ( aaa )^123"};
+        String[] inputs = new String[]{"*aaa^123", "/aaa^123", " * aaa^123", " divided by  aaa ^123"};
 
         for(String input:inputs) {
             assertTrue(String.format("No Match for Input:%s. With constructed single group regex %s"
@@ -271,7 +271,7 @@ public class DimensionComponentDefinerTest {
 
         Pattern singleGroupPattern = dimensionComponentDefiner.createSingleGroupRegExPattern();
 
-        String[] inputs = new String[]{"bab^123", "baa", "(aaaaaa)", "(aaa"};
+        String[] inputs = new String[]{"bab^123", "baa", "(aaaaaaa)", "(aaa"};
 
         for(String input:inputs) {
             assertFalse(String.format("No Match for Input:%s. With constructed single group regex %s"

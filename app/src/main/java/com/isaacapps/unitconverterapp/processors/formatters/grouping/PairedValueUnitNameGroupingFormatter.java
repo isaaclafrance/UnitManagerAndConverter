@@ -1,9 +1,9 @@
 package com.isaacapps.unitconverterapp.processors.formatters.grouping;
 
+import com.florianingerl.util.regex.Matcher;
 import com.isaacapps.unitconverterapp.processors.parsers.measurables.quantity.QuantityGroupingDefiner;
 
 import java.util.Locale;
-import java.util.regex.Matcher;
 
 public class PairedValueUnitNameGroupingFormatter extends GroupingFormatter{
 
@@ -18,6 +18,10 @@ public class PairedValueUnitNameGroupingFormatter extends GroupingFormatter{
         this.defaultValue = defaultValue;
     }
 
+    /**
+     * Along with base grouping formatting, find isolated grouping with only units defined and attempts to add a default value.
+     * Example transformation: {someUnitA} {someUnitB} { 5.0 someUnitC } --> { [defaultValue] someUnitA} { [defaultValue] someUnitB} {5.0 someUnitC}.
+     */
     @Override
     public String format(String pairedGroupings) {
         return super.format(addDefaultValueToIsolatedUnitGroups(pairedGroupings));
@@ -28,7 +32,7 @@ public class PairedValueUnitNameGroupingFormatter extends GroupingFormatter{
      * @param groupingWithIsolatedUnit
      * @return
      */
-    public String addDefaultValueToIsolatedUnitGroups(String groupingWithIsolatedUnit){
+    private String addDefaultValueToIsolatedUnitGroups(String groupingWithIsolatedUnit){
         Matcher isolatedUnitGroupMatcher = quantityGroupingDefiner.getSingleUnitGroupingPattern().matcher(groupingWithIsolatedUnit);
         String groupingWithIsolatedUnitsHavingDefaultValue = groupingWithIsolatedUnit;
 

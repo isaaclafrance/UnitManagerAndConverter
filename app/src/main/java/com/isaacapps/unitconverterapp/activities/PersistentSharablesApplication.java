@@ -17,13 +17,11 @@ public class PersistentSharablesApplication extends Application {
     private UnitManagerBuilder unitManagerBuilder;
     private UnitManager unitManager;
     private Quantity fromQuantity, toQuantity;
-    private int initialUnitNum, initialConversionFavoritesNum;
-    private int numOfLoadersCompleted;
+    private boolean unitManagerUpdated;
 
     ///
     public PersistentSharablesApplication() {
         unitManagerBuilder = new UnitManagerBuilder();
-        numOfLoadersCompleted = initialUnitNum = initialConversionFavoritesNum = 0;
         try {
             fromQuantity = new Quantity();
             toQuantity = new Quantity();
@@ -36,7 +34,8 @@ public class PersistentSharablesApplication extends Application {
     ///
     public void saveUnits() {
         try {
-            new UnitsMapXmlLocalWriter(getApplicationContext()).saveToXML(getUnitManager().getUnitsDataModel().getUnitsContentMainRetriever().getDynamicUnits());
+            new UnitsMapXmlLocalWriter(getApplicationContext()).saveToXML(getUnitManager().getUnitsDataModel()
+                    .getUnitsContentMainRetriever().getDynamicUnits());
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
         } catch (IllegalStateException e) {
@@ -72,13 +71,9 @@ public class PersistentSharablesApplication extends Application {
     }
 
     public UnitManager getUnitManager(){
-        if (unitManager == null) {
-            recreateUnitManager();
-        }
         return unitManager;
     }
-
-    public void recreateUnitManager() {
+    public void createUnitManager() {
         try {
             unitManager = unitManagerBuilder.build();
         }
@@ -86,9 +81,31 @@ public class PersistentSharablesApplication extends Application {
             e.printStackTrace();
         }
     }
+    public boolean updateUnitManager(){
+        try {
+            unitManagerBuilder.updateContent(unitManager);
+            unitManagerUpdated = true;
+            return true;
+        }
+        catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
+    }
 
-    public boolean isUnitManagerPreReqLoadingComplete() {
-        return unitManagerBuilder.areMinComponentsForCreationAvailable() && numOfLoadersCompleted >= 2;
+    public boolean getIsUnitManagerPreReqLoadingComplete() {
+        return unitManagerBuilder.areMinComponentsForCreationAvailable();
+    }
+
+    public boolean getIsUnitManagerAlreadyCreated(){
+        return unitManager != null;
+    }
+
+    public boolean isUnitManagerUpdated(){
+        return unitManagerUpdated;
+    }
+    public void setUnitManagerUpdated(boolean isUpdated){
+        unitManagerUpdated = isUpdated;
     }
 
     ///
@@ -98,14 +115,5 @@ public class PersistentSharablesApplication extends Application {
 
     public Quantity getTargetQuantity() {
         return toQuantity;
-    }
-
-    ///
-    public int getNumberOfLoadersCompleted() {
-        return numOfLoadersCompleted;
-    }
-
-    public void setNumberOfLoadersCompleted(int num) {
-        numOfLoadersCompleted = num;
     }
 }

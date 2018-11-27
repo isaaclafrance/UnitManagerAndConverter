@@ -117,13 +117,6 @@ public class ComponentUnitsDimensionParserTest {
         unitComponentDimension.put("second", -2.0);
 
         //
-        unitDefinition = "( ^^eters ) / second^2";
-        unitComponentDimensionByUnitDefinitionMap.put(unitDefinition, new HashMap<>());
-        unitComponentDimension = unitComponentDimensionByUnitDefinitionMap.get(unitDefinition);
-        unitComponentDimension.put(Unit.UNKNOWN_UNIT_NAME, 1.0);
-        unitComponentDimension.put("second", -2.0);
-
-        //
         ComponentUnitsDimensionParser componentUnitsDimensionParser = new ComponentUnitsDimensionParser();
         componentUnitsDimensionParser.setStrictParsing(false);
 

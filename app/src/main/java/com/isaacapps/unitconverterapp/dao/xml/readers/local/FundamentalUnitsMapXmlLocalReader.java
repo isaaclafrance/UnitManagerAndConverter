@@ -100,7 +100,6 @@ public class FundamentalUnitsMapXmlLocalReader extends AsyncXmlReader<Fundamenta
         String unitName = readText(parser).toLowerCase();
         parser.require(XmlPullParser.END_TAG, null, "unit");
         return unitName;
-
     }
 
     private String readFundamentalDimension(XmlPullParser parser) throws XmlPullParserException, IOException {

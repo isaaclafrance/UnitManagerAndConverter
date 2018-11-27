@@ -29,7 +29,7 @@ public class MixedFractionToDecimalFormatter implements IFormatter {
 
         Matcher mixedInputMatcher = MIXED_PATTERN.matcher(mixedInput);
         while(mixedInputMatcher.find())
-            formattedMixedInput = mixedInput.replaceAll(mixedInputMatcher.group(), convertMixedNumberToDecimal(mixedInputMatcher.group()));
+            formattedMixedInput = mixedInput.replace(mixedInputMatcher.group(), convertMixedNumberToDecimal(mixedInputMatcher.group()));
 
         return formattedMixedInput;
     }

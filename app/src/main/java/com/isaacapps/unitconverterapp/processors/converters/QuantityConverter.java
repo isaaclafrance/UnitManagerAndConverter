@@ -67,19 +67,20 @@ public class QuantityConverter {
             , Double valueOfBasisUnit, List<Unit> sortedTargetUnits, boolean ensureValueOfLargestUnitIsLargerThanOne) {
 
         double[] conversionCoeffs = UnitConverter.calculateConversionCoeffsToTargetUnit(valueOfBasisUnit, basisUnit, sortedTargetUnits.get(0));
-        List<Double> targetValues = new ArrayList<>(sortedTargetUnits.size());
+        List<Double> targetValues = new ArrayList(Collections.nCopies(sortedTargetUnits.size(), 0.0));
 
         double conversionValue = valueOfBasisUnit * conversionCoeffs[0] + conversionCoeffs[1];
-        if(!ensureValueOfLargestUnitIsLargerThanOne||conversionValue>0)
-            targetValues.add(conversionValue);
+        if( !ensureValueOfLargestUnitIsLargerThanOne || (conversionValue > 1 || sortedTargetUnits.size() == 1) )
+            targetValues.set(0, conversionValue);
 
         for (int i = 1; i < sortedTargetUnits.size(); i++) {
-            double cascadedRemainder = targetValues.get(i - 1) == 0.0 ? valueOfBasisUnit : targetValues.get(i - 1) - Math.floor(targetValues.get(i - 1));
-            conversionCoeffs = UnitConverter.calculateConversionCoeffsToTargetUnit(cascadedRemainder, sortedTargetUnits.get(i - 1), sortedTargetUnits.get(i));
+            boolean previousSkipped = targetValues.get(i - 1) == 0.0 && ensureValueOfLargestUnitIsLargerThanOne;
+            double cascadedRemainder = previousSkipped ? valueOfBasisUnit : (targetValues.get(i - 1) - (targetValues.get(i - 1) > 1 ? Math.floor(targetValues.get(i - 1)) : targetValues.get(i - 1)) );
+            conversionCoeffs = UnitConverter.calculateConversionCoeffsToTargetUnit(cascadedRemainder, previousSkipped ? basisUnit : sortedTargetUnits.get(i - 1), sortedTargetUnits.get(i));
 
             conversionValue = cascadedRemainder * conversionCoeffs[0] + conversionCoeffs[1];
-            if(!ensureValueOfLargestUnitIsLargerThanOne || conversionValue > 0)
-                targetValues.add(conversionValue);
+            if(!ensureValueOfLargestUnitIsLargerThanOne || (conversionValue > 1 || i == sortedTargetUnits.size() -1) )
+                targetValues.set(i, conversionValue);
         }
 
         return targetValues;

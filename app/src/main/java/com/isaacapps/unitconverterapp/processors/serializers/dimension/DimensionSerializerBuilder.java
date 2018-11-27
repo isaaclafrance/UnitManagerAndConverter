@@ -17,26 +17,34 @@ public class DimensionSerializerBuilder<T> implements ISerializer<Map<T, Double>
 
     private ISerializer<T> dimensionItemSerializer;
 
-    private String multiplicationSymbolForStringGeneration, divisionSymbolForStringGeneration, exponentSymbolForStringGeneration;
-    private boolean includeParentheses;
+    private String multiplicationSymbol, divisionSymbol, exponentSymbol;
+    private boolean includeParenthesesInExponentials;
 
     private IFormatter dimensionKeyFormatter;
     private IFormatter dimensionValueFormatter;
 
-    private boolean replaceNegativeExponentWithDivision;
-    private boolean orderDimensionEntries;
+    public enum OPERATOR_DISPLAY_CONFIGURATION {
+        /**
+         * Determines whether to represent each instance of negative exponents with a division operator and a positive exponent.
+         * ie. a^2 * c^-1 instead becomes a^2 / c.
+         */
+        DIVISION_PER_NEGATIVE_EXPONENT
+        /**
+         * Determines whether to wrap all negative exponential items under one division.
+         */
+        , SINGLE_DIVISION
+        /**
+         * Negative exponents are maintained.
+         */
+        , NO_DIVISION
+    }
+    private OPERATOR_DISPLAY_CONFIGURATION operatorDisplayConfiguration;
 
     private Comparator<Map.Entry<T, Double>> dimensionEntrySetComparator;
 
     ///
     public DimensionSerializerBuilder(){
-        //Orders dimension entries in decreasing order of exponent values
-        dimensionEntrySetComparator = new Comparator<Map.Entry<T, Double>>() {
-            @Override
-            public int compare(Map.Entry<T, Double> lhsDimensionEntry, Map.Entry<T, Double> rhsDimensionEntry) {
-                return -1 * Double.compare(lhsDimensionEntry.getValue(), rhsDimensionEntry.getValue());
-            }
-        };
+        operatorDisplayConfiguration = OPERATOR_DISPLAY_CONFIGURATION.NO_DIVISION;
     }
 
     ///
@@ -49,7 +57,7 @@ public class DimensionSerializerBuilder<T> implements ISerializer<Map<T, Double>
         StringBuilder dimensionStringBuilder = new StringBuilder();
 
         Set<Map.Entry<T, Double>> dimensionMapEntrySet;
-        if(orderDimensionEntries){
+        if(dimensionEntrySetComparator != null){
             dimensionMapEntrySet = new TreeSet<>(dimensionEntrySetComparator);
             dimensionMapEntrySet.addAll(dimensionMap.entrySet());
         }
@@ -57,29 +65,51 @@ public class DimensionSerializerBuilder<T> implements ISerializer<Map<T, Double>
             dimensionMapEntrySet = dimensionMap.entrySet();
         }
 
+        boolean hasDivision = false;
+        boolean hasMultiplication = false;
+        boolean someDimensionItemsHavePositiveExponents = false;
         for (Map.Entry<T, Double> dimensionEntry : dimensionMapEntrySet) {
-            if(dimensionStringBuilder.length() > 0 ) {
-                String  operatorSymbol = ( replaceNegativeExponentWithDivision && dimensionEntry.getValue() < 0 ) ? divisionSymbolForStringGeneration: multiplicationSymbolForStringGeneration;
-                dimensionStringBuilder.append(" ").append(operatorSymbol.trim()).append(" ");
+            //
+            if( dimensionEntry.getValue() < 0 && (operatorDisplayConfiguration == OPERATOR_DISPLAY_CONFIGURATION.DIVISION_PER_NEGATIVE_EXPONENT || operatorDisplayConfiguration == OPERATOR_DISPLAY_CONFIGURATION.SINGLE_DIVISION && !hasDivision)){
+                dimensionStringBuilder.append(divisionSymbol).append(" ");
+                hasDivision = true;
             }
-            else if(replaceNegativeExponentWithDivision && dimensionEntry.getValue() < 0 && dimensionMapEntrySet.size() == 1){
-                dimensionStringBuilder.append("1 ").append(divisionSymbolForStringGeneration).append(" "); // if only dimension entry, then show as reciprocal. ie. 1/x
+            else if(dimensionStringBuilder.length() > 0 && !( dimensionEntry.getValue() < 0 && operatorDisplayConfiguration == OPERATOR_DISPLAY_CONFIGURATION.DIVISION_PER_NEGATIVE_EXPONENT )) {
+                dimensionStringBuilder.append(multiplicationSymbol).append(" ");
+                hasMultiplication = true;
             }
 
+            //
             String dimensionEntryKeyName = dimensionKeyFormatter.format(dimensionItemSerializer.serialize(dimensionEntry.getKey()));
 
-            if (dimensionEntry.getValue() == 1 || ( replaceNegativeExponentWithDivision && dimensionEntry.getValue() == -1 )) {
+            if (dimensionEntry.getValue() == 1 || ( operatorDisplayConfiguration == OPERATOR_DISPLAY_CONFIGURATION.DIVISION_PER_NEGATIVE_EXPONENT && dimensionEntry.getValue() == -1 )) {
                 dimensionStringBuilder.append(dimensionEntryKeyName);
             } else if (Math.abs(dimensionEntry.getValue()) > 0) { //Ignore calculated dimensions raised to zero in string representation.
-                if(includeParentheses) {
+                if(includeParenthesesInExponentials) {
                     dimensionStringBuilder.append("(").append(dimensionEntryKeyName).append(")");
                 }else {
                     dimensionStringBuilder.append(dimensionEntryKeyName);
                 }
 
-                Double exponentValue = (replaceNegativeExponentWithDivision && dimensionEntry.getValue() < 0 )? Math.abs(dimensionEntry.getValue()):dimensionEntry.getValue();
-                dimensionStringBuilder.append(exponentSymbolForStringGeneration).append(dimensionValueFormatter.format(exponentValue.toString()));
+                boolean exponentShouldBePositive = operatorDisplayConfiguration == OPERATOR_DISPLAY_CONFIGURATION.SINGLE_DIVISION || operatorDisplayConfiguration == OPERATOR_DISPLAY_CONFIGURATION.DIVISION_PER_NEGATIVE_EXPONENT && dimensionEntry.getValue() < 0;
+                Double exponentValue = exponentShouldBePositive ? Math.abs(dimensionEntry.getValue()):dimensionEntry.getValue();
+                dimensionStringBuilder.append(exponentSymbol).append(dimensionValueFormatter.format(exponentValue.toString()));
             }
+
+            someDimensionItemsHavePositiveExponents = someDimensionItemsHavePositiveExponents || dimensionEntry.getValue() > 0;
+        }
+
+        //For reciprocal proper grouping purposes, parenthesis will be included in this case regardless if setIncludeParenthesesInExponentials was specified as true.
+        if(dimensionMapEntrySet.size() != 1 && operatorDisplayConfiguration == OPERATOR_DISPLAY_CONFIGURATION.SINGLE_DIVISION  && hasDivision) {
+            int index = dimensionStringBuilder.indexOf(divisionSymbol);
+            dimensionStringBuilder.insert(index+1, "(");
+            dimensionStringBuilder.append(" )");
+        }
+
+        //If any dimension items of negative exponents, then show as reciprocal. ie. 1/x or 1/(x * y * z)
+        if((operatorDisplayConfiguration == OPERATOR_DISPLAY_CONFIGURATION.SINGLE_DIVISION && !someDimensionItemsHavePositiveExponents)
+                || (operatorDisplayConfiguration == OPERATOR_DISPLAY_CONFIGURATION.DIVISION_PER_NEGATIVE_EXPONENT && (!hasMultiplication && dimensionStringBuilder.indexOf(divisionSymbol) == 0))){
+            dimensionStringBuilder.insert(0, "1");
         }
 
         return dimensionStringBuilder.toString();
@@ -101,13 +131,13 @@ public class DimensionSerializerBuilder<T> implements ISerializer<Map<T, Double>
     public List<String> determineMissingOperationComponentsNeededForStringGeneration() {
         List<String> missingStringGenerationComponents = new ArrayList<>();
 
-        if (multiplicationSymbolForStringGeneration == null || multiplicationSymbolForStringGeneration.isEmpty())
+        if (multiplicationSymbol == null || multiplicationSymbol.isEmpty())
             missingStringGenerationComponents.add("{ Multiplication symbol }");
 
-        if (divisionSymbolForStringGeneration == null || divisionSymbolForStringGeneration.isEmpty())
+        if (operatorDisplayConfiguration != OPERATOR_DISPLAY_CONFIGURATION.NO_DIVISION && ( divisionSymbol == null || divisionSymbol.isEmpty()))
             missingStringGenerationComponents.add("{ Division symbol }");
 
-        if (exponentSymbolForStringGeneration == null || exponentSymbolForStringGeneration.isEmpty())
+        if (exponentSymbol == null || exponentSymbol.isEmpty())
             missingStringGenerationComponents.add("{ Exponent symbol }");
 
         return missingStringGenerationComponents;
@@ -135,24 +165,27 @@ public class DimensionSerializerBuilder<T> implements ISerializer<Map<T, Double>
     }
 
     ///
-    public DimensionSerializerBuilder<T> setMultiplicationSymbolForStringGeneration(String multiplicationSymbol) {
-        this.multiplicationSymbolForStringGeneration = multiplicationSymbol;
+    public DimensionSerializerBuilder<T> setMultiplicationSymbol(String multiplicationSymbol) {
+        this.multiplicationSymbol = multiplicationSymbol.trim();
         return this;
     }
 
-    public DimensionSerializerBuilder<T> setDivisionSymbolForStringGeneration(String divisionSymbol) {
-        this.divisionSymbolForStringGeneration = divisionSymbol;
+    public DimensionSerializerBuilder<T> setDivisionSymbol(String divisionSymbol) {
+        this.divisionSymbol = divisionSymbol.trim();
         return this;
     }
 
-    public DimensionSerializerBuilder<T> setExponentSymbolForStringGeneration(String exponentSymbol) {
-        this.exponentSymbolForStringGeneration = exponentSymbol;
+    public DimensionSerializerBuilder<T> setExponentSymbol(String exponentSymbol) {
+        this.exponentSymbol = exponentSymbol;
         return this;
     }
 
-    public DimensionSerializerBuilder<T> includeParenthesesInStringGeneration(boolean includeParentheses) {
-        this.includeParentheses = includeParentheses;
+    public DimensionSerializerBuilder<T> setIncludeParenthesesInExponentials(boolean includeParentheses) {
+        this.includeParenthesesInExponentials = includeParentheses;
         return this;
+    }
+    public boolean isIncludeParenthesesInExponentials(){
+        return includeParenthesesInExponentials;
     }
 
     ///
@@ -169,19 +202,22 @@ public class DimensionSerializerBuilder<T> implements ISerializer<Map<T, Double>
     }
 
     /**
-     * Determines whether to order appearance of dimension items based on decreasing exponential power.
-     * ie. a^3 * b^2 * c
+     * Determines how to order the appearance of dimension items
      */
-    public void setOrderDimensionEntries(boolean state){
-        this.orderDimensionEntries = state;
+    public DimensionSerializerBuilder<T> setDimensionEntrySetComparator(Comparator<Map.Entry<T, Double>> dimensionEntrySetComparator) {
+        this.dimensionEntrySetComparator = dimensionEntrySetComparator;
+        return this;
+    }
+    public Comparator<Map.Entry<T, Double>> getDimensionEntrySetComparator(){
+        return dimensionEntrySetComparator;
     }
 
-    /**
-     * Determines whether to represent negative exponents with a division operator and a positive exponent.
-     * ie. a^2 * c^-1 instead becomes a^2 / c.
-     */
-    public void setReplaceNegativeExponentWithDivision(boolean state){
-        this.replaceNegativeExponentWithDivision = state;
+    public DimensionSerializerBuilder<T> setOperatorDisplayConfiguration(OPERATOR_DISPLAY_CONFIGURATION operatorDisplayConfiguration){
+        this.operatorDisplayConfiguration = operatorDisplayConfiguration;
+        return this;
+    }
+    public OPERATOR_DISPLAY_CONFIGURATION getOperatorDisplayConfiguration(){
+        return operatorDisplayConfiguration;
     }
 
     public void setLocale(Locale locale) {

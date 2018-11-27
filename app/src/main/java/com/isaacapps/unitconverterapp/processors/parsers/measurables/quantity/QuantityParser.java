@@ -27,13 +27,12 @@ public class QuantityParser implements IParser<Quantity>{
         setLocale(locale);
     }
 
-    ///
-
     /**
-     * Parses text with quantity groupings into Quantity objects. A quantity grouping can be formatted in two mutually exclusive ways.
+     * Parses text with quantity groupings into a Quantity object. A quantity grouping can be formatted in two mutually exclusive ways.
      * One way to format is in pairs "{1 meter} {1 inch}" or "{meter} {inch}" where (one is assumed as value).
      * Another way to format is serially "{1}{1}{meter}{inches}".
      * The provided text can not have a mix of serial and paired quantity grouping format types, otherwise an invalid quantity will be returned.
+     * The unit name component of the groupings can be simple or a complex dimension combination of other unit names.
      */
     @Override
     public Quantity parse(String quantityGroupingsText){

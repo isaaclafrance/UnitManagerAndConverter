@@ -74,7 +74,7 @@ public class UnitsContentMainRetriever {
         if (pluralTextParser.hasPossiblePlural(wellFormattedUnitName, true)) {
             String singularizedUnitName = unitsDataModel.getUnitsContentDeterminer().determineSingularOfUnitName(wellFormattedUnitName);
             if(!singularizedUnitName.equalsIgnoreCase(wellFormattedUnitName))
-                return getUnit(unitsDataModel.getUnitsContentDeterminer().determineSingularOfUnitName(wellFormattedUnitName));
+                return getUnit(singularizedUnitName);
         }
 
         if(!createMissingComplexValidUnits)
@@ -84,9 +84,9 @@ public class UnitsContentMainRetriever {
 
         //Determine if the name has any prefix and a valid unit name part.
         if (!hasComplexDimension) {
-            String[] prefixMatch = unitsDataModel.getUnitManagerContext().getPrefixesDataModel().findPrefixMatch(unformattedUnitName, true);
+            String[] prefixMatch = unitsDataModel.getUnitManagerContext().getPrefixesDataModel().findPrefixPairMatch(unformattedUnitName, true);
             if(prefixMatch.length != 0)
-                return createNewPrefixedUnit(prefixMatch, wellFormattedUnitName);
+                return createNewPrefixedUnit(prefixMatch);
             else
                 return getUnknownUnit();
         }
@@ -121,13 +121,10 @@ public class UnitsContentMainRetriever {
      * Constructs a new prefixed unit to be added to a repository
      * so that it will be immediately recognizable and retrieved the next time such a unit is required.
      */
-    private Unit createNewPrefixedUnit(String[] prefixMatch, String wellFormattedUnitName){
+    private Unit createNewPrefixedUnit(String[] prefixMatch){
         String prefixFullName = prefixMatch[0];
         String prefixAbbreviation = prefixMatch[1];
-
-        String prefixlessUnitName = wellFormattedUnitName.contains(prefixFullName)
-                ? wellFormattedUnitName.replace(prefixFullName, "")
-                : wellFormattedUnitName.replace(prefixAbbreviation, "");
+        String prefixlessUnitName = prefixMatch[2];
 
         double prefixValue = unitsDataModel.getUnitManagerContext().getPrefixesDataModel().getPrefixValue(prefixAbbreviation);
 
@@ -163,11 +160,9 @@ public class UnitsContentMainRetriever {
     public Collection<Unit> getCoreUnits() {
         return unitsDataModel.getRepositoryWithDualKeyNCategory().getItemsByCategory(UnitsContentDeterminer.DATA_MODEL_CATEGORY.CORE);
     }
-
     public Collection<Unit> getDynamicUnits() {
         return unitsDataModel.getRepositoryWithDualKeyNCategory().getItemsByCategory(UnitsContentDeterminer.DATA_MODEL_CATEGORY.DYNAMIC);
     }
-
     public Collection<Unit> getBaseUnits() {
         return unitsDataModel.getRepositoryWithDualKeyNCategory().getItemsByCategory(UnitsContentDeterminer.DATA_MODEL_CATEGORY.BASE);
     }
@@ -175,11 +170,9 @@ public class UnitsContentMainRetriever {
     public Collection<Unit> getAllUnits() {
         return unitsDataModel.getRepositoryWithDualKeyNCategory().getAllItems();
     }
-
     public Collection<String> getAllUnitFullNames(){
         return unitsDataModel.getRepositoryWithDualKeyNCategory().getAllKey1s();
     }
-
     public Collection<String> getAllUnitAbbreviatedNames(){
         return unitsDataModel.getRepositoryWithDualKeyNCategory().getAllKey2s();
     }

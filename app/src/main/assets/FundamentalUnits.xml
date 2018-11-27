@@ -38,7 +38,11 @@
 	        <dimension>
 	            <type>ANGLE</type>
 	            <unit>radian</unit>
-	        </dimension>                             
+	        </dimension>
+			<dimension>
+				<type>NUMBER</type>
+				<unit>1</unit>
+			</dimension>
         </dimensions>
     </unitSystem>
 </main>

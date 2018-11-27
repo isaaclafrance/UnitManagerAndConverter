@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <TextView xmlns:android="http://schemas.android.com/apk/res/android"
-	android:id = "@+id/conversion_faves_list"
+	android:id = "@+id/conversion_faves_category_header"
 	android:textSize="12sp"
     android:padding="2.55dp"
     android:textColor="@android:color/black"    

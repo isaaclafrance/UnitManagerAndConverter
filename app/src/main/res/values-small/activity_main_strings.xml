@@ -15,5 +15,7 @@
     <string name="preConversionValue_text">###</string>
 
     <string name="convertButton_text">CONVERT</string>
-		
+
+    <string name="loaded_online_units_pref_key">loaded online units pref key</string>
+
 </resources>

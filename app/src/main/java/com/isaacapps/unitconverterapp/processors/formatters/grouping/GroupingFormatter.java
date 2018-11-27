@@ -34,40 +34,40 @@ public class GroupingFormatter implements IFormatter {
 
         groupingBraceSpacingPattern = Pattern.compile(String.format("(?<=%1$s|%2$s)\\s+|\\s+(?=%1$s|%2$s)"
                 , quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()
-                , quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol()));
+                , quantityGroupingDefiner.getRegexEscapedGroupClosingSymbol()));
 
         missingInternalStartBracePattern = Pattern.compile(String.format("(?!\\A)%2$s(?=[^%1$s]+%2$s)"
                 , quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()
-                , quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol()));
+                , quantityGroupingDefiner.getRegexEscapedGroupClosingSymbol()));
 
         missingInternalEndBracePattern = Pattern.compile(String.format("(?<!\\A|%1$s|%2$s)%1$s(?=[^%2$s]+%2$s)"
                 , quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()
-                , quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol()));
+                , quantityGroupingDefiner.getRegexEscapedGroupClosingSymbol()));
 
         missingFinalEndBracePattern = Pattern.compile(String.format("(?<![%s%s])\\Z"
                 , quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()
-                , quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol()));
+                , quantityGroupingDefiner.getRegexEscapedGroupClosingSymbol()));
 
         missingBeginningStartBracePattern = Pattern.compile(String.format("\\A(?=[^%s%s])"
                 , quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()
-                , quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol()));
+                , quantityGroupingDefiner.getRegexEscapedGroupClosingSymbol()));
 
         extraStartBracePattern = Pattern.compile(String.format("(%s){2,}"
                 , quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()));
 
         extraEndBracePattern = Pattern.compile(String.format("(%s){2,}"
-                , quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol()));
+                , quantityGroupingDefiner.getRegexEscapedGroupClosingSymbol()));
 
         endBraceAtBeginningPattern = Pattern.compile(String.format("\\A%2$s\\s*%1$s"
                 , quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()
-                , quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol()));
+                , quantityGroupingDefiner.getRegexEscapedGroupClosingSymbol()));
 
         startingBraceAtEndPattern = Pattern.compile(String.format("%s\\Z"
                 , quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()));
 
         edgecasePattern = Pattern.compile(String.format("(?<=%2$s)%1$s(?=[^%1$s%2$s]+%1$s)"
                 , quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()
-                , quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol()));
+                , quantityGroupingDefiner.getRegexEscapedGroupClosingSymbol()));
     }
 
     /**
@@ -99,7 +99,7 @@ public class GroupingFormatter implements IFormatter {
         if (currentGroupCount > targetGroupCount) {
             //remove extra groupings starting at the beginning
             while (calculateGroupingCount(adjustedGroupingTextBuilder.toString()) != targetGroupCount)
-                adjustedGroupingTextBuilder.replace(adjustedGroupingTextBuilder.indexOf(quantityGroupingDefiner.getGroupOpeningSymbol()), adjustedGroupingTextBuilder.indexOf(quantityGroupingDefiner.getGroupClosingSymbol()), "");
+                adjustedGroupingTextBuilder.replace(adjustedGroupingTextBuilder.indexOf(quantityGroupingDefiner.getGroupOpeningSymbol()), adjustedGroupingTextBuilder.indexOf(quantityGroupingDefiner.getGroupClosingSymbol())+1, "");
         } else if (currentGroupCount < targetGroupCount) {
             //Add empty groupings to make up the difference in count
             adjustedGroupingTextBuilder.append(new String(new char[targetGroupCount - currentGroupCount]).replaceAll("\0", quantityGroupingDefiner.getGroupOpeningSymbol()+quantityGroupingDefiner.getGroupClosingSymbol()));
@@ -112,7 +112,7 @@ public class GroupingFormatter implements IFormatter {
         String groupingWithDefaultReplacementText = String.format("%s%s%s"
                 ,quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()
                 , defaultTextInReplacementGrouping
-                , quantityGroupingDefiner.getRegexEscapedGroupClosingingSymbol());
+                , quantityGroupingDefiner.getRegexEscapedGroupClosingSymbol());
 
         return textWithEmptyGroupings.replaceAll(quantityGroupingDefiner.getEmptyGroupingPattern().pattern()
                 , groupingWithDefaultReplacementText);
@@ -121,7 +121,7 @@ public class GroupingFormatter implements IFormatter {
     ///
 
     /**
-     * Recursively tries to format grouping since a non terminal transformation may disrupt an already fixed formatting.
+     * For certain transformations, recursively tries to format grouping since a non terminal transformation may disrupt an already fixed formatting.
      * There is probably a more efficient graph theory algorithmic or context sensitive grammar approach to this.
      * Strict regular expression restrictions that lookbacks (unlike lookaheads) have fixed lengths caused some obstacles and limitations in implementation
      */

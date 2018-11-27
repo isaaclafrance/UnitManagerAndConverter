@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Responsible for assembling the structural components and valid content neeeded to construct a well formed unit manager
+ * Responsible for assembling the structural components and valid content needed to construct a well formed unit manager
  */
 public class UnitManagerBuilder {
     private Locale locale;
@@ -403,7 +403,7 @@ public class UnitManagerBuilder {
     ///
     public boolean areMinComponentsForCreationAvailable() {
         //Determines if the minimum needed components are available to create an adequately functional unit manager.
-        return componentContentStates[0] && componentContentStates[2] && componentContentStates[4] && someFundamentalUnitsAreImplemented();
+        return componentContentStates[0] && componentContentStates[1] && componentContentStates[2] && componentContentStates[4] && someFundamentalUnitsAreImplemented();
     }
 
     private boolean someFundamentalUnitsAreImplemented() {

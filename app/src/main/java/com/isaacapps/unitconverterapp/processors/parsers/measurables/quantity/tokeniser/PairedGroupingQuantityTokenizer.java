@@ -5,14 +5,15 @@ import com.isaacapps.unitconverterapp.processors.parsers.ParsingException;
 import com.isaacapps.unitconverterapp.processors.parsers.measurables.quantity.QuantityGroupingDefiner;
 import com.isaacapps.unitconverterapp.processors.parsers.measurables.unit.UnitParser;
 
+import com.florianingerl.util.regex.Pattern;
+import com.florianingerl.util.regex.Matcher;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static com.isaacapps.unitconverterapp.utilities.RegExUtility.SIGNED_DOUBLE_VALUE_REGEX_PATTERN;
 
@@ -47,6 +48,7 @@ public class PairedGroupingQuantityTokenizer {
 
     /**
      * Converts a paired value unit name grouping list to map of unit name and value.
+     * The unit name can be simple or a complex dimension combination of other unit names
      * If there are serial groupings ie "{1}{2}{meter}{inch}", then an empty map is returned.
      */
     public Map<String, Double> parsePairedValueUnitNameGroupingsToNameValueMap(String pairedValueUnitNameGroupings) {

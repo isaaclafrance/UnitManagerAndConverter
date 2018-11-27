@@ -224,8 +224,8 @@ public class UnitsContentDeterminer {
 
     /**
      * Attempts to find the first smallest equivalent component unit dimension for provided fundamental unit type dimension
-     * by using a permuatated partitioning and then recomposition method. Short circuits to the first found smallest dimension
-     * and does not attemmpt to find the absolute smallest possible due to possible time complexity implications.
+     * by using a permutated partitioning and then recomposition method. Short circuits to the first found smallest dimension
+     * and does not attempt to find the absolute smallest possible due to possible time complexity implications.
      * @return Smallest component unit dimension unit that meet criteria or otherwise just the provided component unit dimension.
      */
     public Map<String, Double> determineReducedComponentUnitsDimension(Map<String, Double> providedComponentUnitsDimension, String unitSystem) throws SerializingException {
@@ -314,18 +314,17 @@ public class UnitsContentDeterminer {
                 boolean lhsExclusivelyMatchesUnitSystem = lhsUnit.getUnitSystem().equalsIgnoreCase(unitSystem);
                 boolean rhsExclusivelyMatchesUnitSystem = rhsUnit.getUnitSystem().equalsIgnoreCase(unitSystem);
 
-                if(lhsExclusivelyMatchesUnitSystem && rhsExclusivelyMatchesUnitSystem){
+                if (lhsExclusivelyMatchesUnitSystem && rhsExclusivelyMatchesUnitSystem) {
                     boolean lhsDimensionIsComplex = componentUnitsDimensionParser.getDimensionParserBuilder().getDimensionComponentDefiner().hasComplexDimensions(lhsUnit.getName());
                     boolean rhsDimensionIsComplex = componentUnitsDimensionParser.getDimensionParserBuilder().getDimensionComponentDefiner().hasComplexDimensions(rhsUnit.getName());
 
                     int dimensionComplexityComparison = Boolean.compare(lhsDimensionIsComplex, rhsDimensionIsComplex);
 
-                    if(dimensionComplexityComparison != 0)
+                    if (dimensionComplexityComparison != 0)
                         return Double.compare(lhsUnit.getComponentUnitsDimension().size(), rhsUnit.getComponentUnitsDimension().size());
                     else
                         return dimensionComplexityComparison;
-                }
-                else{
+                } else {
                     return Boolean.compare(lhsExclusivelyMatchesUnitSystem, rhsExclusivelyMatchesUnitSystem);
                 }
             }

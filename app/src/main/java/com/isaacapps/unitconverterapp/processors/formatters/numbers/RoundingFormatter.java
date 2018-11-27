@@ -1,22 +1,22 @@
 package com.isaacapps.unitconverterapp.processors.formatters.numbers;
 
+import com.florianingerl.util.regex.Matcher;
 import com.isaacapps.unitconverterapp.processors.formatters.IFormatter;
 
 import java.util.Locale;
-import java.util.regex.Matcher;
 
 import static com.isaacapps.unitconverterapp.utilities.RegExUtility.SIGNED_DOUBLE_VALUE_REGEX_PATTERN;
 
 public class RoundingFormatter implements IFormatter {
     private Locale locale;
-    private int decimalPlaces = 6;
+    private int numOfDecimalPlaces = 6;
 
     public RoundingFormatter(Locale locale) {
         this.locale = locale;
     }
-    public RoundingFormatter(Locale locale, int decimalPlaces){
+    public RoundingFormatter(Locale locale, int numOfDecimalPlaces){
         this(locale);
-        this.decimalPlaces = decimalPlaces;
+        this.numOfDecimalPlaces = numOfDecimalPlaces;
     }
 
     @Override
@@ -25,14 +25,17 @@ public class RoundingFormatter implements IFormatter {
 
         Matcher decimalInputMatcher = SIGNED_DOUBLE_VALUE_REGEX_PATTERN.matcher(number);
         while(decimalInputMatcher.find())
-            formattedNumber = number.replaceAll(decimalInputMatcher.group(), String.format(locale,"%." + decimalPlaces + "f", Double.valueOf(decimalInputMatcher.group())));
+            formattedNumber = number.replace(decimalInputMatcher.group(), String.format(locale,"%." + numOfDecimalPlaces + "f", Double.valueOf(decimalInputMatcher.group())));
 
         return formattedNumber;
     }
 
     ///
-    public void setDecimalPlaces(int numberOfDecimalPlaces) {
-        this.decimalPlaces = numberOfDecimalPlaces;
+    public void setNumOfDecimalPlaces(int numberOfDecimalPlaces) {
+        this.numOfDecimalPlaces = numberOfDecimalPlaces;
+    }
+    public int getNumOfDecimalPlaces(){
+        return numOfDecimalPlaces;
     }
 
     @Override

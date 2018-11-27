@@ -50,12 +50,13 @@ public class Quantity {
 
         quantityAttributesValidator = new QuantityAttributesValidator();
 
-        unitsGroupingCollectionSerializer = new UnitsGroupingCollectionSerializer(locale, new UnitNamesGroupingFormatter(locale, new QuantityGroupingDefiner()));
-        valuesGroupingCollectionSerializer = new ValuesGroupingCollectionSerializer(locale, new ValuesGroupingFormatter(locale, new QuantityGroupingDefiner()));
-        quantitySerializer = new PairedGroupingQuantitySerializer(locale, new GeneralTextFormatter(locale), new RoundingFormatter(locale));
-
-        unitValueMap = new TreeMap<>();
         try {
+            unitsGroupingCollectionSerializer = new UnitsGroupingCollectionSerializer(locale, new UnitNamesGroupingFormatter(locale, new QuantityGroupingDefiner()));
+            valuesGroupingCollectionSerializer = new ValuesGroupingCollectionSerializer(locale, new ValuesGroupingFormatter(locale, new QuantityGroupingDefiner()));
+            quantitySerializer = new PairedGroupingQuantitySerializer(locale, new GeneralTextFormatter(locale), new RoundingFormatter(locale));
+
+            unitValueMap = new TreeMap<>();
+
             setUnit(new Unit(), true);
         } catch (ParsingException e) {
             e.printStackTrace();

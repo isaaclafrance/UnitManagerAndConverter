@@ -44,7 +44,7 @@ public class UnitsClassifierDataModel extends BaseDataModel<String, Collection<S
             for (Collection<String> unitNamesGroup : otherUnitNamesGroups)
                 unitNamesGroup.remove(unit.getName());
 
-            //Removed the other unit groups if they are empty
+            //Remove the other unit groups if they are empty
             for (Collection<String> unitGroupWithRemovedUnitName : otherUnitNamesGroups) {
                 if (unitGroupWithRemovedUnitName.isEmpty())
                     repositoryWithDualKeyNCategory.removeItem(unitGroupWithRemovedUnitName);
@@ -158,7 +158,7 @@ public class UnitsClassifierDataModel extends BaseDataModel<String, Collection<S
      * Indicates whether or not the specified unit category can be found in the specified unit system.
      */
     public boolean containsUnitCategoryInUnitSystem(String unitSystem, String unitCategory, boolean fuzzyMatch) {
-        if(unitSystem.isEmpty() && unitCategory.isEmpty())
+        if(unitSystem.isEmpty() || unitCategory.isEmpty())
             return false;
 
         unitSystem = unitSystem.toLowerCase();

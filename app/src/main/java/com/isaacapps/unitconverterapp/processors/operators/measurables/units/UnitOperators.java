@@ -30,13 +30,14 @@ public class UnitOperators {
                 , retrieveValidUnitManagerContexts(firstUnit, secondUnit));
     }
 
-    ///
     public static Unit exponentiate(Unit baseUnit, Double exponent){
         return retrieveExistingUnitWithComparableDimension(
                 DimensionOperators.exponentiate(baseUnit.getComponentUnitsDimension()
                         , exponent)
                 , retrieveValidUnitManagerContexts(baseUnit));
     }
+
+    ///
 
     /***
      * Retrieves a list of non null units manager context from provided units
@@ -135,25 +136,25 @@ public class UnitOperators {
 
     /**
      * Compares two units base of the magnitude of their conversion coefficients to the same base unit.
-     * Smaller conversion magnitude siginifies a unit is smaller.
+     * Smaller conversion magnitude signifies a unit is smaller.
      * @return -1 if left hand side unit is smaller than right hand side unit, + if vice versa. 0 of units are the same
      * @throws UnitException
      */
     public static int compareTo(Unit lhsUnit, Unit rhsUnit) throws UnitException {
         List<String> requirements = new ArrayList<>();
 
-        if( lhsUnit.getUnitManagerContext() != null && lhsUnit.getUnitManagerContext() == rhsUnit.getUnitManagerContext())
-            requirements.add(String.format("Units (%s, %s) do not have the same unit manager context."));
+        if( lhsUnit.getUnitManagerContext() != null && lhsUnit.getUnitManagerContext() != rhsUnit.getUnitManagerContext())
+            requirements.add(String.format("Units (%s, %s) do not have the same unit manager context.", lhsUnit, rhsUnit));
         if( lhsUnit.getBaseUnit() != rhsUnit.getBaseUnit())
-            requirements.add(String.format("Units (%s, %s) do not have the same base unit."));
-        if(lhsUnit.isUsingBaseConversionExpression() && rhsUnit.isUsingBaseConversionExpression())
-            requirements.add(String.format("At least one of units (%s, %s) is using a base conversion expression."));
+            requirements.add(String.format("Units (%s, %s) do not have the same base unit.", lhsUnit, rhsUnit));
+        if(lhsUnit.isUsingBaseConversionExpression() || rhsUnit.isUsingBaseConversionExpression())
+            requirements.add(String.format("At least one of units (%s, %s) is using a base conversion expression.", lhsUnit, rhsUnit));
 
         UnitException.validateRequiredComponentsCollection(requirements);
 
-        int firstCoeffComparison = Double.compare(lhsUnit.getBaseConversionPolyCoeffs()[0], rhsUnit.getBaseConversionPolyCoeffs()[0]);
+        int firstCoeffComparison = Double.compare(lhsUnit.getBaseConversionPolyCoeffs()[1], rhsUnit.getBaseConversionPolyCoeffs()[1]);
         if(firstCoeffComparison == 0) {
-            int secondCoeffComparison = Double.compare(lhsUnit.getBaseConversionPolyCoeffs()[1], rhsUnit.getBaseConversionPolyCoeffs()[1]);
+            int secondCoeffComparison = Double.compare(lhsUnit.getBaseConversionPolyCoeffs()[0], rhsUnit.getBaseConversionPolyCoeffs()[0]);
             return secondCoeffComparison;
         }
         else {

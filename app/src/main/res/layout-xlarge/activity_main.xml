@@ -75,7 +75,7 @@
             android:ems="10"
             android:fadingEdge="horizontal"
             android:fadingEdgeLength="10dp"
-            android:hint="Format: a, a^#, (prefix-a)^#, (a)^# / (b)^#,  (a)^# * (b)^#, etc"
+            android:hint="Format: a, a^#, prefix-a^#, a^# / b^#,  a^# * b^#, etc"
             android:maxLines="1"
             android:paddingLeft="15dp"
             android:scrollbars="horizontal"
@@ -160,7 +160,8 @@
                 android:layout_weight=".10"
                 android:text="ExpressionToggle"
                 android:textOff="EXP:\nOFF"
-                android:textOn="EXP:\nON" />
+                android:textOn="EXP:\nON"
+                android:visibility="gone" />
 
         </LinearLayout>
 
@@ -218,7 +219,7 @@
             android:ems="10"
             android:fadingEdge="horizontal"
             android:fadingEdgeLength="10dp"
-            android:hint="Format: a, a^#, (prefix-a)^#, (a)^# / (b)^#,  (a)^# * (b)^#, etc"
+            android:hint="Format: a, a^#, prefix-a^#, a^# / b^#,  a^# * b^#, etc"
             android:maxLines="1"
             android:paddingLeft="15dp"
             android:paddingRight="15dp"

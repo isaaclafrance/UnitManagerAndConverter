@@ -18,7 +18,6 @@ import java.net.URL;
 
 public abstract class AsyncXmlReader<S, T> extends AsyncTaskLoader<T> {
 
-    ///
     public AsyncXmlReader(Context context) {
         super(context);
     }

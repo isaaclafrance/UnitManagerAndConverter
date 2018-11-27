@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -79,9 +80,9 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
         rawAbbreviatedNameNonBaseUnitsMap = new HashMap<>();
 
         /*Name match requirements: 1. letters and underscore 2. words can optionally be to the left of the left bracket. 3. Can be a digits optionally followed by a star or carrot symbol with no letter present.
-		 *Exponent match requirements: numeric can only be found to the right of right bracket if there are any in matching group.
-		                               Must be immediately to the right of the star symbol if any exists in order to accommodate dimensionless parsed units
-		 *[period] symbol represents multiplication */
+		 *Exponent match requirement: There is no exponent symbol. exponent number must immediately follow atomic component.
+		 *Multiplication: [period] symbol
+		 *Division: Back slash */
         DimensionComponentDefiner customDimensionComponentDefiner = new DimensionComponentDefiner("(?:(?:\\w*\\[\\w+\\])|[a-zA-Z_']+|(?:\\d+[\\^*]?))");
         customDimensionComponentDefiner
                 .setDivisionSymbols(new String[]{"/"})
@@ -354,8 +355,9 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
         return conversionFactors;
     }
 
-    private void fetchUnitDescription(Unit partiallyConstructedUnit){
-        String searchTerms = String.format("%s %s", partiallyConstructedUnit.getName().replace("_"," "), partiallyConstructedUnit.getCategory());
+    private void fetchWikiUnitDescription(Unit partiallyConstructedUnit){
+        //No absolute guarantee the one will get the right extract. But more specific the search terms lead to high probability fo getting the right result.
+        String searchTerms = String.format("%s %s %s", partiallyConstructedUnit.getName().replace("_"," "), partiallyConstructedUnit.getCategory(), "unit");
         PageExtractsSearchResult pageExtractsSearchResult = mediaWikiWebServicesApiRequester.searchPageExtracts(searchTerms);
 
         PageExtract bestPageExtract = pageExtractsSearchResult.getBestMatchPageExtract();
@@ -397,7 +399,8 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
 
         Map<String, double[]> baseUnitNameNConversionPolyCoeffs = new HashMap<>();
         Map<String, Double> abbreviatedComponentUnitsDimension = new HashMap<>();
-        String unitName = "", unitCategory = "", tagName = "";
+        Set<String> unitNames = new HashSet<>();
+        String unitCategory = "", tagName = "";
 
         String rawUnitAbbreviation = readRawUnitAbbreviation(parser, isBaseUnit);
         String unitSystem = (isBaseUnit) ? "si" : readUnitSystem(parser);
@@ -407,8 +410,8 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
                 continue;
             }
             tagName = parser.getName();
-            if (tagName.equalsIgnoreCase("name") && unitName.isEmpty()) {
-                unitName = readUnitName(parser);
+            if (tagName.equalsIgnoreCase("name")) {
+                unitNames.add(readUnitName(parser));
             } else if (tagName.equalsIgnoreCase("property")) {
                 unitCategory = readUnitCategory(parser);
             } else if (tagName.equalsIgnoreCase("value") && !isBaseUnit) {
@@ -416,7 +419,9 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
                     baseUnitNameNConversionPolyCoeffs = readBaseUnitNConversionPolyCoeffs(parser); //Issues may arise when the the conversion is not a simple conversion factor but is instead a complex function with some specific argument. ex. sqrt, log
                     abbreviatedComponentUnitsDimension = readAbbreviatedComponentUnitsDimension(parser); //Issues can arise when trying to parse constants represented as units in the xml since there are component units with only numbers as unit names instead of alphabets.
                 }
-                catch(Exception e){ }
+                catch(Exception e){
+                    e.printStackTrace();
+                }
 
                 skip(parser); //only attributes where being read which does not automatically advance parser, there it has to be forced.
             } else {
@@ -429,13 +434,17 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
                 || baseUnitNameNConversionPolyCoeffs.size() == 0) && !isBaseUnit) {
             return null;
         } else {
-            String baseUnitName = isBaseUnit?unitName:baseUnitNameNConversionPolyCoeffs.keySet().iterator().next();
+            String mainUnitName = unitNames.iterator().next();
+
+            String baseUnitName = isBaseUnit? mainUnitName:baseUnitNameNConversionPolyCoeffs.keySet().iterator().next();
             Unit standInNamedBaseUnit = new Unit(baseUnitName, Collections.emptySet(), "", "", "", baseUnitName, Collections.emptyMap()
                     , defaultUnit
                     , defaultUnit.getBaseConversionPolyCoeffs(), locale, componentUnitsDimensionSerializer, fundamentalUnitTypesDimensionSerializer, dimensionComponentDefiner);
             standInNamedBaseUnit.setAsBaseUnit();
 
-            Unit createdUnit = new Unit(unitName, new HashSet<>(), unitCategory, rootDescription, unitSystem, rawUnitAbbreviation, abbreviatedComponentUnitsDimension
+            unitNames.remove(mainUnitName);
+
+            Unit createdUnit = new Unit(mainUnitName, unitNames, unitCategory, rootDescription, unitSystem, rawUnitAbbreviation, abbreviatedComponentUnitsDimension
                     , standInNamedBaseUnit
                     , isBaseUnit ? new double[]{1.0, 0.0} : baseUnitNameNConversionPolyCoeffs.values().iterator().next(), locale, componentUnitsDimensionSerializer, fundamentalUnitTypesDimensionSerializer, dimensionComponentDefiner);
 

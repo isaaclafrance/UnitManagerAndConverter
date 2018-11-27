@@ -48,9 +48,9 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
      * @return The provided item if it was successfully added or null otherwise.
      */
     public U addItem(V category, T key1, T key2, U item) {
-        if (!keysMustHaveBijectiveRelation || doKeysMaintainBijection(key1, key2)) //&& (!containsItem(item) || duplicateItemsAreRemoved))
+        if (!keysMustHaveBijectiveRelation || doKeysMaintainBijection(key1, key2))
         {
-            if (duplicateItemsAreRemoved && containsItem(item)) // Make item is not associated any other keys or categories.
+            if (duplicateItemsAreRemoved && containsItem(item)) // Make item not associated any other keys or categories.
                 removeItem(item);
 
             addBidirectionalKeyRelations(key1, key2);
@@ -176,7 +176,7 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
             boolean removeEverything = category == null && key == null && item == null;
 
             //
-            if (key2ToItemByCategoryEntry.getKey() == category || removeEverything) {
+            if (category != null && key2ToItemByCategoryEntry.getKey().equals(category) || removeEverything) {
                 removeAllKeyRelationsForKeys(key2ToItemByCategoryEntry.getValue().keySet());
                 key2ToItemByCategoryIterator.remove();
                 if (!removeEverything) {
@@ -192,7 +192,7 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
                  ; key2ToItemIterator.hasNext(); ) {
                 Entry<T, U> key2ToItemEntry = key2ToItemIterator.next();
 
-                if (item != null && item == key2ToItemEntry.getValue()) {
+                if (item != null && item.equals(key2ToItemEntry.getValue())) {
                     removeAllKeyRelationsForKey(key2ToItemEntry.getKey());
                     key2ToItemIterator.remove();
                     if (duplicateItemsAreRemoved) { //No duplicated items had been added to data structure, therefore no need to search any further
@@ -202,8 +202,9 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
                         continue;
                     }
                 }
-                if (key != null && (key2ToItemEntry.getKey() == key
-                        || getKey2FromKey1(isAliasKey(key) ? getKey1TargetOfAlias(key) : key) == key2ToItemEntry.getKey())) {
+
+                if (key != null && (key2ToItemEntry.getKey().equals(key)
+                        || key2ToItemEntry.getKey().equals(getKey2FromKey1(isAliasKey(key) ? getKey1TargetOfAlias(key) : key)))) {
                     removeAllKeyRelationsForKey(key);
                     key2ToItemIterator.remove();
                     if (keysMustHaveBijectiveRelation)
@@ -211,7 +212,6 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
                     someItemRemoved = true;
                 }
             }
-
             //
             if (emptyCategoriesAreRemoved && key2ToItemByCategoryEntry.getValue().isEmpty())
                 key2ToItemByCategoryIterator.remove();

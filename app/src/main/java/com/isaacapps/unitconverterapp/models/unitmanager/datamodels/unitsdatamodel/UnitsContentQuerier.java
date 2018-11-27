@@ -84,7 +84,14 @@ public class UnitsContentQuerier {
         return unitMatches;
     }
 
-    public Collection<Unit> queryCorrespondingUnitsWithUnitSystem(Unit sourceUnit, String targetUnitSystemString, boolean createMissingComplexUnit) {
+    /**
+     *
+     * @param sourceUnit
+     * @param targetUnitSystemString
+     * @param createMissingValidComplexUnit Indicates whether to created a new unit from the unit combination definition if none of the units in the combination are unknown.
+     * @return
+     */
+    public Collection<Unit> queryCorrespondingUnitsWithUnitSystem(Unit sourceUnit, String targetUnitSystemString, boolean createMissingValidComplexUnit) {
         List<Unit> correspondingUnits = new ArrayList<>();
 
         if (sourceUnit.getUnitManagerContext() != unitsDataModel.getUnitManagerContext())
@@ -113,12 +120,12 @@ public class UnitsContentQuerier {
             return correspondingUnits;
 
         //If still nothing is found, then attempt to constructed a suitable unit by finding replacements with the target unit system for each unit component
-        if (createMissingComplexUnit && (sourceUnit.getType() == FundamentalUnitsDataModel.UNIT_TYPE.DERIVED_MULTI_UNIT || sourceUnit.getType() == FundamentalUnitsDataModel.UNIT_TYPE.DERIVED_SINGLE_UNIT)) {
+        if (createMissingValidComplexUnit && (sourceUnit.getType() == FundamentalUnitsDataModel.UNIT_TYPE.DERIVED_MULTI_UNIT || sourceUnit.getType() == FundamentalUnitsDataModel.UNIT_TYPE.DERIVED_SINGLE_UNIT)) {
 
             Map<String, Double> properComponentUnitDimension = new HashMap<>();
 
             for (Map.Entry<String, Double> componentUnitEntry : sourceUnit.getComponentUnitsDimension().entrySet()) {
-                Iterator<Unit> replacementUnitIterator = queryCorrespondingUnitsWithUnitSystem(unitsDataModel.getUnitsContentMainRetriever().getUnit(componentUnitEntry.getKey(), createMissingComplexUnit)
+                Iterator<Unit> replacementUnitIterator = queryCorrespondingUnitsWithUnitSystem(unitsDataModel.getUnitsContentMainRetriever().getUnit(componentUnitEntry.getKey(), createMissingValidComplexUnit)
                         , targetUnitSystemString, true).iterator();
 
                 if (replacementUnitIterator.hasNext())
@@ -163,7 +170,13 @@ public class UnitsContentQuerier {
             return -preferredLhsSignificance.compareTo(preferredRhsSignificance); //need to take negative to order from greatest to least.
         }
     }
-    public SortedSet<Unit> queryUnitsWithSimilarNames(final String providedName) {
+
+    /**
+     *
+     * @param providedName
+     * @return
+     */
+    public SortedSet<Unit> queryUnitsOrderedBySimilarNames(final String providedName) {
         //TODO: Incorporate the levenshtein distance algorithm?
 
         //Non duplicate data structure since there are instances where full name may be the same as abbreviations.
@@ -178,6 +191,10 @@ public class UnitsContentQuerier {
     }
 
     ///Query for Existence of Content
+
+    /**
+     * Name can match to a unit full name or an abbreviation. Must be a full text match.
+     */
     public boolean containsUnit(String unitName) {
         //Name can match to a unit full name or an abbreviation. Must be a full match.
         return unitsDataModel.getRepositoryWithDualKeyNCategory().containsKey(unitName.toLowerCase().trim());

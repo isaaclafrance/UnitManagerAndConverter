@@ -6,6 +6,7 @@ import com.isaacapps.unitconverterapp.dao.xml.readers.AsyncXmlReader;
 import com.isaacapps.unitconverterapp.models.measurables.unit.Unit;
 import com.isaacapps.unitconverterapp.models.measurables.unit.UnitException;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManagerBuilder;
+import com.isaacapps.unitconverterapp.processors.formatters.IFormatter;
 import com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefiner;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.componentnunit.ComponentUnitsDimensionSerializer;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.fundamentalunit.FundamentalUnitTypesDimensionSerializer;
@@ -14,7 +15,9 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -25,18 +28,28 @@ import java.util.Map;
 ///According to official Google Android documentation, the XmlPullParser that reads one tag at a time is the most efficient way of parsing especially in situations where there are a large number of tags.
 public class EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader extends AsyncXmlReader<List<List<Unit>>, UnitManagerBuilder> {
     private final Locale locale;
-    private Map<String, String> currencyAbbreviationNameMap;
+
+    private Date currentDateTime;
+    private DateFormat dateTimeFormat;
+    private final IFormatter unitNameFormatter;
 
     private final DimensionComponentDefiner dimensionComponentDefiner;
     private final ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer;
     private final FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer;
 
+    private Map<String, String> currencyAbbreviationNameMap;
+
     ///
     public EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader(Context context, Locale locale, ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer
-            , FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer, DimensionComponentDefiner dimensionComponentDefiner) {
+            , FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer, DimensionComponentDefiner dimensionComponentDefiner, IFormatter unitNameFormatter) {
         super(context);
         setCurrencyAbbreviationNameMap();
         this.locale = locale;
+
+        this.currentDateTime = new Date();
+        this.dateTimeFormat = DateFormat.getDateTimeInstance(DateFormat.FULL, DateFormat.FULL, locale);
+        this.unitNameFormatter = unitNameFormatter;
+
         this.dimensionComponentDefiner = dimensionComponentDefiner;
         this.componentUnitsDimensionSerializer = componentUnitsDimensionSerializer;
         this.fundamentalUnitTypesDimensionSerializer = fundamentalUnitTypesDimensionSerializer;
@@ -60,49 +73,45 @@ public class EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader extends AsyncXml
             baseUnit.setCoreUnitState(true);
 
             //Sift through the too many nested cube tags.
-            tagName = parser.getName();
-            if (tagName.equalsIgnoreCase("gesmes:Envelope")) {
-                parser.require(XmlPullParser.START_TAG, null, "gesmes:Envelope");
-                while (parser.next() != XmlPullParser.END_TAG) {
-                    if (parser.getEventType() != XmlPullParser.START_TAG) {
-                        continue;
-                    }
-                    tagName = parser.getName();
-                    if (tagName.equalsIgnoreCase("Cube")) {
-                        parser.require(XmlPullParser.START_TAG, null, "Cube");
-                        while (parser.next() != XmlPullParser.END_TAG) {
-                            if (parser.getEventType() != XmlPullParser.START_TAG) {
-                                continue;
-                            }
-                            tagName = parser.getName();
-                            if (tagName.equalsIgnoreCase("Cube")) {
-                                parser.require(XmlPullParser.START_TAG, null, "Cube");
-
-                                baseUnit.setDescription("Currency updated from European Central Bank at " + readUpdateTime(parser));
-                                while (parser.next() != XmlPullParser.END_TAG) {
-                                    if (parser.getEventType() != XmlPullParser.START_TAG) {
-                                        continue;
-                                    }
-                                    tagName = parser.getName();
-                                    if (tagName.equalsIgnoreCase("Cube")) {
-                                        try {
-                                            Unit constructedUnit = readUnit(parser, baseUnit, unitSystem, unitCategory);
-                                            constructedUnit.setCoreUnitState(true);
-
-                                            unitsMap.put(constructedUnit.getName(), constructedUnit);
-                                        } catch (UnitException e) {
-                                        }
-                                    } else {
-                                        skip(parser);
-                                    }
-                                }
-                            } else {
-                                skip(parser);
-                            }
+            while (parser.next() != XmlPullParser.END_TAG) {
+                if (parser.getEventType() != XmlPullParser.START_TAG) {
+                    continue;
+                }
+                tagName = parser.getName();
+                if (tagName.equalsIgnoreCase("Cube")) {
+                    parser.require(XmlPullParser.START_TAG, null, "Cube");
+                    while (parser.next() != XmlPullParser.END_TAG) {
+                        if (parser.getEventType() != XmlPullParser.START_TAG) {
+                            continue;
                         }
-                    } else {
-                        skip(parser);
+                        tagName = parser.getName();
+                        if (tagName.equalsIgnoreCase("Cube")) {
+                            parser.require(XmlPullParser.START_TAG, null, "Cube");
+
+                            baseUnit.setDescription("Currency retrieved from European Central Bank at " + dateTimeFormat.format(currentDateTime));
+                            while (parser.next() != XmlPullParser.END_TAG) {
+                                if (parser.getEventType() != XmlPullParser.START_TAG) {
+                                    continue;
+                                }
+                                tagName = parser.getName();
+                                if (tagName.equalsIgnoreCase("Cube")) {
+                                    try {
+                                        Unit constructedUnit = readUnit(parser, baseUnit, unitSystem, unitCategory);
+                                        constructedUnit.setCoreUnitState(true);
+
+                                        unitsMap.put(constructedUnit.getName(), constructedUnit);
+                                    } catch (UnitException e) {
+                                    }
+                                } else {
+                                    skip(parser);
+                                }
+                            }
+                        } else {
+                            skip(parser);
+                        }
                     }
+                } else {
+                    skip(parser);
                 }
             }
 
@@ -111,7 +120,9 @@ public class EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader extends AsyncXml
             unitLists.get(0).add(baseUnit);
             unitLists.add(new ArrayList<>(unitsMap.values()));
 
-        } catch (Exception e) { }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         return unitLists;
     }
@@ -120,7 +131,7 @@ public class EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader extends AsyncXml
     private Unit readUnit(XmlPullParser parser, Unit baseUnit, String unitSystem, String unitCategory) throws XmlPullParserException, IOException, UnitException {
         parser.require(XmlPullParser.START_TAG, null, "Cube");
 
-        String unitName = readUnitName(parser);
+        String unitName = unitNameFormatter.format(readUnitName(parser));
         String abbreviation = readAbbreviation(parser);
 
         Map<String, Double> componentUnitsDimension = new HashMap<>();
@@ -141,13 +152,9 @@ public class EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader extends AsyncXml
 
     private String readUnitName(XmlPullParser parser) {
         String abrv = readAbbreviation(parser);
-        String name = currencyAbbreviationNameMap.get(abrv);
+        String name = currencyAbbreviationNameMap.get(abrv.toLowerCase());
 
         return (name == null) ? abrv : name;
-    }
-
-    private String readUpdateTime(XmlPullParser parser) {
-        return readAttribute(parser, "time");
     }
 
     private double[] readBaseConversionPolyCoeffs(XmlPullParser parser) {
@@ -158,8 +165,8 @@ public class EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader extends AsyncXml
     private void setCurrencyAbbreviationNameMap() {
         currencyAbbreviationNameMap = new HashMap<>();
 
-        currencyAbbreviationNameMap.put("usd", "U.S Dollar");
-        currencyAbbreviationNameMap.put("gbp", "U.K. Pound Sterling");
+        currencyAbbreviationNameMap.put("usd", "US Dollar");
+        currencyAbbreviationNameMap.put("gbp", "UK Pound Sterling");
         currencyAbbreviationNameMap.put("cad", "Canadian Dollar");
         currencyAbbreviationNameMap.put("aud", "Australian Dollar");
         currencyAbbreviationNameMap.put("chf", "Swiss Franc");
@@ -196,7 +203,7 @@ public class EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader extends AsyncXml
     public UnitManagerBuilder loadInBackground() {
         List<List<Unit>> currencyUnitsGroup = new ArrayList<>();
         try {
-            currencyUnitsGroup = parseXML(openXmlFile("http://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml", true));
+            currencyUnitsGroup = parseXML(openXmlFile("https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml", true));
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -85,14 +85,7 @@ public class DimensionParserBuilder<T> implements IParser<Map<T, Double>> {
 
         Matcher multiGroupDimensionRegExMatcher = getMultiGroupRegExMatcher(dimensionString);
 
-        /*There is exists an edgecase where a unit definition classified as a single groups is also classified as
-         *  a multigroup by the respective regexes. This edgecase is explicitly when an atomic type
-         *  is bounded by parentheses and raised to an exponent, ie '(meter)^2'.
-         *  Rather than modify and over complicate the multigroup regex to not match this special,
-         *  there will just be a second to make sure that single group regex does not also match the multigroup.
-         */
-        while (multiGroupDimensionRegExMatcher.find()
-                && !getSingleGroupRegExMatcher(multiGroupDimensionRegExMatcher.group()).matches()) {
+        while (multiGroupDimensionRegExMatcher.find()) {
             String multiGroupDimension = multiGroupDimensionRegExMatcher.group();
 
             //
@@ -321,8 +314,8 @@ public class DimensionParserBuilder<T> implements IParser<Map<T, Double>> {
         return this;
     }
     /**
-     * Determines if certain shortcuts are taken for the sake of performance, whihc may have other unwelcome side effects.
-     * For example, regular expression matcher reuse which pose problems in multi threading
+     * Determines if certain shortcuts are taken for the sake of performance, which may have other unwelcome side effects.
+     * For example, regular expression matcher may reuse is not necessarily threadsafe.
      */
     public boolean isOptimized() {
         return isOptimized;

@@ -7,7 +7,6 @@ import com.isaacapps.unitconverterapp.processors.serializers.dimension.BaseDimen
 import java.util.Locale;
 
 public class FundamentalUnitTypesDimensionSerializer extends BaseDimensionSerializer<FundamentalUnitsDataModel.UNIT_TYPE> {
-    private Locale locale;
     private FundamentalUnitTypesDimensionItemSerializer fundamentalUnitTypesDimensionItemSerializer;
 
     public FundamentalUnitTypesDimensionSerializer(Locale locale, FundamentalUnitTypesDimensionItemSerializer fundamentalUnitTypesDimensionItemSerializer) {

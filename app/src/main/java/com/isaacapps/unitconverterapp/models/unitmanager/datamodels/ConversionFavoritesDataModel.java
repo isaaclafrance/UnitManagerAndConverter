@@ -11,8 +11,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class ConversionFavoritesDataModel extends BaseDataModel<String, String, String> {
-    private static final String CATEGORY_DELIMITER = ": ";
-    private static final String CONVERSION_DELIMITER = " --> ";
+    public static final String CATEGORY_DELIMITER = ": ";
+    public static final String CONVERSION_DELIMITER = " --> ";
     private SignificanceRankHashedRepository significanceRankRepository;
 
     ///
@@ -27,7 +27,6 @@ public class ConversionFavoritesDataModel extends BaseDataModel<String, String, 
         String formattedConversion = convertToFormattedConversion(unitCategory, sourceUnitNames, targetUnitNames);
         return repositoryWithDualKeyNCategory.addItem(unitCategory, sourceUnitNames, formattedConversion, targetUnitNames) != null ? formattedConversion : "";
     }
-
     public String addConversion(Quantity sourceQuantity, Quantity targetQuantity) throws SerializingException {
         if (sourceQuantity.getUnitManagerContext() == targetQuantity.getUnitManagerContext()
                 && QuantityOperators.equalsUnitDimensionOf(sourceQuantity, targetQuantity)) {
@@ -35,7 +34,7 @@ public class ConversionFavoritesDataModel extends BaseDataModel<String, String, 
             String formattedConversion= addConversion(sourceQuantity.getLargestUnit().getCategory()
                     , sourceQuantity.getUnitNames(), targetQuantity.getUnitNames());
 
-            //Properly updateContent other conversions based on if they are associated by unit or category
+            //Properly update rank of other conversions based on if they are associated by unit or category
             for (Unit sourceUnit : sourceQuantity.getUnits()) {
                 modifySignificanceRankOfMultipleConversions(sourceUnit, true);
             }
@@ -55,7 +54,6 @@ public class ConversionFavoritesDataModel extends BaseDataModel<String, String, 
         modifySignificanceRankOfMultipleConversions(targetUnit, false);
         return repositoryWithDualKeyNCategory.removeItemByKey(convertToFormattedConversion(sourceUnit, targetUnit));
     }
-
     public boolean removeFormattedConversion(String formattedConversion) {
         String sourceUnitName = getSourceUnitNameFromConversion(formattedConversion);
         String targetUnitName = getTargetUnitNameFromConversion(formattedConversion);
@@ -63,17 +61,20 @@ public class ConversionFavoritesDataModel extends BaseDataModel<String, String, 
 
         if (repositoryWithDualKeyNCategory.removeItemByKey(formattedConversion)) {
             modifySignificanceRankOfMultipleConversions(unitCategory, false);
+
             //Add extra significance decrement to conversion that contains source and target unit.
             for (String favoriteConversion : getFormattedConversionsAssociatedWithCategory(unitCategory)) {
+                System.out.println("------------"+favoriteConversion);
+
                 if (favoriteConversion.contains(sourceUnitName) || favoriteConversion.contains(targetUnitName))
                     significanceRankRepository.modifySignificanceRankOfConversion(favoriteConversion, -1);
             }
+
             return true;
         }
 
         return false;
     }
-
     public boolean removeAllConversionsWithUnit(Unit unit) {
         boolean removed = repositoryWithDualKeyNCategory.removeItemByKey(unit.getName()) //Remove by source unit name
                 || repositoryWithDualKeyNCategory.removeItem(unit.getName()); // Remove by target unit name
@@ -83,7 +84,6 @@ public class ConversionFavoritesDataModel extends BaseDataModel<String, String, 
         }
         return false;
     }
-
     public boolean removedAllConversionWithCategory(String unitCategory) {
         return repositoryWithDualKeyNCategory.removeCategory(unitCategory);
     }
@@ -92,19 +92,15 @@ public class ConversionFavoritesDataModel extends BaseDataModel<String, String, 
     public boolean hasAsASourceUnit(String unitName) {
         return repositoryWithDualKeyNCategory.containsKey(unitName);
     }
-
     public boolean hasAsATargetUnit(String unitName) {
         return repositoryWithDualKeyNCategory.containsItem(unitName);
     }
-
     public boolean hasUnit(String unitName) {
         return hasAsASourceUnit(unitName) || hasAsATargetUnit(unitName);
     }
-
     public boolean hasConversion(String conversion) {
         return repositoryWithDualKeyNCategory.isKey2(conversion);
     }
-
     public boolean hasUnitCategory(String unitCategory) {
         return repositoryWithDualKeyNCategory.containsCategory(unitCategory);
     }
@@ -141,7 +137,6 @@ public class ConversionFavoritesDataModel extends BaseDataModel<String, String, 
 
         return matchingFormattedConversionFavorites;
     }
-
     public Collection<String> getFormattedConversionsAssociatedWithCategory(String category) {
         return new ArrayList<>(repositoryWithDualKeyNCategory.getKey2sByCategory(category));
     }
@@ -154,7 +149,6 @@ public class ConversionFavoritesDataModel extends BaseDataModel<String, String, 
         }
         return formattedConversion.split(CATEGORY_DELIMITER)[1].split(CONVERSION_DELIMITER)[0];
     }
-
     public String getTargetUnitNameFromConversion(String formattedConversion) {
         //Use a quick constant time lookup to find corresponding target unit associated with conversion, otherwsie use string transformations
         if (hasConversion(formattedConversion)) {
@@ -167,9 +161,8 @@ public class ConversionFavoritesDataModel extends BaseDataModel<String, String, 
     private String convertToFormattedConversion(Unit sourceUnit, Unit targetUnit) {
         return convertToFormattedConversion(sourceUnit.getCategory(), sourceUnit.getName(), targetUnit.getName());
     }
-
     private String convertToFormattedConversion(String category, String sourceUnitName, String targetUnitName) {
-        return category.toUpperCase() + CATEGORY_DELIMITER + sourceUnitName + CONVERSION_DELIMITER + targetUnitName;
+        return (category + CATEGORY_DELIMITER + sourceUnitName + CONVERSION_DELIMITER + targetUnitName).toLowerCase();
     }
 
     ///
@@ -191,12 +184,13 @@ public class ConversionFavoritesDataModel extends BaseDataModel<String, String, 
     public Collection<String> getAllFormattedConversions() {
         return repositoryWithDualKeyNCategory.getAllKey2s();
     }
-
     public Collection<String> getAllSourceUnits() {
         return repositoryWithDualKeyNCategory.getAllKey1s();
     }
-
     public Collection<String> getAllTargetUnits() {
         return repositoryWithDualKeyNCategory.getAllItems();
+    }
+    public Collection<String> getAllConversionCategories(){
+        return repositoryWithDualKeyNCategory.getAllAssignedCategories();
     }
 }

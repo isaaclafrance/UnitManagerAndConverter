@@ -4,7 +4,9 @@ import com.isaacapps.unitconverterapp.processors.formatters.numbers.RoundingForm
 import com.isaacapps.unitconverterapp.processors.formatters.text.GeneralTextFormatter;
 import com.isaacapps.unitconverterapp.processors.serializers.ISerializer;
 import com.isaacapps.unitconverterapp.processors.serializers.SerializingException;
+import com.isaacapps.unitconverterapp.processors.serializers.dimension.DimensionSerializerBuilder.OPERATOR_DISPLAY_CONFIGURATION;
 
+import java.util.Comparator;
 import java.util.Locale;
 import java.util.Map;
 
@@ -12,25 +14,33 @@ import static com.isaacapps.unitconverterapp.processors.parsers.dimension.Dimens
 import static com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefiner.DEFAULT_EXPONENT_SYMBOL_GROUPS;
 import static com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefiner.DEFAULT_MULTIPLICATION_SYMBOL_GROUPS;
 
+/**
+ * Provides base pre-configurations upon which higher abstractions of dimension serializers can be built upon.
+ * @param <T> Type of dimension item
+ */
 public class BaseDimensionSerializer<T> implements ISerializer<Map<T, Double>> {
-    protected Locale locale;
-    protected boolean includeParentheses;
     protected DimensionSerializerBuilder<T> dimensionSerializerBuilder;
+    protected Comparator<Map.Entry<T, Double>> dimensionEntrySetComparator;
 
     ///
     public BaseDimensionSerializer(Locale locale) {
-        this.locale = locale;
-
         dimensionSerializerBuilder = new DimensionSerializerBuilder<T>()
-                .setDivisionSymbolForStringGeneration(DEFAULT_DIVISION_SYMBOL_GROUPS[0])
-                .setMultiplicationSymbolForStringGeneration(DEFAULT_MULTIPLICATION_SYMBOL_GROUPS[0])
-                .setExponentSymbolForStringGeneration(DEFAULT_EXPONENT_SYMBOL_GROUPS[0])
+                .setDivisionSymbol(DEFAULT_DIVISION_SYMBOL_GROUPS[0])
+                .setMultiplicationSymbol(DEFAULT_MULTIPLICATION_SYMBOL_GROUPS[0])
+                .setExponentSymbol(DEFAULT_EXPONENT_SYMBOL_GROUPS[0])
                 .setDimensionKeyFormatter(new GeneralTextFormatter(locale))
-                .setDimensionValueFormatter(new RoundingFormatter(locale));
+                .setDimensionValueFormatter(new RoundingFormatter(locale))
+                .setOperatorDisplayConfiguration(OPERATOR_DISPLAY_CONFIGURATION.DIVISION_PER_NEGATIVE_EXPONENT);
 
         dimensionSerializerBuilder.setLocale(locale);
-        dimensionSerializerBuilder.setReplaceNegativeExponentWithDivision(true);
-        dimensionSerializerBuilder.setOrderDimensionEntries(true);
+
+        //Orders dimension entries in decreasing order of exponent values
+        dimensionEntrySetComparator = new Comparator<Map.Entry<T, Double>>() {
+            @Override
+            public int compare(Map.Entry<T, Double> lhsDimensionEntry, Map.Entry<T, Double> rhsDimensionEntry) {
+                return -1 * Double.compare(lhsDimensionEntry.getValue(), rhsDimensionEntry.getValue());
+            }
+        };
     }
     public BaseDimensionSerializer(Locale locale, DimensionSerializerBuilder dimensionSerializerBuilder) {
         this.dimensionSerializerBuilder = dimensionSerializerBuilder;
@@ -38,28 +48,51 @@ public class BaseDimensionSerializer<T> implements ISerializer<Map<T, Double>> {
     }
 
     ///
+
+    /**
+     * Transforms a dimension map into string representations. Orders dimension items based on decreasing exponential power. ie. a^3 * b^2 * c.
+     * @throws SerializingException
+     */
     @Override
     public String serialize(Map<T, Double> dimensionMap) throws SerializingException {
-        return dimensionSerializerBuilder.includeParenthesesInStringGeneration(includeParentheses)
-                .serialize(dimensionMap);
+        return dimensionSerializerBuilder.serialize(dimensionMap);
     }
 
     //
-    public boolean isIncludeParentheses() {
-        return includeParentheses;
+
+    /**
+     * Indicates whether parentheses should be included in exponentials. ie. x^2 * y^3 becomes (x)^2 * (y)^3
+     */
+    public boolean isIncludeParenthesesInExponentials() {
+        return dimensionSerializerBuilder.isIncludeParenthesesInExponentials();
+    }
+    public void setIncludeParenthesesInExponentials(boolean includeParentheses) {
+        dimensionSerializerBuilder.setIncludeParenthesesInExponentials(includeParentheses);
     }
 
-    public void setIncludeParentheses(boolean includeParentheses) {
-        this.includeParentheses = includeParentheses;
+    public OPERATOR_DISPLAY_CONFIGURATION getOperatorDisplayConfiguration(){
+        return dimensionSerializerBuilder.getOperatorDisplayConfiguration();
+    }
+    public void setOperatorDisplayConfiguration(OPERATOR_DISPLAY_CONFIGURATION operatorDisplayConfiguration){
+        dimensionSerializerBuilder.setOperatorDisplayConfiguration(operatorDisplayConfiguration);
+    }
+
+    public void setOrderDimensionItemsByExponentialValue(boolean isOrdered){
+        if(isOrdered)
+            dimensionSerializerBuilder.setDimensionEntrySetComparator(this.dimensionEntrySetComparator);
+        else
+            dimensionSerializerBuilder.setDimensionEntrySetComparator(null);
+    }
+    public boolean isDimensionItemsOrderedByExponentialValue(){
+        return dimensionSerializerBuilder.getDimensionEntrySetComparator() != null;
     }
 
     ///
     public Locale getLocale(){
-        return locale;
+        return dimensionSerializerBuilder.getLocale();
     }
 
     public void setLocale(Locale locale){
-        this.locale = locale;
         dimensionSerializerBuilder.setLocale(locale);
     }
 }

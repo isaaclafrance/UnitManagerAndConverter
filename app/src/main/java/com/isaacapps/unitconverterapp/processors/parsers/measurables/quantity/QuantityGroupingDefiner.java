@@ -1,20 +1,21 @@
 package com.isaacapps.unitconverterapp.processors.parsers.measurables.quantity;
 
+import com.florianingerl.util.regex.Pattern;
+import com.isaacapps.unitconverterapp.processors.parsers.ParsingException;
+import com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefiner;
 import com.isaacapps.unitconverterapp.processors.parsers.measurables.unit.UnitParser;
 import com.isaacapps.unitconverterapp.utilities.RegExUtility;
-
-import java.util.regex.Pattern;
 
 import static com.isaacapps.unitconverterapp.utilities.RegExUtility.SIGNED_DOUBLE_VALUE_REGEX_PATTERN;
 
 public class QuantityGroupingDefiner {
-    public static final String DEFAULT_OPENING_SYMBOL = "{";
-    public static final String DEFAULT_CLOSING_SYMBOL = "}";
+    public static final String DEFAULT_GROUP_OPENING_SYMBOL = "{";
+    public static final String DEFAULT_GROUP_CLOSING_SYMBOL = "}";
 
     private String groupOpeningSymbol;
     private String groupClosingSymbol;
     private String regexEscapedGroupOpeningSymbol;
-    private String regexEscapedGroupClosingingSymbol;
+    private String regexEscapedGroupClosingSymbol;
 
     private Pattern anyGroupingPattern;
     private Pattern singleUnitGroupingPattern, serialUnitsGroupingsPattern;
@@ -22,11 +23,15 @@ public class QuantityGroupingDefiner {
     private Pattern singlePairedValueUnitNameGroupingPattern, pairedValueUnitNameGroupingPattern;
     private Pattern emptyGroupingPattern;
 
-    public QuantityGroupingDefiner(){
-        this(DEFAULT_OPENING_SYMBOL, DEFAULT_CLOSING_SYMBOL);
+    private DimensionComponentDefiner dimensionComponentDefiner;
+
+    public QuantityGroupingDefiner() throws ParsingException {
+        this(new DimensionComponentDefiner(UnitParser.UNIT_NAME_REGEX), DEFAULT_GROUP_OPENING_SYMBOL, DEFAULT_GROUP_CLOSING_SYMBOL);
     }
 
-    public QuantityGroupingDefiner(String groupOpeningSymbol, String groupClosingSymbol){
+    public QuantityGroupingDefiner(DimensionComponentDefiner dimensionComponentDefiner, String groupOpeningSymbol, String groupClosingSymbol){
+        this.dimensionComponentDefiner = dimensionComponentDefiner;
+
         this.groupOpeningSymbol = groupOpeningSymbol;
         this.groupClosingSymbol = groupClosingSymbol;
         compileGroupingIdentificationPatterns();
@@ -35,27 +40,27 @@ public class QuantityGroupingDefiner {
     ///
     private void compileGroupingIdentificationPatterns(){
         regexEscapedGroupOpeningSymbol = RegExUtility.escapeRegexReservedCharacters(groupOpeningSymbol);
-        regexEscapedGroupClosingingSymbol = RegExUtility.escapeRegexReservedCharacters(groupClosingSymbol);
-        anyGroupingPattern = Pattern.compile(String.format("%s.+%s", regexEscapedGroupOpeningSymbol, regexEscapedGroupClosingingSymbol));
-        emptyGroupingPattern = Pattern.compile(String.format("%s\\s*%s", regexEscapedGroupOpeningSymbol, regexEscapedGroupClosingingSymbol));
+        regexEscapedGroupClosingSymbol = RegExUtility.escapeRegexReservedCharacters(groupClosingSymbol);
+        anyGroupingPattern = Pattern.compile(String.format("%s.+%s", regexEscapedGroupOpeningSymbol, regexEscapedGroupClosingSymbol));
+        emptyGroupingPattern = Pattern.compile(String.format("%s\\s*%s", regexEscapedGroupOpeningSymbol, regexEscapedGroupClosingSymbol));
         compileSerialGroupingPatterns();
         compilePairedGroupingPatterns();
     }
     private void compileSerialGroupingPatterns(){
-        singleUnitGroupingPattern = Pattern.compile(String.format("%s[\\s]*%s[\\s]*%s", regexEscapedGroupOpeningSymbol, UnitParser.UNIT_NAME_REGEX, regexEscapedGroupClosingingSymbol));
-        serialUnitsGroupingsPattern = Pattern.compile(String.format("([\\s]*%s[\\s]*)+", singleUnitGroupingPattern.pattern()));
-        singleValueGroupingPattern = Pattern.compile(String.format("%s[\\s]*%s[\\s]*%s", regexEscapedGroupOpeningSymbol, SIGNED_DOUBLE_VALUE_REGEX_PATTERN.pattern(), regexEscapedGroupClosingingSymbol));
-        serialValuesGroupingsPattern = Pattern.compile(String.format("([\\s]*%s[\\s]*)+", singleValueGroupingPattern.pattern()));
+        singleUnitGroupingPattern = Pattern.compile(String.format("%s(?:[\\s]*%s|%s[\\s]*)%s", regexEscapedGroupOpeningSymbol, dimensionComponentDefiner.getMultiGroupRegExPattern(), dimensionComponentDefiner.getSingleGroupRegExPattern(), regexEscapedGroupClosingSymbol));
+        serialUnitsGroupingsPattern = Pattern.compile(String.format("(?:[\\s]*%s[\\s]*)+", singleUnitGroupingPattern.pattern()));
+        singleValueGroupingPattern = Pattern.compile(String.format("%s[\\s]*%s[\\s]*%s", regexEscapedGroupOpeningSymbol, SIGNED_DOUBLE_VALUE_REGEX_PATTERN.pattern(), regexEscapedGroupClosingSymbol));
+        serialValuesGroupingsPattern = Pattern.compile(String.format("(?:[\\s]*%s[\\s]*)+", singleValueGroupingPattern.pattern()));
     }
     private void compilePairedGroupingPatterns(){
-        singlePairedValueUnitNameGroupingPattern = Pattern.compile(String.format("%s[\\s]*%s[\\s]+%s[\\s]*%s", regexEscapedGroupOpeningSymbol, SIGNED_DOUBLE_VALUE_REGEX_PATTERN.pattern(), UnitParser.UNIT_NAME_REGEX, regexEscapedGroupClosingingSymbol));
+        singlePairedValueUnitNameGroupingPattern = Pattern.compile(String.format("%s[\\s]*%s[\\s]+(?:%s|%s)[\\s]*%s", regexEscapedGroupOpeningSymbol, SIGNED_DOUBLE_VALUE_REGEX_PATTERN.pattern(), dimensionComponentDefiner.getMultiGroupRegExPattern(), dimensionComponentDefiner.getSingleGroupRegExPattern(), regexEscapedGroupClosingSymbol));
         pairedValueUnitNameGroupingPattern = Pattern.compile(String.format("([\\s]*%s[\\s]*)+", singlePairedValueUnitNameGroupingPattern.pattern()));
     }
 
     ///
     public String removeGroupingSymbol(String grouping){
         return grouping.replaceAll(regexEscapedGroupOpeningSymbol, "")
-                .replaceAll(regexEscapedGroupClosingingSymbol, "");
+                .replaceAll(regexEscapedGroupClosingSymbol, "");
     }
 
     ///
@@ -95,9 +100,8 @@ public class QuantityGroupingDefiner {
         this.groupClosingSymbol = groupClosingSymbol;
         compileGroupingIdentificationPatterns();
     }
-
-    public String getRegexEscapedGroupClosingingSymbol() {
-        return regexEscapedGroupClosingingSymbol;
+    public String getRegexEscapedGroupClosingSymbol() {
+        return regexEscapedGroupClosingSymbol;
     }
 
     ///

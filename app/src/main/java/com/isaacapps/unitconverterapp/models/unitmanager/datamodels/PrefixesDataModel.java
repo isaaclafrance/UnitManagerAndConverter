@@ -51,13 +51,17 @@ public class PrefixesDataModel extends BaseDataModel<String, Double, DATA_MODEL_
     }
 
     public void removePrefix(String prefixName) {
-        repositoryWithDualKeyNCategory.removeItemByKey(prefixName);
-        if(prefixName.length() == maxPrefixCharacterLength) {
-            //Calculate what the next second largest prefix is, but could still be the same if there is still a remaining prefix of same size.
-            adjustMaxPrefixCharacterLenghtAfterRemoval();
+        if(getDataModelCategory(prefixName) != DATA_MODEL_CATEGORY.CORE) {
+            repositoryWithDualKeyNCategory.removeItemByKey(prefixName);
+            if (prefixName.length() == maxPrefixCharacterLength) {
+                //Calculate what the next second largest prefix is, but could still be the same if there is still a remaining prefix of same size.
+                adjustMaxPrefixCharacterLenghtAfterRemoval();
+
+            }
         }
     }
 
+    //Ideally this should only be called by the unit manager builder
     public void removeAllCorePrefixes() {
         repositoryWithDualKeyNCategory.removeCategory(DATA_MODEL_CATEGORY.CORE);
         adjustMaxPrefixCharacterLenghtAfterRemoval();
@@ -76,8 +80,8 @@ public class PrefixesDataModel extends BaseDataModel<String, Double, DATA_MODEL_
 
     private void adjustMaxPrefixCharacterLenghtAfterRemoval(){
         //Unlike addition of prefixes, removal requires full recalculation of prefix max character length to account for remaining prefixes.
-        int prefixFullNameMaxLength = Collections.max(getAllPrefixFullNames(), stringCharacterLengthComparator).length();
-        int prefixAbbreviationMaxLength = Collections.max(getAllPrefixAbbreviations(), stringCharacterLengthComparator).length();
+        int prefixFullNameMaxLength = !getAllPrefixFullNames().isEmpty() ? Collections.max(getAllPrefixFullNames(), stringCharacterLengthComparator).length() : 0;
+        int prefixAbbreviationMaxLength = !getAllPrefixAbbreviations().isEmpty() ? Collections.max(getAllPrefixAbbreviations(), stringCharacterLengthComparator).length() : 0;
 
         maxPrefixCharacterLength = Math.max(prefixAbbreviationMaxLength, prefixFullNameMaxLength);
     }
@@ -125,7 +129,7 @@ public class PrefixesDataModel extends BaseDataModel<String, Double, DATA_MODEL_
         }
     }
 
-    private <T, S> T tryGet(T value, T nullCase){
+    private <T> T tryGet(T value, T nullCase){
         if (value != null) {
             return value;
         } else {
@@ -195,8 +199,8 @@ public class PrefixesDataModel extends BaseDataModel<String, Double, DATA_MODEL_
         //Search is naturally faster when the provided prefixed unit name valid and is an abbreviation, in case usually only one or two passes is needed for identification.
         for(int prefixCharLenBoundary = 1; prefixCharLenBoundary <= adjustedMaxPrefixCharacterLength ; prefixCharLenBoundary++){
             String potentialPrefixName = unitNameWithPrefix.substring(0, prefixCharLenBoundary);
-
             String unitNameWithoutPrefix = unitNameWithPrefix.substring(prefixCharLenBoundary);
+
             if(containsPrefixName(potentialPrefixName)
                     && (!constrainBasedOnValidUnitNames || (constrainedOnValidUnitName(unitNameWithoutPrefix) && validatePrefixNUnitNameAreSameKind(potentialPrefixName, unitNameWithoutPrefix))))
             {
@@ -237,7 +241,7 @@ public class PrefixesDataModel extends BaseDataModel<String, Double, DATA_MODEL_
     }
 
     private boolean validatePrefixNUnitNameAreSameKind(String prefix, String unitNameWithoutPrefix){
-        return (repositoryWithDualKeyNCategory.isKey1(prefix) && unitsDataModel.getUnitsContentMainRetriever().getAllUnitFullNames().contains(unitNameWithoutPrefix)
+        return (repositoryWithDualKeyNCategory.isKey1(prefix) && unitsDataModel.getUnitsContentMainRetriever().getAllUnitFullNames().contains(unitNameWithoutPrefix.toLowerCase())
                 || repositoryWithDualKeyNCategory.isKey2(prefix) && unitsDataModel.getUnitsContentMainRetriever().getAllUnitAbbreviatedNames().contains(unitNameWithoutPrefix));
     }
 

@@ -1,6 +1,6 @@
 package com.isaacapps.unitconverterapp.utilities;
 
-import java.util.regex.Pattern;
+import com.florianingerl.util.regex.Pattern;
 
 public class RegExUtility {
 

@@ -5,9 +5,9 @@
     <dimen name="to_unit_label_text_size">55sp</dimen>
     <dimen name="conversion_value_label_text_size">55sp</dimen>
     
-    <dimen name="from_unit_text_size">38sp</dimen>
+    <dimen name="from_unit_text_size">32sp</dimen>
     <dimen name="from_value_text_size">65sp</dimen>
-    <dimen name="to_unit_text_size">38sp</dimen>
+    <dimen name="to_unit_text_size">32sp</dimen>
     <dimen name="conversion_value_text_size">35sp</dimen>    
     
     <dimen name="from_linearlayout_padding">30dp</dimen>
@@ -25,7 +25,6 @@
     <dimen name="to_linearlayout_radius">100dp</dimen>
     <dimen name="from_unit_text_radius">50dp</dimen>
     <dimen name="from_value_text_radius">50dp</dimen>
-    <dimen name="to_unit_text_radius">50dp</dimen>
     
     <dimen name="from_linearlayout_thickness">5dp</dimen>
     <dimen name="to_linearlayout_thickness">5dp</dimen>
