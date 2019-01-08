@@ -16,11 +16,10 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import static com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentDeterminer.DATA_MODEL_CATEGORY;
-import static com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentDeterminer.determineGeneralDataModelCategory;
+import static com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentDeterminer.determineHighestPriorityDataModelCategory;
 
 public class UnitsContentQuerier {
     private UnitsDataModel unitsDataModel;
-    private Comparator<Unit> unitsWithSimilarNameComparator;
 
     public UnitsContentQuerier() {
     }
@@ -30,7 +29,7 @@ public class UnitsContentQuerier {
     public Collection<Unit> queryUnitsByComponentUnitsDimension(Map<String, Double> componentUnitsDimension, boolean overrideToFundamentalUnitTypes) {
         List<Unit> unitsMatched = new ArrayList<>();
 
-        Collection<Unit> limitedSearchableSet = unitsDataModel.getRepositoryWithDualKeyNCategory().getItemsByCategory(DATA_MODEL_CATEGORY.BASE);
+        Collection<Unit> limitedSearchableSet = new ArrayList(unitsDataModel.getRepositoryWithDualKeyNCategory().getItemsByCategory(DATA_MODEL_CATEGORY.BASE));
         limitedSearchableSet.addAll(unitsDataModel.getRepositoryWithDualKeyNCategory().getItemsByCategory(DATA_MODEL_CATEGORY.UNKNOWN));
 
         for (Unit unit : limitedSearchableSet ) {
@@ -45,7 +44,7 @@ public class UnitsContentQuerier {
         return unitsMatched;
     }
 
-    public Collection<Unit> queryUnitsByFundamentalUnitTypeDimension(Map<FundamentalUnitsDataModel.UNIT_TYPE, Double> fundamentalUnitsDimension) {
+    public List<Unit> queryUnitsByFundamentalUnitTypeDimension(Map<FundamentalUnitsDataModel.UNIT_TYPE, Double> fundamentalUnitsDimension) {
         List<Unit> unitsMatched = new ArrayList<>();
 
 		/*Quicker to just access the small list of base units (has a non-unknown fundamental unit in most cases)
@@ -60,11 +59,11 @@ public class UnitsContentQuerier {
         return unitsMatched;
     }
 
-    public Collection<Unit> queryUnitsWithMatchingFundamentalUnitDimension(Unit unit) {
+    public List<Unit> queryUnitsWithMatchingFundamentalUnitDimension(Unit unit) {
         List<Unit> unitsMatched = new ArrayList<>();
 
         if (unit.getUnitManagerContext() == unitsDataModel.getUnitManagerContext()) {
-            if (unit.getBaseUnit().isBaseUnit() && determineGeneralDataModelCategory(unit.getBaseUnit()) != DATA_MODEL_CATEGORY.UNKNOWN) {
+            if (unit.getBaseUnit().isBaseUnit() && determineHighestPriorityDataModelCategory(unit.getBaseUnit()) != DATA_MODEL_CATEGORY.UNKNOWN) {
                 unitsMatched.add(unit.getBaseUnit());
                 unitsMatched.addAll(unit.getBaseUnit().getConversionsToDescendents().keySet());
             } else {
@@ -75,7 +74,7 @@ public class UnitsContentQuerier {
         return unitsMatched;
     }
 
-    public Collection<Unit> queryUnitsByUnitSystem(String unitSystem) {
+    public List<Unit> queryUnitsByUnitSystem(String unitSystem) {
         List<Unit> unitMatches = new ArrayList<>();
 
         for (String unitName : unitsDataModel.getUnitManagerContext().getUnitsClassifierDataModel().getUnitNamesByUnitSystem(unitSystem.trim()))
@@ -84,14 +83,25 @@ public class UnitsContentQuerier {
         return unitMatches;
     }
 
+    public List<Unit> queryUnitsByUnitCategory(String unitCategory) {
+        List<Unit> unitMatches = new ArrayList<>();
+
+        Collection<Collection<String>> unitNameGroupsWithSameCategory = unitsDataModel.getUnitManagerContext().getUnitsClassifierDataModel().getUnitGroupsWithSameCategory(unitCategory);
+        for(Collection<String> unitNameGroup:unitNameGroupsWithSameCategory){
+            for (String unitName : unitNameGroup){
+                unitMatches.add(unitsDataModel.getUnitsContentMainRetriever().getUnit(unitName, false));
+            }
+        }
+
+        return unitMatches;
+    }
+
     /**
-     *
-     * @param sourceUnit
-     * @param targetUnitSystemString
-     * @param createMissingValidComplexUnit Indicates whether to created a new unit from the unit combination definition if none of the units in the combination are unknown.
+     * Queries data models to find units with same dimension but with all component units in the specified target unit system.
+     * @param createMissingValidComplexUnit Indicates whether to attempt creating a new unit with component units in specified target unit system if none exists already.
      * @return
      */
-    public Collection<Unit> queryCorrespondingUnitsWithUnitSystem(Unit sourceUnit, String targetUnitSystemString, boolean createMissingValidComplexUnit) {
+    public List<Unit> queryCorrespondingUnitsWithUnitSystem(Unit sourceUnit, String targetUnitSystemString, boolean createMissingValidComplexUnit) {
         List<Unit> correspondingUnits = new ArrayList<>();
 
         if (sourceUnit.getUnitManagerContext() != unitsDataModel.getUnitManagerContext())
@@ -120,7 +130,7 @@ public class UnitsContentQuerier {
             return correspondingUnits;
 
         //If still nothing is found, then attempt to constructed a suitable unit by finding replacements with the target unit system for each unit component
-        if (createMissingValidComplexUnit && (sourceUnit.getType() == FundamentalUnitsDataModel.UNIT_TYPE.DERIVED_MULTI_UNIT || sourceUnit.getType() == FundamentalUnitsDataModel.UNIT_TYPE.DERIVED_SINGLE_UNIT)) {
+        if (createMissingValidComplexUnit && sourceUnit.getUnitType() == FundamentalUnitsDataModel.UNIT_TYPE.COMPLEX) {
 
             Map<String, Double> properComponentUnitDimension = new HashMap<>();
 
@@ -136,7 +146,9 @@ public class UnitsContentQuerier {
                 Unit newUnit = new Unit(properComponentUnitDimension);
                 unitsDataModel.getUnitsContentModifier().addUnit(newUnit);
                 correspondingUnits.add(newUnit);
-            } catch (Exception e) { }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         return correspondingUnits;
@@ -146,19 +158,19 @@ public class UnitsContentQuerier {
      * Sort the candidates list by the significance of the provided name with respect to their full name and abbreviated name
      */
     private class UnitsWithSimilarNameComparator implements Comparator<Unit>{
-        private String providedName;
+        private int providedNameLength;
 
-        public UnitsWithSimilarNameComparator(String providedName){
-            this.providedName = providedName;
+        public UnitsWithSimilarNameComparator(int providedNameLength){
+            this.providedNameLength = providedNameLength;
         }
 
         @Override
         public int compare(Unit lhsUnit, Unit rhsUnit) {
-            Double lhsUnitFullNameSignificance = (double) providedName.length() / lhsUnit.getName().length();
-            Double lhsUnitAbbreviationSignificance = (double) providedName.length() / lhsUnit.getAbbreviation().length();
+            Double lhsUnitFullNameSignificance = (double) providedNameLength / lhsUnit.getName().length();
+            Double lhsUnitAbbreviationSignificance = (double) providedNameLength / lhsUnit.getAbbreviation().length();
 
-            Double rhsUnitFullNameSignificance = (double) providedName.length() / rhsUnit.getName().length();
-            Double rhsUnitAbbreviationSignificance = (double) providedName.length() / rhsUnit.getAbbreviation().length();
+            Double rhsUnitFullNameSignificance = (double) providedNameLength / rhsUnit.getName().length();
+            Double rhsUnitAbbreviationSignificance = (double) providedNameLength / rhsUnit.getAbbreviation().length();
 
             /*Only select the abbreviation significance if the length of provided name is less than the length of the abbreviation,
              *otherwise the Full Name significance is utilized.This is to ensure that abbreviations take precedence
@@ -170,20 +182,17 @@ public class UnitsContentQuerier {
             return -preferredLhsSignificance.compareTo(preferredRhsSignificance); //need to take negative to order from greatest to least.
         }
     }
-
     /**
-     *
-     * @param providedName
-     * @return
+     * Finds a set of units sorted by the degree of similarity of their names to the provided name
      */
     public SortedSet<Unit> queryUnitsOrderedBySimilarNames(final String providedName) {
-        //TODO: Incorporate the levenshtein distance algorithm?
+        //TODO: Incorporate the levenshtein distance algorithm, soundex, metaphone ????
 
         //Non duplicate data structure since there are instances where full name may be the same as abbreviations.
-        SortedSet<Unit> unitCandidates = new TreeSet<>(new UnitsWithSimilarNameComparator(providedName));
+        SortedSet<Unit> unitCandidates = new TreeSet<>(new UnitsWithSimilarNameComparator(providedName.length()));
 
         for (String unitName : unitsDataModel.getRepositoryWithDualKeyNCategory().getAllKeys()) {
-            if (providedName.contains(unitName))
+            if (unitName.contains(providedName))
                 unitCandidates.add(unitsDataModel.getRepositoryWithDualKeyNCategory().getFirstItemByAnyKey(unitName));
         }
 
@@ -199,7 +208,6 @@ public class UnitsContentQuerier {
         //Name can match to a unit full name or an abbreviation. Must be a full match.
         return unitsDataModel.getRepositoryWithDualKeyNCategory().containsKey(unitName.toLowerCase().trim());
     }
-
     public boolean containsUnit(Unit unit) {
         return unitsDataModel.getRepositoryWithDualKeyNCategory().containsItem(unit);
     }

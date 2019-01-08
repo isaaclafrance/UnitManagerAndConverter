@@ -1,0 +1,67 @@
+package com.isaacapps.unitconverterapp.tokenizers;
+
+import android.widget.MultiAutoCompleteTextView;
+
+import static com.isaacapps.unitconverterapp.adapters.MultiAutoCompleteUnitsDefinitionArrayAdapter.MULTI_AUTO_COMPLETE_UNIT_NAME_DELIMITER;
+import com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefiner;
+
+import com.florianingerl.util.regex.Matcher ;
+
+
+public class MultiAutoCompleteUnitDefinitionTokenizer implements MultiAutoCompleteTextView.Tokenizer {
+    private DimensionComponentDefiner dimensionComponentDefiner;
+
+    public MultiAutoCompleteUnitDefinitionTokenizer(DimensionComponentDefiner dimensionComponentDefiner){
+        this.dimensionComponentDefiner = dimensionComponentDefiner;
+    }
+
+    @Override
+    public int findTokenStart(CharSequence unitDefinitionText, int cursorPosition) {
+        //TODO: Improve token recognition
+
+        CharSequence unitDefinitionSubSequence = unitDefinitionText.subSequence(0, cursorPosition);
+        int tokenPosition = -1;
+
+        Matcher unitDefinitionMultiGroupMatcher = dimensionComponentDefiner.getMultiGroupRegExPattern().matcher(unitDefinitionSubSequence);
+        while(unitDefinitionMultiGroupMatcher.find()){
+            tokenPosition = unitDefinitionMultiGroupMatcher.start();
+        }
+
+        if(tokenPosition == -1){
+            Matcher unitDefinitionSingleGroupMatcher = dimensionComponentDefiner.getSingleGroupRegExPattern().matcher(unitDefinitionSubSequence);
+            while(unitDefinitionSingleGroupMatcher.find()){
+                tokenPosition = unitDefinitionSingleGroupMatcher.start();
+            }
+        }
+
+        return tokenPosition != -1 ? tokenPosition : 0;
+    }
+    @Override
+    public int findTokenEnd(CharSequence unitDefinitionText, int cursorPosition) {
+        //TODO: Improve token recognition
+
+        CharSequence unitDefinitionSubSequence = unitDefinitionText.subSequence(cursorPosition, unitDefinitionText.length() - 1);
+        int tokenPosition = -1;
+
+        Matcher unitDefinitionMultiGroupMatcher = dimensionComponentDefiner.getMultiGroupRegExPattern().matcher(unitDefinitionSubSequence);
+        while(unitDefinitionMultiGroupMatcher.find()){
+            tokenPosition = unitDefinitionMultiGroupMatcher.end();
+        }
+
+        if(tokenPosition == -1){
+            Matcher unitDefinitionSingleGroupMatcher = dimensionComponentDefiner.getSingleGroupRegExPattern().matcher(unitDefinitionSubSequence);
+            while(unitDefinitionSingleGroupMatcher.find()){
+                return unitDefinitionSingleGroupMatcher.end();
+            }
+        }
+
+        return tokenPosition != -1 ? tokenPosition : unitDefinitionText.length();
+    }
+
+    @Override
+    public CharSequence terminateToken(CharSequence unitDefinitionText) {
+        int delimiterPosition = unitDefinitionText.toString().indexOf(MULTI_AUTO_COMPLETE_UNIT_NAME_DELIMITER);
+        CharSequence fullNameToken = delimiterPosition == -1 ? unitDefinitionText : unitDefinitionText.toString().substring(0, delimiterPosition);
+        return fullNameToken + " ";
+    }
+}
