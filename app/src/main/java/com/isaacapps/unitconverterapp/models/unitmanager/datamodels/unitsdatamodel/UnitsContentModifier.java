@@ -13,15 +13,18 @@ import java.util.Locale;
 import java.util.Set;
 
 import static com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentDeterminer.DATA_MODEL_CATEGORY;
-import static com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentDeterminer.determineDataModelCategoriesGroup;
-import static com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentDeterminer.determineGeneralDataModelCategory;
+import static com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentDeterminer.determineDataModelCategories;
+import static com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentDeterminer.determineHighestPriorityDataModelCategory;
 
 public class UnitsContentModifier {
     private Locale locale;
     private UnitsDataModel unitsDataModel;
+    private boolean reUpdateAssociationsOfUnknownUnits;
 
     ///
-    public UnitsContentModifier(){}
+    public UnitsContentModifier(){
+        this.reUpdateAssociationsOfUnknownUnits = true;
+    }
 
     ///Modify Data Model Content
     public void addUnits(Iterable<Unit> units) throws UnitException {
@@ -29,64 +32,85 @@ public class UnitsContentModifier {
             addUnit(unit);
     }
     public Unit addUnit(Unit unit) throws UnitException {
+
         if (addUnitToDataStructures(unit, true, true)) {
-            if (!unit.isBaseUnit() && !unit.isCoreUnit()) {
-                //Make the unit be a base unit if its the only one of its kind in the unit manager or if it is a fundamental unit and not already a core base unit
+            //Make the unit be a base unit if it is a fundamental unit and unique based on dimension;
+            if (!unit.isBaseUnit()) {
+                boolean isUnique = unitsDataModel.getUnitsContentDeterminer().determineIfUnitIsUniqueByDimension(unit);
                 boolean isAFundamentalUnit = unitsDataModel.getUnitManagerContext().getFundamentalUnitsDataModel().containsUnitName(unit.getName());
-                boolean isOneOfAKind = true;
 
-                //No need to determine one-of-kindness if the unit already fundamental since the logical relationship is a disjunction.
-                for (Unit baseUnit : isAFundamentalUnit ? new ArrayList<Unit>(0) : unitsDataModel.getUnitsContentMainRetriever().getBaseUnits()) {
-                    if (UnitOperators.equalsDimension(unit, baseUnit)) {
-                        isOneOfAKind = false;
-                        break;
-                    }
+                if (isUnique || isAFundamentalUnit) {
+                    unit.setAsBaseUnit();
                 }
-
-                if (isAFundamentalUnit || isOneOfAKind)
-                    unit.setBaseUnit(unit);
             }
 
-            /*Attempt to see if this unit can be used to make other unknown units become known only if it has not been incorporated as a base unit already.
-             This is because base unit incorporation already checks for that. */
-            if (!incorporateBaseUnit(unit, false))
-                updateAssociationsOfUnknownUnits();
+            //Attempt to see if this unit can be used to make other unknown units become known.
+            if(unit.isBaseUnit())
+                incorporateAsBaseUnit(unit);
+            updateAssociationsOfUnknownUnits();
         }
 
         return unit;
     }
     private boolean addUnitToDataStructures(Unit unit, boolean includeAliases, boolean includeUpdateToUnitsClassifier){
-        Unit unitInDataStructureWithSameName = unitsDataModel.getUnitsContentMainRetriever().getUnit(unit.getName(), false);
-        if( unitInDataStructureWithSameName != null && unitInDataStructureWithSameName != unit && unitInDataStructureWithSameName.isCoreUnit() != unit.isCoreUnit()) {
-            //If a unit of a different instance exists that does not have the same compatible IsCore Unit state, then prevent replacement.
-            return false;
+        Unit unitInDataStructureWithSameName = unitsDataModel.getUnitsContentMainRetriever().getUnit(unit.getName().toLowerCase(), false);
+        boolean unitBeingAddedIsSameInstanceAsPreexisting = unit == unitInDataStructureWithSameName;
+
+        if( unitInDataStructureWithSameName != null && unitsDataModel.getUnitsContentMainRetriever().getUnknownUnit() !=  unitInDataStructureWithSameName) {
+            // Blast away previous categorizations for existing same name unit and start on clean slate so to speak
+            //If preexisting unit of same name is not the same instance and does not have the same IsCoreUnit state and the new unit has invalid names , then prevent replacement.
+            if(unitsDataModel.getRepositoryWithDualKeyNCategory().areKeysValid(unit.getName().toLowerCase(), unit.getAbbreviation()) && unitInDataStructureWithSameName.isCoreUnit() == unit.isCoreUnit()){
+                try {
+                    if(!unitBeingAddedIsSameInstanceAsPreexisting) {
+                        unitsDataModel.getUnitsContentModifier().removeUnit(unitInDataStructureWithSameName.getName(), true, unit, false);
+                    }
+                    else{
+                        unitsDataModel.getRepositoryWithDualKeyNCategory().removeItem(unitInDataStructureWithSameName);
+                    }
+                } catch (UnitException ue) {
+                    ue.printStackTrace();
+                    return false;
+                }
+            }
+            else{
+                return false;
+            }
         }
 
+        //
         try {
-            unit.setUnitManagerContext(unitsDataModel.getUnitManagerContext());
+            if(!unitBeingAddedIsSameInstanceAsPreexisting && unit.getUnitManagerContext() != unitsDataModel.getUnitManagerContext())
+                unit.setUnitManagerContext(unitsDataModel.getUnitManagerContext());
         }
         catch(UnitException ue1) {
+            ue1.printStackTrace();
             try {
                 unit.setUnitManagerContext(null);
-            } catch (UnitException ue2) {}
+            } catch (UnitException ue2) {
+                ue2.printStackTrace();
+            }
             return false;
         }
 
-        unitsDataModel.getRepositoryWithDualKeyNCategory().removeItem(unit);// Blast away previous categorizations for unit and start on clean slate so to speak
-
+        //
         Unit addedUnit = null;
-        for (DATA_MODEL_CATEGORY dataModelCategory : determineDataModelCategoriesGroup(unit))
-            addedUnit = unitsDataModel.getRepositoryWithDualKeyNCategory().addItem(dataModelCategory, unit.getName(), unit.getAbbreviation(), unit);
+        for (DATA_MODEL_CATEGORY dataModelCategory : determineDataModelCategories(unit))
+            addedUnit = unitsDataModel.getRepositoryWithDualKeyNCategory().addItem(dataModelCategory, unit.getName().toLowerCase(), unit.getAbbreviation(), unit);
 
         boolean unitAbleToBeAdded = addedUnit != null;
 
-        if(!unitAbleToBeAdded) {
-            try {
+        try {
+            if (!unitAbleToBeAdded) {
                 unit.setUnitManagerContext(null);
-            } catch (UnitException ue) { }
+                return false;
+            }
+        }
+        catch(UnitException ue){
+            ue.printStackTrace();
             return false;
         }
 
+        //
         if (includeUpdateToUnitsClassifier)
             unitsDataModel.getUnitManagerContext().getUnitsClassifierDataModel().addToHierarchy(addedUnit, false);
 
@@ -112,21 +136,22 @@ public class UnitsContentModifier {
      * Updates the base units of dependent units to unknown. Also removes a reference to this unit manager from the unit.
      * TODO: Remove reference to conversion favorites when creating a slimmed down version of unit manager in a standalone library.
      */
-    public boolean removeUnit(String unitName) throws UnitException {
+    private boolean removeUnit(String unitName, boolean allowRemovalOfCoreUnits, Unit replacementBaseUnit, boolean resetBaseConversionPolyCoeffsOfDescendents) throws UnitException {
         Unit removedUnitCandidate = unitsDataModel.getRepositoryWithDualKeyNCategory().getFirstItemByAnyKey(unitName.toLowerCase().trim());
-        if (determineGeneralDataModelCategory(removedUnitCandidate) != DATA_MODEL_CATEGORY.CORE) {
+        if (removedUnitCandidate != null &&  (allowRemovalOfCoreUnits || determineHighestPriorityDataModelCategory(removedUnitCandidate) != DATA_MODEL_CATEGORY.CORE) ) {
             unitsDataModel.getRepositoryWithDualKeyNCategory().removeItemByKey(unitName);
 
             unitsDataModel.getUnitManagerContext().getUnitsClassifierDataModel().removeFromHierarchy(removedUnitCandidate);
 
             if (removedUnitCandidate.isBaseUnit()) {
-                removedUnitCandidate.downPropogateBaseUnitModification(unitsDataModel.getUnitsContentMainRetriever().getUnknownUnit());
+                removedUnitCandidate.downPropogateBaseUnitModification(replacementBaseUnit == null? unitsDataModel.getUnitsContentMainRetriever().getUnknownUnit():replacementBaseUnit
+                        , resetBaseConversionPolyCoeffsOfDescendents);
             } else {
                 removedUnitCandidate.getBaseUnit().getConversionsToDescendents().remove(removedUnitCandidate);
             }
 
             removedUnitCandidate.setUnitManagerContext(null);
-            updateFundamentalUnitsDimensionOfKnownUnits();
+            updateFundamentalUnitsDimensionOfKnownUnits(!removedUnitCandidate.isCoreUnit());
 
             //Remove any conversion favorites that may be associated with this unit as well updateContent the significance rankings
             unitsDataModel.getUnitManagerContext().getConversionFavoritesDataModel().removeAllConversionsWithUnit(removedUnitCandidate);
@@ -135,7 +160,12 @@ public class UnitsContentModifier {
         }
         return false;
     }
+    public boolean removeUnit(String unitName) throws UnitException {
+        return removeUnit(unitName, false, null, true);
+    }
     public boolean removeUnit(Unit unit) throws UnitException {
+        if(!unitsDataModel.getRepositoryWithDualKeyNCategory().containsItem(unit))
+            return false;
         return removeUnit(unit.getName());
     }
 
@@ -153,9 +183,6 @@ public class UnitsContentModifier {
             unitsDataModel.getUnitManagerContext().getUnitsClassifierDataModel().removeFromHierarchy(unitToBeRemoved);
             //Unknown units do not have conversions therefore there is no need to remove them from the conversion favorites
         }
-
-        unitsDataModel.getRepositoryWithDualKeyNCategory().removeCategory(DATA_MODEL_CATEGORY.DYNAMIC);
-        unitsDataModel.getRepositoryWithDualKeyNCategory().removeCategory(DATA_MODEL_CATEGORY.UNKNOWN);
     }
     public void removeAllUnitNameAliases() {
         Collection<Unit> allUnits = unitsDataModel.getUnitsContentMainRetriever().getAllUnits();
@@ -165,27 +192,41 @@ public class UnitsContentModifier {
     }
 
     ///Update Existing Data Model Content
-
     public void updateAssociationsOfUnknownUnits() throws UnitException {
-        updateAssociationsOfUnknownUnits(new ArrayList<>(), new ArrayList<>(unitsDataModel.getRepositoryWithDualKeyNCategory().getItemsByCategory(DATA_MODEL_CATEGORY.UNKNOWN)));
+        Collection<Unit> knownUnits = updateAssociationsOfUnknownUnits(new ArrayList<>(), new ArrayList<>(unitsDataModel.getUnitsContentMainRetriever().getUnknownUnits()));
+        for(Unit knownUnit:knownUnits) {
+            if(knownUnit.isBaseUnit())
+                incorporateAsBaseUnit(knownUnit);
+        }
     }
-    private void updateAssociationsOfUnknownUnits(Collection<Unit> unitsNoLongerUnknown, Collection<Unit> currentUnknownUnits) throws UnitException {
+    private Collection<Unit> updateAssociationsOfUnknownUnits(Collection<Unit> unitsNoLongerUnknown, Collection<Unit> currentUnknownUnits) throws UnitException {
+        if(!reUpdateAssociationsOfUnknownUnits)
+            return Collections.emptyList();
+
+        int originalNumOfNoLongerUnknownUnits = unitsNoLongerUnknown.size();
+
         for (Unit unit : currentUnknownUnits) {
+
             if (unit != unitsDataModel.getUnitsContentMainRetriever().getUnknownUnit() && unit.setAutomaticBaseUnit()
-                    && UnitsContentDeterminer.determineGeneralDataModelCategory(unit) != DATA_MODEL_CATEGORY.UNKNOWN) {
+                    && UnitsContentDeterminer.determineHighestPriorityDataModelCategory(unit) != DATA_MODEL_CATEGORY.UNKNOWN) {
+
                 unitsNoLongerUnknown.add(unit);
                 //Reclassify this unit in the data structure with its newly acquired category
                 addUnitToDataStructures(unit, false, true);
             }
         }
 
+        currentUnknownUnits.removeAll(unitsNoLongerUnknown);
+
 		/*Recursively accounts for the edge case where identifiability of one unit is dependent on the identifiability of another unit in the same unknown set.
 		 Prevents the ordering of the unknown identification from preventing a dependent unknown unit from being identified. */
-        Collection<Unit> unknownUnitsToBeReAnalyzed = unitsNoLongerUnknown.isEmpty() || !unitsNoLongerUnknown.containsAll(currentUnknownUnits)
+        Collection<Unit> unknownUnitsToBeReAnalyzed = unitsNoLongerUnknown.isEmpty() || currentUnknownUnits.isEmpty()
                 ? Collections.emptyList() : unknownUnitsToBeReAnalyzed(currentUnknownUnits, unitsNoLongerUnknown);
 
-        if (!unknownUnitsToBeReAnalyzed.isEmpty())
+        if (unitsNoLongerUnknown.size()>originalNumOfNoLongerUnknownUnits && !unknownUnitsToBeReAnalyzed.isEmpty())
             updateAssociationsOfUnknownUnits(unitsNoLongerUnknown, unknownUnitsToBeReAnalyzed);
+
+        return unitsNoLongerUnknown;
     }
     private Collection<Unit> unknownUnitsToBeReAnalyzed(Collection<Unit> currentUnknownUnits, Iterable<Unit> unitsNoLongerUnknown) {
         Set<String> namesOfUnitsNoLongerUnknown = new HashSet<>();
@@ -206,54 +247,64 @@ public class UnitsContentModifier {
             return true;
 
         for (String componentUnitName : currentUnknownUnit.getComponentUnitsDimension().keySet()) {
-            if (namesOfUnitsNoLongerUnknown.contains(componentUnitName))
+            if ( !currentUnknownUnit.getName().equalsIgnoreCase(componentUnitName) && namesOfUnitsNoLongerUnknown.contains(componentUnitName))
                 return true;
         }
         return false;
     }
 
-    public void updateFundamentalUnitsDimensionOfKnownUnits(){
-        for (Unit unit : unitsDataModel.getRepositoryWithDualKeyNCategory().getItemsByCategory(DATA_MODEL_CATEGORY.DYNAMIC)) {
+    public boolean areAssociationsOfUnknownUnitsReUpdated(){
+        return reUpdateAssociationsOfUnknownUnits;
+    }
+    public void setUpdateAssociationsOfUnknownUnits(boolean updateAssociationsOfUnknownUnits){
+        this.reUpdateAssociationsOfUnknownUnits = updateAssociationsOfUnknownUnits;
+    }
+
+    public void updateFundamentalUnitsDimensionOfKnownUnits(boolean onlyDynamicUnits){
+        Collection<Unit> knownUnits = new ArrayList<>();
+        if(onlyDynamicUnits) {
+            knownUnits.addAll(unitsDataModel.getRepositoryWithDualKeyNCategory().getItemsByCategory(DATA_MODEL_CATEGORY.DYNAMIC));
+        }
+        else{
+            knownUnits.addAll(unitsDataModel.getRepositoryWithDualKeyNCategory().getAllItems());
+        }
+
+        for (Unit unit : knownUnits) {
+            DATA_MODEL_CATEGORY previousDataModelCategory = determineHighestPriorityDataModelCategory(unit);
+
+            if(previousDataModelCategory == DATA_MODEL_CATEGORY.UNKNOWN)
+                continue;
+
             unit.setAutomaticUnitSystem();
             unit.setAutomaticUnitTypeNFundamentalTypesDimension();
             unit.setAutomaticCategory();
 
-            if (determineGeneralDataModelCategory(unit) == DATA_MODEL_CATEGORY.UNKNOWN)
+            DATA_MODEL_CATEGORY currentDataModelCategory = determineHighestPriorityDataModelCategory(unit);
+
+            if (currentDataModelCategory == DATA_MODEL_CATEGORY.UNKNOWN)
                 addUnitToDataStructures(unit, false, true);//Readd unit so that it is recategorized as unknown in the data model.
         }
     }
 
-    public boolean incorporateBaseUnit(Unit unit, boolean baseUnitStatusChanged) throws UnitException {
-        if(baseUnitStatusChanged)
-            addUnitToDataStructures(unit, false, false);
-
-        if (!unit.isBaseUnit() || unit.getUnitManagerContext() != unitsDataModel.getUnitManagerContext())
-            return false;
-
+    private void incorporateAsBaseUnit(Unit unit) throws UnitException {
         for (Unit existingBaseUnit : unitsDataModel.getUnitsContentMainRetriever().getBaseUnits()) {
-            /*If the core units states are compatible (Dynamic units can not replace core units),
-             *then set the existing base units and its dependent units to be instead be associated with this base unit.
+            /*If the existing base unit is not a core unit  (Dynamic units can not replace core units) and dimensions are the same, then set this unit as the base unit of the existing.
              *Otherwise, assign the existing base unit to this unit.
              */
-            if(!unit.getName().equalsIgnoreCase(existingBaseUnit.getName()) && UnitOperators.equalsDimension(unit, existingBaseUnit)) {
+            if(!existingBaseUnit.getName().equalsIgnoreCase(unit.getName()) && UnitOperators.equalsFundamentalUnitsDimension(unit, existingBaseUnit)) {
+                boolean unitIsAFundamental = unitsDataModel.getUnitManagerContext().getFundamentalUnitsDataModel().containsUnitName(unit.getName());
+                boolean existingBaseUnitIsCore = existingBaseUnit.isCoreUnit();
 
-                boolean existingBaseUnitAbleToBeSetAsNonBase = existingBaseUnit.isCoreUnit() == unit.isCoreUnit()
-                        && !existingBaseUnit.getName().equalsIgnoreCase(unit.getName());
+                boolean existingBaseUnitAbleToBeSetAsNonBase = !existingBaseUnitIsCore || unitIsAFundamental;
 
                 if (existingBaseUnitAbleToBeSetAsNonBase) {
-                    for (Unit dependentUnit : existingBaseUnit.getConversionsToDescendents().keySet())
-                        dependentUnit.setBaseUnit(unit);
+                    existingBaseUnit.setBaseUnit(unit); //Automatically updates the base unit of the the dependent units.
                 } else {
                     unit.setBaseUnit(existingBaseUnit);
                 }
                 break; //Ideally if the data model is consistent, there should have only been one valid existing base unit present.
             }
         }
-
-        //Determines if this unit can be associated with existing units that currently do not have base units.
-        updateAssociationsOfUnknownUnits();
-
-        return true;
     }
 
     ///
