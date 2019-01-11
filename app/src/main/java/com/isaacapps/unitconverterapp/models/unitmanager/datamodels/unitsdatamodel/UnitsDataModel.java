@@ -5,6 +5,7 @@ import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.BaseDataModel;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.repositories.IDualKeyNCategoryRepository;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentDeterminer.DATA_MODEL_CATEGORY;
+import com.isaacapps.unitconverterapp.processors.formatters.IFormatter;
 import com.isaacapps.unitconverterapp.processors.parsers.dimension.componentunits.ComponentUnitsDimensionParser;
 import com.isaacapps.unitconverterapp.processors.parsers.generaltext.PluralTextParser;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.componentnunit.ComponentUnitsDimensionSerializer;
@@ -19,6 +20,7 @@ public class UnitsDataModel extends BaseDataModel<String, Unit, DATA_MODEL_CATEG
     private ComponentUnitsDimensionParser componentUnitsDimensionParser;
     private ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer;
     private FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer;
+    private IFormatter abbreviationFormatter;
 
     private UnitsContentMainRetriever unitsContentMainRetriever;
     private UnitsContentModifier unitsContentModifier;
@@ -40,6 +42,7 @@ public class UnitsDataModel extends BaseDataModel<String, Unit, DATA_MODEL_CATEG
         unitsContentMainRetriever.setComponentUnitsDimensionParser(componentUnitsDimensionParser);
         unitsContentMainRetriever.setComponentUnitsDimensionSerializer(componentUnitsDimensionSerializer);
         unitsContentMainRetriever.setFundamentalUnitTypesDimensionSerializer(fundamentalUnitTypesDimensionSerializer);
+        unitsContentMainRetriever.setAbbreviationFormatter(abbreviationFormatter);
         unitsContentMainRetriever.setLocale(locale);
     }
 
@@ -82,18 +85,38 @@ public class UnitsDataModel extends BaseDataModel<String, Unit, DATA_MODEL_CATEG
     }
     public void setPluralTextParser(PluralTextParser pluralTextParser) {
         this.pluralTextParser = pluralTextParser;
+        if(unitsContentMainRetriever != null)
+            unitsContentMainRetriever.setPluralTextParser(pluralTextParser);
+        if(unitsContentDeterminer != null)
+            unitsContentMainRetriever.setPluralTextParser(pluralTextParser);
     }
 
     public void setComponentUnitsDimensionParser(ComponentUnitsDimensionParser componentUnitsDimensionParser) {
         this.componentUnitsDimensionParser = componentUnitsDimensionParser;
+        if(unitsContentMainRetriever != null)
+            unitsContentMainRetriever.setComponentUnitsDimensionParser(componentUnitsDimensionParser);
+        if(unitsContentDeterminer != null)
+            unitsContentDeterminer.setComponentUnitsDimensionParser(componentUnitsDimensionParser);
     }
 
     public void setComponentUnitsDimensionSerializer(ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer) {
         this.componentUnitsDimensionSerializer = componentUnitsDimensionSerializer;
+        if(unitsContentMainRetriever != null)
+            unitsContentMainRetriever.setComponentUnitsDimensionSerializer(componentUnitsDimensionSerializer);
+        if(unitsContentDeterminer != null)
+            unitsContentDeterminer.setComponentUnitsDimensionSerializer(componentUnitsDimensionSerializer);
     }
 
     public void setFundamentalUnitTypesDimensionSerializer(FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer) {
         this.fundamentalUnitTypesDimensionSerializer = fundamentalUnitTypesDimensionSerializer;
+        if(unitsContentMainRetriever != null)
+            unitsContentMainRetriever.setFundamentalUnitTypesDimensionSerializer(fundamentalUnitTypesDimensionSerializer);
+    }
+
+    public void setAbbreviationFormatter(IFormatter abbreviationFormatter){
+        this.abbreviationFormatter = abbreviationFormatter;
+        if(unitsContentMainRetriever != null)
+            unitsContentMainRetriever.setAbbreviationFormatter(abbreviationFormatter);
     }
 
     public void setLocale(Locale locale) {
