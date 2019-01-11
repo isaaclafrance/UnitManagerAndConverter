@@ -36,12 +36,12 @@ public class UnitsContentMainRetriever {
      * Retrieves a unit instance having provided unit name / unit definition.
      * @param unformattedUnitName The name can be a a abbreviation or a full name, either of which can have prefixes.
      *        The name can also be a complex dimension consisting of a combination of units joined by the multiplication and/or division operator.
-     * @param createMissingComplexValidUnits Indicates whether to created a new unit from the unit combination definition if none of the units in the combination are unknown.
+     * @param createMissingComplexValidUnits Indicates whether to created a new unit from the unit combination definition, but only if none of the units in the combination are unknown.
      */
     public Unit getUnit(String unformattedUnitName, boolean createMissingComplexValidUnits) {
         Unit unit;
 
-        //First attempt to search for unit by full name or abbreviation
+        //First attempt to search for unit by unformatted full name or abbreviation
         if ((unit = unitsDataModel.getRepositoryWithDualKeyNCategory().getFirstItemByAnyKey(unformattedUnitName)) != null
                 || (unit = unitsDataModel.getRepositoryWithDualKeyNCategory().getFirstItemByAnyKey(unformattedUnitName.toLowerCase().trim())) != null)
         {
@@ -52,13 +52,13 @@ public class UnitsContentMainRetriever {
         String wellFormattedUnitName;
         Map<String, Double> unitNameAsDimensionMap;
         try {
-            unitNameAsDimensionMap = componentUnitsDimensionParser.parse(unformattedUnitName);
+            unitNameAsDimensionMap = componentUnitsDimensionParser.parse(unformattedUnitName.toLowerCase());
 
             if(unitNameAsDimensionMap.containsKey(Unit.UNKNOWN_UNIT_NAME))
                 return getUnknownUnit();
 
-            //Cleans up the unit definition into a standardized dimension format for easier recognization.
-            //Could have used the DimensionFormatter abstraction, but needed to explicitly separate the parser parser part from the serializer part.
+            //Cleans up the unit definition into a standardized dimension format for easier recognition.
+            //Could have used the DimensionFormatter abstraction, but needed to explicitly separate the parser part from the serializer part.
             wellFormattedUnitName = componentUnitsDimensionSerializer.serialize(unitNameAsDimensionMap);
         }
         catch(Exception e){
@@ -66,15 +66,14 @@ public class UnitsContentMainRetriever {
             wellFormattedUnitName = unformattedUnitName.toLowerCase().trim();
         }
 
-        //
         if((unit = unitsDataModel.getRepositoryWithDualKeyNCategory().getFirstItemByAnyKey(wellFormattedUnitName)) != null)
             return unit;
 
         //If the name has any plural components, then perform search again with those components singularized.
         if (pluralTextParser.hasPossiblePlural(wellFormattedUnitName, true)) {
-            String singularizedUnitName = unitsDataModel.getUnitsContentDeterminer().determineSingularOfUnitName(wellFormattedUnitName);
-            if(!singularizedUnitName.equalsIgnoreCase(wellFormattedUnitName))
-                return getUnit(singularizedUnitName);
+            String singularizedUnitDefinition = unitsDataModel.getUnitsContentDeterminer().determineSingularOfUnitName(wellFormattedUnitName);
+            if(!singularizedUnitDefinition.equalsIgnoreCase(wellFormattedUnitName))
+                return getUnit(singularizedUnitDefinition);
         }
 
         if(!createMissingComplexValidUnits)
@@ -84,9 +83,9 @@ public class UnitsContentMainRetriever {
 
         //Determine if the name has any prefix and a valid unit name part.
         if (!hasComplexDimension) {
-            String[] prefixMatch = unitsDataModel.getUnitManagerContext().getPrefixesDataModel().findPrefixPairMatch(unformattedUnitName, true);
-            if(prefixMatch.length != 0)
-                return createNewPrefixedUnit(prefixMatch);
+            Collection<String[]> prefixMatches = unitsDataModel.getUnitManagerContext().getPrefixesDataModel().findPrefixPairMatches(unformattedUnitName, true);
+            if(!prefixMatches.isEmpty())
+                return createNewPrefixedUnit(prefixMatches.iterator().next());
             else
                 return getUnknownUnit();
         }
@@ -107,14 +106,27 @@ public class UnitsContentMainRetriever {
 
         if (complexUnitMatches.isEmpty()) {
             try {
-                return unitsDataModel.getUnitsContentModifier().addUnit(new Unit(unitNameAsDimensionMap));
+                if(allComponentUnitsAreKnown(unitNameAsDimensionMap)) {
+                    return unitsDataModel.getUnitsContentModifier().addUnit(new Unit(unitNameAsDimensionMap));
+                }
+                else{
+                    return getUnknownUnit();
+                }
             } catch (Exception e) {
+                e.printStackTrace();
                 return getUnknownUnit();
             }
 
         } else {
             return complexUnitMatches.iterator().next();
         }
+    }
+    private boolean allComponentUnitsAreKnown(Map<String, Double> componentUnitsDimension){
+        for(String componentUnitName:componentUnitsDimension.keySet()){
+            if(!unitsDataModel.getUnitsContentQuerier().containsUnit(componentUnitName))
+                return false;
+        }
+        return true;
     }
 
     /**
@@ -165,6 +177,9 @@ public class UnitsContentMainRetriever {
     }
     public Collection<Unit> getBaseUnits() {
         return unitsDataModel.getRepositoryWithDualKeyNCategory().getItemsByCategory(UnitsContentDeterminer.DATA_MODEL_CATEGORY.BASE);
+    }
+    public Collection<Unit> getUnknownUnits(){
+        return unitsDataModel.getRepositoryWithDualKeyNCategory().getItemsByCategory(UnitsContentDeterminer.DATA_MODEL_CATEGORY.UNKNOWN);
     }
 
     public Collection<Unit> getAllUnits() {
