@@ -41,6 +41,8 @@ public class BaseDimensionSerializer<T> implements ISerializer<Map<T, Double>> {
                 return -1 * Double.compare(lhsDimensionEntry.getValue(), rhsDimensionEntry.getValue());
             }
         };
+
+        setOrderDimensionItemsByExponentialValue(true);
     }
     public BaseDimensionSerializer(Locale locale, DimensionSerializerBuilder dimensionSerializerBuilder) {
         this.dimensionSerializerBuilder = dimensionSerializerBuilder;

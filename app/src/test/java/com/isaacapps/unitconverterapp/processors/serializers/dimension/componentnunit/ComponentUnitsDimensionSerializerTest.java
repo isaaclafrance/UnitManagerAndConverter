@@ -93,7 +93,7 @@ public class ComponentUnitsDimensionSerializerTest {
     }
 
     @Test
-    public void serialize_ComponentUnitsDimension_Should_Produce_Component_Dimension_String_Order_By_Exponent_Value() throws SerializingException {
+    public void serialize_ComponentUnitsDimension_Should_Produce_Component_Dimension_String_Ordered_By_Exponent_Value() throws SerializingException {
         String unitDefinition;
         Map<String,Double> unitComponentDimension;
         Map<String, Map<String,Double>> unitComponentDimensionByUnitDefinitionMap = new HashMap<>();
@@ -137,7 +137,7 @@ public class ComponentUnitsDimensionSerializerTest {
     }
 
     @Test
-    public void serialize_ComponentUnitsDimension_Should_Produce_Component_Dimension_String_Order_With_Negative_Exponents_Replaced_With_Multiple_Division() throws SerializingException {
+    public void serialize_ComponentUnitsDimension_Should_Produce_Component_Dimension_String_Ordered_With_Negative_Exponents_Replaced_With_Multiple_Division() throws SerializingException {
         String unitDefinition;
         Map<String,Double> unitComponentDimension;
         Map<String, Map<String,Double>> unitComponentDimensionByUnitDefinitionMap = new HashMap<>();
@@ -165,7 +165,6 @@ public class ComponentUnitsDimensionSerializerTest {
         Locale locale = Locale.ENGLISH;
         ComponentUnitsDimensionItemSerializer componentUnitsDimensionItemSerializer = new ComponentUnitsDimensionItemSerializer(locale, mockFormatter);
         ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer = new ComponentUnitsDimensionSerializer(locale, componentUnitsDimensionItemSerializer);
-        componentUnitsDimensionSerializer.setOrderDimensionItemsByExponentialValue(true);
         componentUnitsDimensionSerializer.setOperatorDisplayConfiguration(DimensionSerializerBuilder.OPERATOR_DISPLAY_CONFIGURATION.DIVISION_PER_NEGATIVE_EXPONENT);
         componentUnitsDimensionSerializer.setOrderDimensionItemsByExponentialValue(true);
 
@@ -182,7 +181,7 @@ public class ComponentUnitsDimensionSerializerTest {
     }
 
     @Test
-    public void serialize_ComponentUnitsDimension_Should_Produce_Component_Dimension_String_Order_With_One_Division() throws SerializingException {
+    public void serialize_ComponentUnitsDimension_Should_Produce_Component_Dimension_String_Ordered_With_One_Division() throws SerializingException {
         String unitDefinition;
         Map<String,Double> unitComponentDimension;
         Map<String, Map<String,Double>> unitComponentDimensionByUnitDefinitionMap = new HashMap<>();
@@ -210,7 +209,6 @@ public class ComponentUnitsDimensionSerializerTest {
         Locale locale = Locale.ENGLISH;
         ComponentUnitsDimensionItemSerializer componentUnitsDimensionItemSerializer = new ComponentUnitsDimensionItemSerializer(locale, mockFormatter);
         ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer = new ComponentUnitsDimensionSerializer(locale, componentUnitsDimensionItemSerializer);
-        componentUnitsDimensionSerializer.setOrderDimensionItemsByExponentialValue(true);
         componentUnitsDimensionSerializer.setOperatorDisplayConfiguration(DimensionSerializerBuilder.OPERATOR_DISPLAY_CONFIGURATION.SINGLE_DIVISION);
         componentUnitsDimensionSerializer.setOrderDimensionItemsByExponentialValue(true);
 

@@ -5,6 +5,7 @@ import com.isaacapps.unitconverterapp.processors.serializers.ISerializer;
 import com.isaacapps.unitconverterapp.processors.serializers.SerializingException;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -56,19 +57,15 @@ public class DimensionSerializerBuilder<T> implements ISerializer<Map<T, Double>
 
         StringBuilder dimensionStringBuilder = new StringBuilder();
 
-        Set<Map.Entry<T, Double>> dimensionMapEntrySet;
+        List<Map.Entry<T, Double>> dimensionMapEntries = new ArrayList<>(dimensionMap.entrySet());
         if(dimensionEntrySetComparator != null){
-            dimensionMapEntrySet = new TreeSet<>(dimensionEntrySetComparator);
-            dimensionMapEntrySet.addAll(dimensionMap.entrySet());
-        }
-        else{
-            dimensionMapEntrySet = dimensionMap.entrySet();
+            Collections.sort(dimensionMapEntries, dimensionEntrySetComparator);
         }
 
         boolean hasDivision = false;
         boolean hasMultiplication = false;
         boolean someDimensionItemsHavePositiveExponents = false;
-        for (Map.Entry<T, Double> dimensionEntry : dimensionMapEntrySet) {
+        for (Map.Entry<T, Double> dimensionEntry : dimensionMapEntries) {
             //
             if( dimensionEntry.getValue() < 0 && (operatorDisplayConfiguration == OPERATOR_DISPLAY_CONFIGURATION.DIVISION_PER_NEGATIVE_EXPONENT || operatorDisplayConfiguration == OPERATOR_DISPLAY_CONFIGURATION.SINGLE_DIVISION && !hasDivision)){
                 dimensionStringBuilder.append(divisionSymbol).append(" ");
@@ -100,7 +97,7 @@ public class DimensionSerializerBuilder<T> implements ISerializer<Map<T, Double>
         }
 
         //For reciprocal proper grouping purposes, parenthesis will be included in this case regardless if setIncludeParenthesesInExponentials was specified as true.
-        if(dimensionMapEntrySet.size() != 1 && operatorDisplayConfiguration == OPERATOR_DISPLAY_CONFIGURATION.SINGLE_DIVISION  && hasDivision) {
+        if(dimensionMapEntries.size() != 1 && operatorDisplayConfiguration == OPERATOR_DISPLAY_CONFIGURATION.SINGLE_DIVISION  && hasDivision) {
             int index = dimensionStringBuilder.indexOf(divisionSymbol);
             dimensionStringBuilder.insert(index+1, "(");
             dimensionStringBuilder.append(" )");
@@ -127,7 +124,6 @@ public class DimensionSerializerBuilder<T> implements ISerializer<Map<T, Double>
 
         return missingStringGenerationComponents;
     }
-
     public List<String> determineMissingOperationComponentsNeededForStringGeneration() {
         List<String> missingStringGenerationComponents = new ArrayList<>();
 
@@ -142,7 +138,6 @@ public class DimensionSerializerBuilder<T> implements ISerializer<Map<T, Double>
 
         return missingStringGenerationComponents;
     }
-
     public List<String> determineMissingFormatterComponentsNeededForStringGeneration() {
         List<String> missingStringGenerationComponents = new ArrayList<>();
 
@@ -169,12 +164,10 @@ public class DimensionSerializerBuilder<T> implements ISerializer<Map<T, Double>
         this.multiplicationSymbol = multiplicationSymbol.trim();
         return this;
     }
-
     public DimensionSerializerBuilder<T> setDivisionSymbol(String divisionSymbol) {
         this.divisionSymbol = divisionSymbol.trim();
         return this;
     }
-
     public DimensionSerializerBuilder<T> setExponentSymbol(String exponentSymbol) {
         this.exponentSymbol = exponentSymbol;
         return this;
@@ -194,7 +187,6 @@ public class DimensionSerializerBuilder<T> implements ISerializer<Map<T, Double>
         this.dimensionKeyFormatter.setLocale(locale);
         return this;
     }
-
     public DimensionSerializerBuilder<T> setDimensionValueFormatter(IFormatter dimensionValueFormatter) {
         this.dimensionValueFormatter = dimensionValueFormatter;
         this.dimensionValueFormatter.setLocale(locale);
