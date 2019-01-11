@@ -79,6 +79,8 @@
             android:fadingEdgeLength="10dp"
             android:hint="Format: a, a^#, prefix-a^#, a^# / b^#,  a^# * b^#, etc"
             android:paddingLeft="5dp"
+            android:scrollbars="horizontal"
+            android:scrollHorizontally="true"
             android:textSize="@dimen/from_unit_text_size"
             android:textStyle="bold" />
 
@@ -148,6 +150,7 @@
                 android:lines="1"
                 android:minLines="1"
                 android:scrollbars="horizontal"
+                android:scrollHorizontally="true"
                 android:textAlignment="gravity"
                 android:textSize="@dimen/from_value_text_size"
                 android:textStyle="bold" />
@@ -220,6 +223,8 @@
             android:fadingEdgeLength="10dp"
             android:hint="Format: a, a^#, prefix-a^#, a^# / b^#,  a^# * b^#, etc"
             android:paddingLeft="5dp"
+            android:scrollbars="horizontal"
+            android:scrollHorizontally="true"
             android:textSize="@dimen/to_unit_text_size"
             android:textStyle="bold" />
 

@@ -16,6 +16,6 @@
 
     <string name="convertButton_text">CONVERT</string>
 
-    <string name="loaded_online_units_pref_key">loaded online units pref key</string>
+    <string name="online_units_previously_saved_pref_key">loaded online units pref key</string>
 
 </resources>

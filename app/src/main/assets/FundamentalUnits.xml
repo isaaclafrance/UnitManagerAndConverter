@@ -45,4 +45,13 @@
 			</dimension>
         </dimensions>
     </unitSystem>
+	<unitSystem>
+		<name>dimless</name>
+		<dimensions>
+			<dimension>
+				<type>NUMBER</type>
+				<unit>1</unit>
+			</dimension>
+		</dimensions>
+	</unitSystem>
 </main>
