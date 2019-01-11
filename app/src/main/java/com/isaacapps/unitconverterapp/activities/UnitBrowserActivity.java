@@ -26,23 +26,25 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import static com.isaacapps.unitconverterapp.activities.MainActivity.SOURCE_NAME;
 import static com.isaacapps.unitconverterapp.activities.MainActivity.TARGET_NAME;
 
 public class UnitBrowserActivity extends Activity {
-    private static final int ALL = 0, OPPOSITE = 1, DYNAMIC = 2, CURRENCY = 3, METRIC = 4, SPECIAL = 5;
+    //Unfortunately android does not recommend enums. The number determines the order in the spinner dropdown.
+    private static final int ALL = 0, OPPOSITE = 1, CURRENCY = 2, LENGTH = 3, VOLUME = 4, AREA = 5, DYNAMIC = 6,  METRIC = 7, SPECIAL = 8, SI = 9, CGS = 10, US = 11;
 
     private static final String PREFIX_DELIMITER = " :: ";
     private static final String UNIT_ABBREVIATION_DELIMITER = " - ";
     private static final String PREFIX_IDENTITY_SYMBOL = "- - - - - - -";
-    private static final String ANY_UNIT_SYSTEM = "*Any Unit System"; //Shows up first in unit system spinner due to underscore prefix.
+    private static final String ANY_UNIT_SYSTEM = "*Any Unit System";
 
     private PersistentSharablesApplication pSharablesApplication;
     private ComponentUnitsDimensionParser componentUnitsDimensionParser;
@@ -58,6 +60,9 @@ public class UnitBrowserActivity extends Activity {
 
     private Map<Integer,String> quickDimensionFilters;
 
+    private ArrayList<String> unitSystemFilteringTokens;
+    private ArrayList<String> unitCategoryFilteringTokens;
+
     ///
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,6 +77,7 @@ public class UnitBrowserActivity extends Activity {
         } catch (ParsingException e) {
             e.printStackTrace();
         }
+
         spinnerSelectionFormatter = new StartCaseFormatter(locale);
 
         //Set unit category and the unit type of the opposite unit based on the current unit for which activity was invoked.
@@ -88,27 +94,55 @@ public class UnitBrowserActivity extends Activity {
         addOnItemSelectionListenerForSpinners();
 
         //
-        quickDimensionFilters = new HashMap<>();
+        populateUnitSystemFilteringTokens();
+        populateUnitCategoryFilteringTokens();
+        populateQuickDimFilters();
+    }
+    private void populateUnitSystemFilteringTokens(){
+        unitSystemFilteringTokens = new ArrayList<>();
+        unitSystemFilteringTokens.add(Unit.UNKNOWN_UNIT_SYSTEM);
+        unitSystemFilteringTokens.add("dimless");
+        unitSystemFilteringTokens.add("const");
+        unitSystemFilteringTokens.add("clinical");
+        unitSystemFilteringTokens.add("chemical");
+    }
+    private void populateUnitCategoryFilteringTokens(){
+        unitCategoryFilteringTokens = new ArrayList<>();
+        unitCategoryFilteringTokens.add(Unit.UNKNOWN_UNIT_CATEGORY);
+    }
+    private void populateQuickDimFilters(){
+        quickDimensionFilters = new TreeMap<>();
         quickDimensionFilters.put(ALL,"[ All ] Units");
         quickDimensionFilters.put(OPPOSITE, "[ " + oppositeUnitType + " ] " + "Units");
         quickDimensionFilters.put(DYNAMIC, "[ Dynamic ] Units");
         quickDimensionFilters.put(CURRENCY, "[ Currency ] Units");
+        quickDimensionFilters.put(LENGTH, "[ Length ] Units");
+        quickDimensionFilters.put(VOLUME, "[ Volume ] Units");
+        quickDimensionFilters.put(AREA, "[ Area ] Units");
         quickDimensionFilters.put(METRIC, "[ Metric ] Units");
-        quickDimensionFilters.put(SPECIAL, "[ Special ] Units");
+        quickDimensionFilters.put(SI, "[ SI ] Units");
+        quickDimensionFilters.put(CGS, "[ CGS ] Units");
+        quickDimensionFilters.put(US, "[ US ] Units");
+        //quickDimensionFilters.put(SPECIAL, "[ Special ] Units");
 
         //
-        populateQuickDimensionFilterSpinner();
+        ArrayList<String> filters = new ArrayList(quickDimensionFilters.values());
+        Collections.sort(filters);
+        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(this, R.layout.unit_browse_spinner_item, filters);
+        quickDimFilterSpinner.setAdapter(arrayAdapter);
+
+        //
         quickDimFilterSpinner.startAnimation(AnimationUtils
                 .loadAnimation(UnitBrowserActivity.this, android.R.anim.slide_in_left));
 
         if (oppositeUnitType.equalsIgnoreCase(SOURCE_NAME) &&
-                UnitsContentDeterminer.determineGeneralDataModelCategory(pSharablesApplication
+                UnitsContentDeterminer.determineHighestPriorityDataModelCategory(pSharablesApplication
                         .getSourceQuantity().getLargestUnit()) != UnitsContentDeterminer.DATA_MODEL_CATEGORY.UNKNOWN)
         {
-            quickDimFilterSpinner.setSelection(OPPOSITE);
+            quickDimFilterSpinner.setSelection(arrayAdapter.getPosition(quickDimensionFilters.get(OPPOSITE)));
         }
         else{
-            quickDimFilterSpinner.setSelection(ALL);
+            quickDimFilterSpinner.setSelection(arrayAdapter.getPosition(quickDimensionFilters.get(ALL)));
         }
 
         quickDimFilterSpinner.setSelected(true);
@@ -125,6 +159,10 @@ public class UnitBrowserActivity extends Activity {
         switch (item.getItemId()) {
             case R.id.delete_all_dynamic_units:
                 pSharablesApplication.getUnitManager().getUnitsDataModel().getUnitsContentModifier().removeAllDynamicUnits();
+
+                populateUnitSystemSpinner();
+                unitSystemSpinner.setSelection(0);
+                unitSystemSpinner.setSelected(true);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -168,7 +206,6 @@ public class UnitBrowserActivity extends Activity {
             deleteUnitButton.setAnimation(AnimationUtils.loadAnimation(UnitBrowserActivity.this, android.R.anim.slide_out_right));
         }
     }
-
     private void showSelectButtonIfSelectedUnitSelectable(String selectedUnitName) {
         //Only show select button that meet the following criteria: Not a COMPLETELY unknown
         if (selectedUnitName != null && !selectedUnitName.contains("No Compatible Units")) {
@@ -319,57 +356,56 @@ public class UnitBrowserActivity extends Activity {
         });
     }
 
-    private void populateQuickDimensionFilterSpinner() {
-        ArrayList<String> filters = new ArrayList(quickDimensionFilters.values());
-        Collections.sort(filters);
-
-        quickDimFilterSpinner.setAdapter( new ArrayAdapter<String>(this, R.layout.unit_browse_spinner_item, filters));
-    }
     private void populateUnitSystemSpinner() {
-        Set<String> unitSystems = getUnitSystemsBasedOnQuickDimFilterSelection();
+        ArrayList<String> formattedUnitSystems = getFormattedUnitSystemsBasedOnQuickDimFilterSelection();
 
-        if (unitSystems.isEmpty())
-            unitSystems.add("No Compatible Unit Systems");
-        else if(unitSystems.size() > 1){
+        if (formattedUnitSystems.isEmpty())
+            formattedUnitSystems.add("No Compatible Unit Systems");
+        else if(formattedUnitSystems.size() > 1){
             //Any compatible unit system
-            unitSystems.add(ANY_UNIT_SYSTEM);
+            formattedUnitSystems.add(0, ANY_UNIT_SYSTEM);
         }
 
-        unitSystemSpinner.setAdapter(new ArrayAdapter<>(this, R.layout.unit_browse_spinner_item, new ArrayList<>(unitSystems)));
+        unitSystemSpinner.setAdapter(new ArrayAdapter<>(this, R.layout.unit_browse_spinner_item, formattedUnitSystems));
     }
     private void populateCategorySpinner() {
-        Set<String> unitCategories = new TreeSet<>(); //Naturally ordered and no duplicates
-        String dimSpinnerSelection = (String) quickDimFilterSpinner.getSelectedItem();
+        Set<String> unformattedFinalUnitCategories = new TreeSet<>(); //Naturally ordered and no duplicates
+        String quickDimSpinnerSelection = (String) quickDimFilterSpinner.getSelectedItem();
         String unitSystemSpinnerSelection = (String) unitSystemSpinner.getSelectedItem();
 
-        if (dimSpinnerSelection.equals(quickDimensionFilters.get(DYNAMIC))) {
+        if (quickDimSpinnerSelection.equals(quickDimensionFilters.get(DYNAMIC))) {
             for (Unit dynamicUnit : pSharablesApplication.getUnitManager().getUnitsDataModel().getUnitsContentMainRetriever().getDynamicUnits())
-                unitCategories.add(spinnerSelectionFormatter.format(dynamicUnit.getCategory()));
+                unformattedFinalUnitCategories.add(dynamicUnit.getCategory());
         } else {
-            String dimFilterUnitCategory = getSingularUnitCategoryBasedOnQuickDimFilterSelection();
+            String dimFilterUnitCategoryToken = getSingularUnitCategoryTokenBasedOnQuickDimFilterSelection();
 
-            if (!dimFilterUnitCategory.isEmpty()) {
-                unitCategories.add(spinnerSelectionFormatter.format(dimFilterUnitCategory));
+            Collection<String> unformattedInitialUnitCategories;
+            if(unitSystemSpinnerSelection.equalsIgnoreCase(ANY_UNIT_SYSTEM)) {
+                unformattedInitialUnitCategories = pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().getAllUnitCategories();
+            } else {
+                unformattedInitialUnitCategories = pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().getUnitCategoriesInUnitSystem(unitSystemSpinnerSelection);
             }
-            else if(unitSystemSpinnerSelection.equalsIgnoreCase(ANY_UNIT_SYSTEM)) {
-                for(String unitCategory:pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().getAllUnitCategories())
-                    unitCategories.add(spinnerSelectionFormatter.format(unitCategory));
 
-                unitCategories.remove(Unit.UNKNOWN_UNIT_CATEGORY);
-            }
-            else
-            {
-                for(String unitCategory:pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().getUnitCategoriesInUnitSystem(unitSystemSpinnerSelection))
-                    unitCategories.add(spinnerSelectionFormatter.format(unitCategory));
+            for (String unitCategory : unformattedInitialUnitCategories) {
+                if (unitCategory.contains(dimFilterUnitCategoryToken))
+                    unformattedFinalUnitCategories.add(unitCategory);
             }
         }
 
-        if(unitCategories.isEmpty())
-            unitCategories.add("No Compatible Unit Categories.");
+        filterInvalidUnitCategories(unformattedFinalUnitCategories);
+
+        if(unformattedFinalUnitCategories.isEmpty()) {
+            unformattedFinalUnitCategories.add("No Compatible Unit Categories.");
+        }
+
+        ArrayList<String> formattedUnitCategories = new ArrayList<>();
+        for(String unitCategory:unformattedFinalUnitCategories){
+            formattedUnitCategories.add(spinnerSelectionFormatter.format(unitCategory));
+        }
 
         categorySpinner.setAdapter(new ArrayAdapter<>(this
                 , R.layout.unit_browse_spinner_item
-                , new ArrayList<>(unitCategories)));
+                , formattedUnitCategories));
     }
     private void populateUnitSpinner() {
         Set<String> formattedFullNameNAbbreviations = new TreeSet<>(); //Sort by default alphabetical
@@ -386,14 +422,6 @@ public class UnitBrowserActivity extends Activity {
         {
             formattedFullNameNAbbreviations.add("No Units Have A Dimension Compatible to the " + oppositeUnitType.toUpperCase() + " Unit.");
 
-        } else if (quickDimFilterSelection.equals(quickDimensionFilters.get(DYNAMIC) )) {
-
-            for(Unit dynamicUnit:pSharablesApplication.getUnitManager().getUnitsDataModel().getUnitsContentMainRetriever().getDynamicUnits())
-                formattedFullNameNAbbreviations.add(spinnerSelectionFormatter.format(dynamicUnit.getName()));
-
-            if(formattedFullNameNAbbreviations.isEmpty())
-                formattedFullNameNAbbreviations.add("No Dynamic Units");
-
         } else {
             List<String> allRelevantUnitNames = new ArrayList<>();
 
@@ -409,15 +437,15 @@ public class UnitBrowserActivity extends Activity {
 
             for (String unitName : allRelevantUnitNames) {
                 Unit unit = pSharablesApplication.getUnitManager().getUnitsDataModel().getUnitsContentMainRetriever().getUnit(unitName);
+                boolean unitNameIsComplex = !componentUnitsDimensionParser.getDimensionParserBuilder().getDimensionComponentDefiner().hasComplexDimensions(unitName);
 
                 String abbreviation = unit.getAbbreviation();
-                String fullNameNAbbreviation = (!unitName.equalsIgnoreCase(abbreviation)) ? unitName + UNIT_ABBREVIATION_DELIMITER + unit.getAbbreviation() : unitName;
+                String fullNameNAbbreviation = (!unitName.equalsIgnoreCase(abbreviation) && unitNameIsComplex) ? unitName + UNIT_ABBREVIATION_DELIMITER + unit.getAbbreviation() : unitName;
                 formattedFullNameNAbbreviations.add(spinnerSelectionFormatter.format(fullNameNAbbreviation));
             }
 			
 			/*If there are no units at this point, then the fault would not be that of the Quick Dimension Filter and with the selected unit system and category pairing
 			  since the category and unit system spinners are populated based on available units. */
-
             if (formattedFullNameNAbbreviations.isEmpty())
                 formattedFullNameNAbbreviations.add("No units available due to current Quick Dimension Filter selection");
         }
@@ -437,7 +465,7 @@ public class UnitBrowserActivity extends Activity {
         String unitSelection = ((String) unitSpinner.getSelectedItem()).split(UNIT_ABBREVIATION_DELIMITER)[0].trim();
 
         if (!unitSelection.contains("no units")
-                && !pSharablesApplication.getUnitManager().getPrefixesDataModel().hasPrefix(unitSelection, true)
+                && !pSharablesApplication.getUnitManager().getPrefixesDataModel().unitNameHasPrefix(unitSelection, true)
                 && !componentUnitsDimensionParser.getDimensionParserBuilder().getDimensionComponentDefiner().hasComplexDimensions(unitSelection)
                 && !(unitCategorySelection).equalsIgnoreCase(MainActivity.CURRENCY_CATEGORY))
         {
@@ -465,27 +493,25 @@ public class UnitBrowserActivity extends Activity {
     }
 
     ///
-    private Set<String> getUnitSystemsBasedOnQuickDimFilterSelection() {
-        Set<String> unitSystems = new TreeSet<>(); //Naturally ordered and no duplicates
+    private ArrayList<String> getFormattedUnitSystemsBasedOnQuickDimFilterSelection() {
+        Collection<String> unformattedUnitSystems = new TreeSet<>(); //Naturally ordered and no duplicates
         String dimFilterSelection = (String) quickDimFilterSpinner.getSelectedItem();
 
         if (dimFilterSelection.equals(quickDimensionFilters.get(ALL)))
         {
             for(String unitSystem:pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().getAllUnitSystems())
-                unitSystems.add(spinnerSelectionFormatter.format(unitSystem));
-
-            unitSystems.remove(spinnerSelectionFormatter.format(Unit.UNKNOWN_UNIT_SYSTEM));
+                unformattedUnitSystems.add(unitSystem);
 
         } else if (dimFilterSelection.equals(quickDimensionFilters.get(DYNAMIC))) {
             for (Unit dynamicUnit : pSharablesApplication.getUnitManager()
                     .getUnitsDataModel().getUnitsContentMainRetriever().getDynamicUnits())
             {
-                unitSystems.add(spinnerSelectionFormatter.format(dynamicUnit.getUnitSystem()));
+                unformattedUnitSystems.add(dynamicUnit.getUnitSystem());
             }
         } else {
             //Only add unit system that contains a relevant token or is associated with a relevant category.
             String relevantUnitSystemToken = getSingularUnitSystemTokenBasedOnQuickDimFilterSelection();
-            String relevantUnitCategory = getSingularUnitCategoryBasedOnQuickDimFilterSelection();
+            String relevantUnitCategory = getSingularUnitCategoryTokenBasedOnQuickDimFilterSelection();
 
             for (String unitSystem : pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().getAllUnitSystems()) {
                 boolean unitSystemIsRelevantBasedOnUnitSystemToken = !relevantUnitSystemToken.isEmpty() && unitSystem.contains(relevantUnitSystemToken);
@@ -493,17 +519,30 @@ public class UnitBrowserActivity extends Activity {
                         && pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().containsUnitCategoryInUnitSystem(unitSystem, relevantUnitCategory, true);
 
                 if (unitSystemIsRelevantBasedOnUnitSystemToken || unitSystemIsRelevantBasedOnCategory)
-                    unitSystems.add(spinnerSelectionFormatter.format(unitSystem));
+                    unformattedUnitSystems.add(unitSystem);
             }
         }
 
-        return unitSystems;
+        filterInvalidUnitSystems(unformattedUnitSystems);
+
+        ArrayList<String> formattedUnitsSystems = new ArrayList<>();
+        for(String unitSystem:unformattedUnitSystems){
+            formattedUnitsSystems.add(spinnerSelectionFormatter.format(unitSystem));
+        }
+
+        return formattedUnitsSystems;
     }
-    private String getSingularUnitCategoryBasedOnQuickDimFilterSelection() {
+    private String getSingularUnitCategoryTokenBasedOnQuickDimFilterSelection() {
         String dimFilterSelection = (String) quickDimFilterSpinner.getSelectedItem();
 
         if (dimFilterSelection.equalsIgnoreCase(quickDimensionFilters.get(CURRENCY))) {
-            return "currency_unit";
+            return "currency";
+        } else if (dimFilterSelection.equalsIgnoreCase(quickDimensionFilters.get(LENGTH))) {
+            return "length";
+        } else if (dimFilterSelection.equalsIgnoreCase(quickDimensionFilters.get(VOLUME))) {
+            return "volume";
+        } else if (dimFilterSelection.equalsIgnoreCase(quickDimensionFilters.get(AREA))) {
+            return "area";
         } else if (dimFilterSelection.equalsIgnoreCase(quickDimensionFilters.get(OPPOSITE))) {
             if (oppositeUnitType.equalsIgnoreCase(TARGET_NAME)) {
                 return pSharablesApplication.getTargetQuantity().getLargestUnit().getCategory();
@@ -520,11 +559,34 @@ public class UnitBrowserActivity extends Activity {
 
         if (dimFilterSelection.equalsIgnoreCase(quickDimensionFilters.get(METRIC))) {
             return "metric";
+        } else if (dimFilterSelection.equalsIgnoreCase(quickDimensionFilters.get(SI))) {
+            return "si";
+        } else if (dimFilterSelection.equalsIgnoreCase(quickDimensionFilters.get(CGS))) {
+            return "cgs";
+        } else if (dimFilterSelection.equalsIgnoreCase(quickDimensionFilters.get(US))) {
+            return "us";
         } else if (dimFilterSelection.equalsIgnoreCase(quickDimensionFilters.get(SPECIAL))) {
             return "special";
-        } else {
+        }else {
             return "";
         }
+    }
 
+    private void filterInvalidUnitSystems(Collection<String> filterableUnitSystems){
+        filterInvalidItems(filterableUnitSystems, unitSystemFilteringTokens);
+    }
+    private void filterInvalidUnitCategories(Collection<String> filterableUnitCategories){
+        filterInvalidItems(filterableUnitCategories, unitCategoryFilteringTokens);
+    }
+    private void filterInvalidItems(Collection<String> filterableItems, ArrayList<String> filterTokens){
+        Iterator<String> filterableItemsIterator = filterableItems.iterator();
+        while(filterableItemsIterator.hasNext()){
+            String filterCandidate = filterableItemsIterator.next();
+
+            for(String filterToken:filterTokens) {
+                if (filterCandidate.contains(filterToken))
+                    filterableItemsIterator.remove();
+            }
+        }
     }
 }
