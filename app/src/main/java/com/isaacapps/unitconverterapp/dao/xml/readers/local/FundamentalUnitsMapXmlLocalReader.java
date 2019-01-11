@@ -14,6 +14,8 @@ import java.io.IOException;
 
 ///According to official Google Android documentation, the XmlPullParser that reads one tag at a time is the most efficient way of parsing especially in situations where there are a large number of tags.
 public class FundamentalUnitsMapXmlLocalReader extends AsyncXmlReader<FundamentalUnitsDataModel, UnitManagerBuilder> {
+    public static String FUNDAMENTAL_UNITS_FILE = "FundamentalUnits.xml";
+
     private final FundamentalUnitsDataModel fundamentalUnitsDataModel;
 
     ///
@@ -56,6 +58,13 @@ public class FundamentalUnitsMapXmlLocalReader extends AsyncXmlReader<Fundamenta
     }
 
     ///
+    private String readUnitName(XmlPullParser parser) throws XmlPullParserException, IOException {
+        parser.require(XmlPullParser.START_TAG, null, "unit");
+        String unitName = readText(parser).toLowerCase();
+        parser.require(XmlPullParser.END_TAG, null, "unit");
+        return unitName;
+    }
+
     private String readUnitSystem(XmlPullParser parser) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, null, "name");
         String name = readText(parser).toLowerCase();
@@ -94,14 +103,6 @@ public class FundamentalUnitsMapXmlLocalReader extends AsyncXmlReader<Fundamenta
             }
         }
     }
-
-    private String readUnitName(XmlPullParser parser) throws XmlPullParserException, IOException {
-        parser.require(XmlPullParser.START_TAG, null, "unit");
-        String unitName = readText(parser).toLowerCase();
-        parser.require(XmlPullParser.END_TAG, null, "unit");
-        return unitName;
-    }
-
     private String readFundamentalDimension(XmlPullParser parser) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, null, "type");
         String fundamentalDimension = readText(parser).toUpperCase();
@@ -115,7 +116,7 @@ public class FundamentalUnitsMapXmlLocalReader extends AsyncXmlReader<Fundamenta
     public UnitManagerBuilder loadInBackground() {
         UnitManagerBuilder unitManagerBuilderBundle = new UnitManagerBuilder();
         try {
-            unitManagerBuilderBundle.addFundamentalUnitsDataModel(parseXML(openAssetFile("FundamentalUnits.xml")));
+            unitManagerBuilderBundle.addFundamentalUnitsDataModel(parseXML(openAssetFile(FUNDAMENTAL_UNITS_FILE)));
         } catch (Exception e) {
             e.printStackTrace();
         }

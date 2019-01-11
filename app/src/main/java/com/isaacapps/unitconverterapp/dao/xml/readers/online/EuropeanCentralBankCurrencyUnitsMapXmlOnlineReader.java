@@ -57,7 +57,7 @@ public class EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader extends AsyncXml
 
     ///
     @Override
-    protected List<List<Unit>> readEntity(XmlPullParser parser) throws XmlPullParserException, IOException {
+    protected List<List<Unit>> readEntity(XmlPullParser parser) {
         Map<String, Unit> unitsMap = new HashMap<>();
         List<List<Unit>> unitLists = new ArrayList<>(2);
 

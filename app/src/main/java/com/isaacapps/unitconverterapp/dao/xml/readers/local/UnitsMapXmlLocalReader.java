@@ -6,6 +6,10 @@ import com.isaacapps.unitconverterapp.dao.xml.readers.AsyncXmlReader;
 import com.isaacapps.unitconverterapp.models.measurables.unit.Unit;
 import com.isaacapps.unitconverterapp.models.measurables.unit.UnitException;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManagerBuilder;
+import com.isaacapps.unitconverterapp.processors.formatters.ChainedFormatter;
+import com.isaacapps.unitconverterapp.processors.formatters.IFormatter;
+import com.isaacapps.unitconverterapp.processors.formatters.text.LowercaseFormatter;
+import com.isaacapps.unitconverterapp.processors.formatters.text.SnakeCaseFormatter;
 import com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefiner;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.componentnunit.ComponentUnitsDimensionSerializer;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.fundamentalunit.FundamentalUnitTypesDimensionSerializer;
@@ -23,7 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 ///According to official Google Android documentation, the XmlPullParser that reads one tag at a time is the most efficient way of parsing especially in situations where there are a large number of tags.
-public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<Unit>>, UnitManagerBuilder> {
+public abstract class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<Unit>>, UnitManagerBuilder> {
     private final Locale locale;
     private final DimensionComponentDefiner dimensionComponentDefiner;
     private final ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer;
@@ -33,6 +37,9 @@ public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<U
     private final Map<String, Unit> nonBaseUnitsMap;
     private final ArrayList<Unit> partiallyConstructedUnits;
     private final ArrayList<Unit> defectiveUnits;
+
+    private final IFormatter unitSystemFormatter;
+    private final IFormatter unitNameFormatter;
 
     private Unit defaultUnit;
 
@@ -48,6 +55,9 @@ public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<U
         nonBaseUnitsMap = new HashMap<>();
         partiallyConstructedUnits = new ArrayList<>();
         defectiveUnits = new ArrayList<>();
+
+        unitSystemFormatter = new ChainedFormatter(locale).AddFormatter(new SnakeCaseFormatter(locale)).AddFormatter(new LowercaseFormatter(locale));
+        unitNameFormatter = new ChainedFormatter(locale).AddFormatter(new SnakeCaseFormatter(locale)).AddFormatter(new LowercaseFormatter(locale));
 
         try {
             defaultUnit = new Unit("base", Collections.emptySet(), "", "", "", "", Collections.emptyMap()
@@ -173,11 +183,10 @@ public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<U
     ///
     private String readUnitName(XmlPullParser parser) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, null, "unitName");
-        String unitNameString = readText(parser).toLowerCase();
+        String unitNameString = unitNameFormatter.format(readText(parser));
         parser.require(XmlPullParser.END_TAG, null, "unitName");
         return unitNameString;
     }
-
     private Set<String> readUnitNameAliases(XmlPullParser parser) throws XmlPullParserException, IOException {
         Set<String> unitNameAliases = new HashSet<>();
         String tagName = "";
@@ -199,25 +208,22 @@ public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<U
 
     private String readUnitSystem(XmlPullParser parser) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, null, "unitSystem");
-        String unitSystemString = readText(parser).toLowerCase();
+        String unitSystemString = unitSystemFormatter.format(readText(parser));
         parser.require(XmlPullParser.END_TAG, null, "unitSystem");
         return unitSystemString;
     }
-
     private String readAbbreviation(XmlPullParser parser) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, null, "abbreviation");
         String abbreviation = readText(parser);
         parser.require(XmlPullParser.END_TAG, null, "abbreviation");
         return abbreviation;
     }
-
     private String readUnitCategory(XmlPullParser parser) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, null, "unitCategory");
         String abbreviation = readText(parser).toLowerCase();
         parser.require(XmlPullParser.END_TAG, null, "unitCategory");
         return abbreviation;
     }
-
     private String readUnitDescription(XmlPullParser parser) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, null, "unitDescription");
         String abbreviation = readText(parser);
@@ -259,7 +265,6 @@ public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<U
         }
         return componentUnitsExponentsMap;
     }
-
     private Map<String, double[]> readBaseUnitNConversionPolyCoeffs(XmlPullParser parser) throws XmlPullParserException, IOException {
         Map<String, double[]> conversionPolyCoeffsMap = new HashMap<>();
         String baseUnitName = "";
@@ -285,37 +290,4 @@ public class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<ArrayList<U
 
         return conversionPolyCoeffsMap;
     }
-
-    ///
-    @Override
-    public UnitManagerBuilder loadInBackground() {
-
-        ArrayList<ArrayList<Unit>> coreUnitsGroup = new ArrayList<>();
-        ArrayList<ArrayList<Unit>> dynamicUnitsGroup = new ArrayList<>();
-        try {
-            coreUnitsGroup = parseXML(openAssetFile("StandardCoreUnits.xml"));
-            //dynamicUnitsGroup = parseXML(openXmlFile(getContext().getFilesDir().getPath().toString() + "DynamicUnits.xml", false));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        for (int i = 0; i < 2; i++) {
-            for (Unit unit : coreUnitsGroup.get(i)) {
-                unit.setCoreUnitState(true);
-            }
-        }
-
-        ArrayList<Unit> combinedUnits = coreUnitsGroup.get(0);
-        combinedUnits.addAll(coreUnitsGroup.get(1));
-
-        //if(dynamicUnitsGroup != null){
-        //combinedUnits.addAll(dynamicUnitsGroup.get(0));
-        //combinedUnits.addAll(dynamicUnitsGroup.get(1));
-        //}
-
-        return new UnitManagerBuilder().addBaseUnits(combinedUnits)
-                .addNonBaseUnits(combinedUnits);
-    }
-
-
 }

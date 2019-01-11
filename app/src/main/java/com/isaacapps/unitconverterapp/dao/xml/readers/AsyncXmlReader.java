@@ -54,7 +54,6 @@ public abstract class AsyncXmlReader<S, T> extends AsyncTaskLoader<T> {
     public InputStream openAssetFile(String fileName) throws IOException {
         return getContext().getAssets().open(fileName);
     }
-
     public InputStream openXmlFile(String fileLocation, boolean isOnlineSource) throws IOException {
         if (isOnlineSource) {
             return new URL(fileLocation).openStream();
@@ -84,11 +83,9 @@ public abstract class AsyncXmlReader<S, T> extends AsyncTaskLoader<T> {
     protected int readInt(XmlPullParser parser) throws IOException, XmlPullParserException {
         return Integer.parseInt(readText(parser));
     }
-
     protected double readDouble(XmlPullParser parser) throws IOException, XmlPullParserException {
         return Double.parseDouble(readText(parser));
     }
-
     protected double[] readDoubleArray(XmlPullParser parser) throws IOException, XmlPullParserException {
         double[] doubles = new double[2];
         String[] doublesTexts = readText(parser).split(" ", 0);

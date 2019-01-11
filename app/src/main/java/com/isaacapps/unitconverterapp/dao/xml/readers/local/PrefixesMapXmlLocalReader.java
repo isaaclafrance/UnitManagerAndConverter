@@ -14,6 +14,8 @@ import java.io.IOException;
 
 ///According to official Google Android documentation, the XmlPullParser that reads one tag at a time is the most efficient way of parsing especially in situations where there are a large number of tags.
 public class PrefixesMapXmlLocalReader extends AsyncXmlReader<PrefixesDataModel, UnitManagerBuilder> {
+    public static String STANDARD_CORE_PREFIXES_FILE = "StandardCorePrefixes.xml";
+
     private UnitsContentDeterminer.DATA_MODEL_CATEGORY categoryCurrentlyBeingRead;
     final PrefixesDataModel prefixesDataModel;
 
@@ -74,7 +76,7 @@ public class PrefixesMapXmlLocalReader extends AsyncXmlReader<PrefixesDataModel,
         UnitManagerBuilder unitManagerBuilderBundle = new UnitManagerBuilder();
         try {
             categoryCurrentlyBeingRead = UnitsContentDeterminer.DATA_MODEL_CATEGORY.CORE;
-            unitManagerBuilderBundle.addPrefixDataModel(parseXML(openAssetFile("StandardCorePrefixes.xml")));
+            unitManagerBuilderBundle.addPrefixDataModel(parseXML(openAssetFile(STANDARD_CORE_PREFIXES_FILE)));
             categoryCurrentlyBeingRead = UnitsContentDeterminer.DATA_MODEL_CATEGORY.DYNAMIC;
             unitManagerBuilderBundle.addPrefixDataModel(parseXML(openXmlFile(getContext().getFilesDir().getPath() + "DynamicPrefixes.xml", false)));
         } catch (Exception e) {

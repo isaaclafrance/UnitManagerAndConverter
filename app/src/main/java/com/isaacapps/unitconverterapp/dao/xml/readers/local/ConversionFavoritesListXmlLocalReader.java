@@ -1,5 +1,6 @@
 package com.isaacapps.unitconverterapp.dao.xml.readers.local;
 
+import android.app.Application;
 import android.content.Context;
 
 import com.isaacapps.unitconverterapp.dao.xml.readers.AsyncXmlReader;
@@ -12,6 +13,8 @@ import java.io.IOException;
 
 ///According to official Google Android documentation, the XmlPullParser that reads one tag at a time is the most efficient way of parsing especially in situations where there are a large number of tags.
 public class ConversionFavoritesListXmlLocalReader extends AsyncXmlReader<ConversionFavoritesDataModel, ConversionFavoritesDataModel> {
+    public static String CONVERSION_FAVORITES_FILE = "ConversionFavorites.xml";
+
     private final ConversionFavoritesDataModel conversionFavoritesDataModel;
 
     ///
@@ -71,7 +74,7 @@ public class ConversionFavoritesListXmlLocalReader extends AsyncXmlReader<Conver
     public ConversionFavoritesDataModel loadInBackground() {
         ConversionFavoritesDataModel conversionFavoritesDataModel = new ConversionFavoritesDataModel();
         try {
-            conversionFavoritesDataModel = parseXML(openXmlFile(getContext().getFilesDir().getPath() + "ConversionFavorites.xml", false));
+            conversionFavoritesDataModel = parseXML(openXmlFile(getContext().getFilesDir().getPath() + CONVERSION_FAVORITES_FILE, false));
         } catch (Exception e) {
             e.printStackTrace();
         }
