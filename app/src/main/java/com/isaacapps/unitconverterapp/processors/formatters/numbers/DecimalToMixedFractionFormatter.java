@@ -11,13 +11,14 @@ import static com.isaacapps.unitconverterapp.utilities.RegExUtility.SIGNED_DOUBL
 public class DecimalToMixedFractionFormatter implements IFormatter {
     /*Product of all successive primes less than and equal to 43. Due to precision limitations chose 43 as cut-off, but the large the number the better
      since it would make it would make it somewhat easier to find reduced fractions for nonterminating and irregular decimals. */
-    public final double HIGH_DIVISIBLE_DENOMINATOR = 6541380665835015.0;
-    public final double GCD_TOLERANCE = 0.000001; // used as a precision parameter.
+    public static final double HIGH_DIVISIBLE_DENOMINATOR = 6541380665835015.0;
+    public static final double GCD_TOLERANCE = 0.000001; // used as a precision parameter.
+
+    private static final Pattern decimalFractionPartPattern = Pattern.compile("(?<=[.,])\\d+\\Z");
+    private static final Pattern wholeNumberPartPattern = Pattern.compile("\\d+(?=[.,])");
+    private static final Pattern decimalPattern = SIGNED_DOUBLE_VALUE_REGEX_PATTERN;
 
     private Locale locale;
-    private final Pattern decimalFractionPartPattern = Pattern.compile("(?<=[.,])\\d+\\Z");
-    private final Pattern wholeNumberPartPattern = Pattern.compile("\\d+(?=[.,])");
-    private final Pattern decimalPattern = SIGNED_DOUBLE_VALUE_REGEX_PATTERN;
     private double nearestDenominator;
     private double gcdTolerance;
 
@@ -35,12 +36,16 @@ public class DecimalToMixedFractionFormatter implements IFormatter {
 
     ///
     @Override
-    public String format(String decimalInput) {
-        String formattedDecimal = decimalInput;
+    /**
+     * Produces a new formatted text where each instance of a double is transformed into mixed fraction representation (i.e. "2 1/3", "5/6", etc ).
+     * If there are no suitable instances, then the string is returned as is.
+     */
+    public String format(String textWithDoubles) {
+        String formattedDecimal = textWithDoubles;
 
-        Matcher decimalInputMatcher = decimalPattern.matcher(decimalInput);
+        Matcher decimalInputMatcher = decimalPattern.matcher(textWithDoubles);
         while(decimalInputMatcher.find())
-            formattedDecimal = decimalInput.replace(decimalInputMatcher.group(), convertToMixedNumber(decimalInputMatcher.group()));
+            formattedDecimal = textWithDoubles.replace(decimalInputMatcher.group(), convertToMixedNumber(decimalInputMatcher.group()));
 
         return formattedDecimal;
     }

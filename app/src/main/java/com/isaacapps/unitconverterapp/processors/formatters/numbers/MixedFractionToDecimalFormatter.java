@@ -24,12 +24,16 @@ public class MixedFractionToDecimalFormatter implements IFormatter {
 
     ///
     @Override
-    public String format(String mixedInput) {
-        String formattedMixedInput = mixedInput;
+    /**
+     * Produces a new formatted text where each instance of mixed fraction (i.e. "2 1/3", "5/6", etc ) is transformed into double with decimal places.
+     * If there are no suitable instances, then the string is returned as is.
+     */
+    public String format(String textWithMixedFraction) {
+        String formattedMixedInput = textWithMixedFraction;
 
-        Matcher mixedInputMatcher = MIXED_PATTERN.matcher(mixedInput);
+        Matcher mixedInputMatcher = MIXED_PATTERN.matcher(textWithMixedFraction);
         while(mixedInputMatcher.find())
-            formattedMixedInput = mixedInput.replace(mixedInputMatcher.group(), convertMixedNumberToDecimal(mixedInputMatcher.group()));
+            formattedMixedInput = textWithMixedFraction.replace(mixedInputMatcher.group(), convertMixedNumberToDecimal(mixedInputMatcher.group()));
 
         return formattedMixedInput;
     }

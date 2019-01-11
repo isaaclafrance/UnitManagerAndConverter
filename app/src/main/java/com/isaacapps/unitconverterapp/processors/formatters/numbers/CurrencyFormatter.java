@@ -17,12 +17,16 @@ public class CurrencyFormatter implements IFormatter {
     }
 
     @Override
-    public String format(String currencyNumber) {
-        String formattedCurrencyNumber = currencyNumber;
+    /**
+     * Produces a new formatted text where each instance of a double is transformed into a currency representation with a currency symbol that is local specific.
+     * If there are no suitable instances, then the string is returned as is.
+     */
+    public String format(String textWithDouble) {
+        String formattedCurrencyNumber = textWithDouble;
 
-        Matcher currencyInputMatcher = SIGNED_DOUBLE_VALUE_REGEX_PATTERN.matcher(currencyNumber);
+        Matcher currencyInputMatcher = SIGNED_DOUBLE_VALUE_REGEX_PATTERN.matcher(textWithDouble);
         while(currencyInputMatcher.find())
-            formattedCurrencyNumber = currencyNumber.replace(currencyInputMatcher.group(), currencyNumberFormat.format(Double.valueOf(currencyInputMatcher.group())));
+            formattedCurrencyNumber = textWithDouble.replace(currencyInputMatcher.group(), currencyNumberFormat.format(Double.valueOf(currencyInputMatcher.group())));
 
         return formattedCurrencyNumber;
     }
@@ -36,5 +40,14 @@ public class CurrencyFormatter implements IFormatter {
     public void setLocale(Locale locale) {
         this.locale = locale;
         currencyNumberFormat = NumberFormat.getCurrencyInstance(locale);
+    }
+
+    public static Locale guessCurrencyLocaleBasedOnCode(String code){
+        for(Locale locale:Locale.getAvailableLocales()){
+            if(code.startsWith(locale.toString().split("_")[0])){
+                return locale;
+            }
+        }
+        return null;
     }
 }

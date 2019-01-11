@@ -3,11 +3,14 @@ package com.isaacapps.unitconverterapp.processors.formatters.grouping;
 import com.isaacapps.unitconverterapp.processors.formatters.IFormatter;
 import com.isaacapps.unitconverterapp.processors.parsers.measurables.quantity.QuantityGroupingDefiner;
 
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
 public class GroupingFormatter implements IFormatter {
-    QuantityGroupingDefiner quantityGroupingDefiner;
+    public enum GROUP_ADJUSTMENT_LOCATION{BEGINNING, END};
+
+    protected QuantityGroupingDefiner quantityGroupingDefiner;
 
     private Pattern groupingContentSpacingPattern;
     private Pattern groupingBraceSpacingPattern;
@@ -92,17 +95,43 @@ public class GroupingFormatter implements IFormatter {
         return groupingCount;
     }
 
-    public String adjustGroupingsCount(String groupingTextToBeAdjusted, int targetGroupCount) {
+    public String adjustGroupingsCount(String groupingTextToBeAdjusted, int targetGroupCount, GROUP_ADJUSTMENT_LOCATION groupAdjustmentLocation) {
         StringBuilder adjustedGroupingTextBuilder = new StringBuilder(groupingTextToBeAdjusted);
 
         int currentGroupCount = calculateGroupingCount(groupingTextToBeAdjusted);
         if (currentGroupCount > targetGroupCount) {
             //remove extra groupings starting at the beginning
-            while (calculateGroupingCount(adjustedGroupingTextBuilder.toString()) != targetGroupCount)
-                adjustedGroupingTextBuilder.replace(adjustedGroupingTextBuilder.indexOf(quantityGroupingDefiner.getGroupOpeningSymbol()), adjustedGroupingTextBuilder.indexOf(quantityGroupingDefiner.getGroupClosingSymbol())+1, "");
+            while (calculateGroupingCount(adjustedGroupingTextBuilder.toString()) != targetGroupCount) {
+                int groupOpeningSymbolIndex;
+                int groupClosingSymbolIndex;
+                switch (groupAdjustmentLocation){
+                    case BEGINNING:
+                        groupOpeningSymbolIndex = adjustedGroupingTextBuilder.indexOf(quantityGroupingDefiner.getGroupOpeningSymbol());
+                        groupClosingSymbolIndex = adjustedGroupingTextBuilder.indexOf(quantityGroupingDefiner.getGroupClosingSymbol());
+                        break;
+                    case END:
+                        groupOpeningSymbolIndex = adjustedGroupingTextBuilder.lastIndexOf(quantityGroupingDefiner.getGroupOpeningSymbol());
+                        groupClosingSymbolIndex = adjustedGroupingTextBuilder.lastIndexOf(quantityGroupingDefiner.getGroupClosingSymbol());
+                        break;
+                    default:
+                        groupOpeningSymbolIndex = adjustedGroupingTextBuilder.lastIndexOf(quantityGroupingDefiner.getGroupOpeningSymbol());
+                        groupClosingSymbolIndex = adjustedGroupingTextBuilder.lastIndexOf(quantityGroupingDefiner.getGroupClosingSymbol());
+                }
+                adjustedGroupingTextBuilder.replace(groupOpeningSymbolIndex, groupClosingSymbolIndex + 1, "");
+            }
         } else if (currentGroupCount < targetGroupCount) {
             //Add empty groupings to make up the difference in count
-            adjustedGroupingTextBuilder.append(new String(new char[targetGroupCount - currentGroupCount]).replaceAll("\0", quantityGroupingDefiner.getGroupOpeningSymbol()+quantityGroupingDefiner.getGroupClosingSymbol()));
+            String emptyGrouping = quantityGroupingDefiner.getGroupOpeningSymbol()+quantityGroupingDefiner.getGroupClosingSymbol();
+            int additionalGroupingsCount = targetGroupCount - currentGroupCount;
+            String additionalEmptyGroupings = new String(new char[additionalGroupingsCount]).replaceAll("\0", emptyGrouping);
+            switch (groupAdjustmentLocation){
+                case BEGINNING:
+                    adjustedGroupingTextBuilder.insert(0, additionalEmptyGroupings);
+                    break;
+                case END:
+                    adjustedGroupingTextBuilder.append(additionalEmptyGroupings);
+                    break;
+            }
         }
 
         return adjustedGroupingTextBuilder.toString();
@@ -110,7 +139,7 @@ public class GroupingFormatter implements IFormatter {
 
     public String replaceEmptyGroupingsWithDefaultGrouping(String textWithEmptyGroupings, String defaultTextInReplacementGrouping){
         String groupingWithDefaultReplacementText = String.format("%s%s%s"
-                ,quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()
+                , quantityGroupingDefiner.getRegexEscapedGroupOpeningSymbol()
                 , defaultTextInReplacementGrouping
                 , quantityGroupingDefiner.getRegexEscapedGroupClosingSymbol());
 
@@ -119,7 +148,6 @@ public class GroupingFormatter implements IFormatter {
     }
 
     ///
-
     /**
      * For certain transformations, recursively tries to format grouping since a non terminal transformation may disrupt an already fixed formatting.
      * There is probably a more efficient graph theory algorithmic or context sensitive grammar approach to this.
@@ -128,36 +156,36 @@ public class GroupingFormatter implements IFormatter {
     @Override
     public String format(String grouping) {
         if (calculateGroupingCount(grouping) == 0)
-            grouping = "{" + grouping + "}";
+            grouping = quantityGroupingDefiner.getGroupOpeningSymbol() + grouping + quantityGroupingDefiner.getGroupClosingSymbol();
 
         if (startingBraceAtEndPattern.matcher(grouping).find()) //In most cases when a line ends in a starting brace, the actual intent would be a closing brace
-            grouping = format(grouping.replaceAll(startingBraceAtEndPattern.pattern(), "}"));
+            grouping = format(grouping.replaceAll(startingBraceAtEndPattern.pattern(), quantityGroupingDefiner.getGroupClosingSymbol()));
 
         // Add missing starting brace as long as the adjacent terminating brace is not in the beginning of the string, ie {aa}bb}... --> {aa}{bb}
         if (missingInternalStartBracePattern.matcher(grouping).find())
-            grouping = format(grouping.replaceAll(missingInternalStartBracePattern.pattern(), "}{"));
+            grouping = format(grouping.replaceAll(missingInternalStartBracePattern.pattern(), quantityGroupingDefiner.getGroupClosingSymbol()+quantityGroupingDefiner.getGroupOpeningSymbol()));
 
         // Add missing terminating brace as long as the adjacent beginning brace is not in the beginning of string or immediately to the right of a terminating brace , ie. {aa{bb}... --> {aa}{bb}
         if (missingInternalEndBracePattern.matcher(grouping).find())
-            grouping = format(grouping.replaceAll(missingInternalEndBracePattern.pattern(), "}{"));
+            grouping = format(grouping.replaceAll(missingInternalEndBracePattern.pattern(), quantityGroupingDefiner.getGroupClosingSymbol()+quantityGroupingDefiner.getGroupOpeningSymbol()));
 
         if (missingFinalEndBracePattern.matcher(grouping).find()) //Missing end brace at the very end, ie. {aa}{bb --> {aa}{bb}
-            grouping = format(grouping.replaceAll(missingFinalEndBracePattern.pattern(), "}"));
+            grouping = format(grouping.replaceAll(missingFinalEndBracePattern.pattern(), quantityGroupingDefiner.getGroupClosingSymbol()));
 
         if (missingBeginningStartBracePattern.matcher(grouping).find()) //Missing start brace at the very beginning, ie. aa}{bb} --> {aa}{bb}
-            grouping = format(grouping.replaceAll(missingFinalEndBracePattern.pattern(), "{"));
+            grouping = format(grouping.replaceAll(missingFinalEndBracePattern.pattern(), quantityGroupingDefiner.getGroupOpeningSymbol()));
 
         if (edgecasePattern.matcher(grouping).find()) //Account for some edge case....
             grouping = format(grouping.replaceAll(edgecasePattern.pattern(), ""));
 
         if (endBraceAtBeginningPattern.matcher(grouping).find()) // Remove terminating bracket at beginning, ie '}asnd}' --> '{asnd}'
-            grouping = grouping.replaceAll(endBraceAtBeginningPattern.pattern(), "{");
+            grouping = grouping.replaceAll(endBraceAtBeginningPattern.pattern(), quantityGroupingDefiner.getGroupOpeningSymbol());
 
         if (extraEndBracePattern.matcher(grouping).find()) // Remove extra ending braces ie '}}}' --> '}'
-            grouping = grouping.replaceAll(extraEndBracePattern.pattern(), "}");
+            grouping = grouping.replaceAll(extraEndBracePattern.pattern(), quantityGroupingDefiner.getGroupClosingSymbol());
 
         if (extraStartBracePattern.matcher(grouping).find()) // Remove extra starting braces ie '{{{' --> '{'
-            grouping = grouping.replaceAll(extraStartBracePattern.pattern(), "{");
+            grouping = grouping.replaceAll(extraStartBracePattern.pattern(), quantityGroupingDefiner.getGroupOpeningSymbol());
 
         if(groupingBraceSpacingPattern.matcher(grouping).find()) // Removal all spacings adjacent to a starting and terminating brace.
             grouping = grouping.replaceAll(groupingBraceSpacingPattern.pattern(), "");

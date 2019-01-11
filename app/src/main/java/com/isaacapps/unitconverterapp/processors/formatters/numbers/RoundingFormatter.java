@@ -20,12 +20,16 @@ public class RoundingFormatter implements IFormatter {
     }
 
     @Override
-    public String format(String number) {
-        String formattedNumber = number;
+    /**
+     * Produces a new formatted text where each instance of a double is transformed into rounded double.
+     * If there are no suitable instances, then the string is returned as is.
+     */
+    public String format(String textWithDoubles) {
+        String formattedNumber = textWithDoubles;
 
-        Matcher decimalInputMatcher = SIGNED_DOUBLE_VALUE_REGEX_PATTERN.matcher(number);
+        Matcher decimalInputMatcher = SIGNED_DOUBLE_VALUE_REGEX_PATTERN.matcher(textWithDoubles);
         while(decimalInputMatcher.find())
-            formattedNumber = number.replace(decimalInputMatcher.group(), String.format(locale,"%." + numOfDecimalPlaces + "f", Double.valueOf(decimalInputMatcher.group())));
+            formattedNumber = textWithDoubles.replace(decimalInputMatcher.group(), String.format(locale,"%." + numOfDecimalPlaces + "f", Double.valueOf(decimalInputMatcher.group())));
 
         return formattedNumber;
     }

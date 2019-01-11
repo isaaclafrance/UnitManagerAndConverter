@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 
 public class GeneralTextFormatter implements IFormatter{
     private Locale locale;
-    private Pattern multipleWhiteSpacesPattern = Pattern.compile("\\s{2,}");
+    private final static Pattern multipleWhiteSpacesPattern = Pattern.compile("\\s{2,}");
 
     public GeneralTextFormatter(Locale locale){
         this.locale = locale;

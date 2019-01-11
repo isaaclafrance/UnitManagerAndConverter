@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 
 public class StartCaseFormatter implements IFormatter {
     private Locale locale;
-    private final Pattern firstLowerCaseLetterPattern = Pattern.compile("(?<=^|[^a-zA-Z])[a-z]");
+    private static final Pattern firstLowerCaseLetterPattern = Pattern.compile("(?<=^|[^a-zA-Z])[a-z]");
 
     public StartCaseFormatter(Locale locale){
         this.locale = locale;

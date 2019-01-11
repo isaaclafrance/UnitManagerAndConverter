@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 
 public class SnakeCaseFormatter implements IFormatter {
     private Locale locale;
-    private Pattern oneOrMoreWhiteSpacesPattern = Pattern.compile("\\s+");
+    private final static Pattern oneOrMoreWhiteSpacesPattern = Pattern.compile("\\s+");
 
     public SnakeCaseFormatter(Locale locale){
         this.locale = locale;
@@ -15,7 +15,7 @@ public class SnakeCaseFormatter implements IFormatter {
 
     @Override
     public String format(String text) {
-        return oneOrMoreWhiteSpacesPattern.matcher(text).replaceAll("_");
+        return oneOrMoreWhiteSpacesPattern.matcher(text).replaceAll("_").replace("-", "_").trim();
     }
 
     @Override

@@ -20,14 +20,18 @@ public class SignificantFiguresFormatter implements IFormatter {
     }
 
     @Override
-    public String format(String decimal) {
-        String formattedNumber = decimal;
+    /**
+     * Produces a new formatted text where each instance of a double is transformed into another number satisfying specified significant figures.
+     * If there are no suitable instances, then the string is returned as is.
+     */
+    public String format(String textWithDoubles) {
+        String formattedText = textWithDoubles;
 
-        Matcher decimalInputMatcher = SIGNED_DOUBLE_VALUE_REGEX_PATTERN.matcher(decimal);
+        Matcher decimalInputMatcher = SIGNED_DOUBLE_VALUE_REGEX_PATTERN.matcher(textWithDoubles);
         while(decimalInputMatcher.find())
-            formattedNumber = decimal.replace(decimalInputMatcher.group(), String.format(locale,"%." + numberOfSignificantFigures + "g", decimalInputMatcher.group()));
+            formattedText = textWithDoubles.replace(decimalInputMatcher.group(), String.format(locale,"%." + numberOfSignificantFigures + "g", decimalInputMatcher.group()));
 
-        return formattedNumber;
+        return formattedText;
     }
 
     ///

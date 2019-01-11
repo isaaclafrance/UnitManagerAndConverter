@@ -17,12 +17,16 @@ public class PercentFormatter implements IFormatter {
     }
 
     @Override
-    public String format(String percentNumber) {
-        String formattedCurrencyNumber = percentNumber;
+    /**
+     * Produces a new formatted text where each instance of a double is transformed into another percent representation.
+     * If there are no suitable instances, then the string is returned as is.
+     */
+    public String format(String textWithDoubles) {
+        String formattedCurrencyNumber = textWithDoubles;
 
-        Matcher percentInputMatcher = SIGNED_DOUBLE_VALUE_REGEX_PATTERN.matcher(percentNumber);
+        Matcher percentInputMatcher = SIGNED_DOUBLE_VALUE_REGEX_PATTERN.matcher(textWithDoubles);
         while(percentInputMatcher.find())
-            formattedCurrencyNumber = percentNumber.replace(percentInputMatcher.group(), percentNumberFormat.format(Double.valueOf(percentInputMatcher.group())));
+            formattedCurrencyNumber = textWithDoubles.replace(percentInputMatcher.group(), percentNumberFormat.format(Double.valueOf(percentInputMatcher.group())));
 
         return formattedCurrencyNumber;
     }
