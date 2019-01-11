@@ -75,6 +75,8 @@ public class UnitManagerBuilder {
     private FundamentalUnitTypesDimensionParser fundamentalUnitTypesDimensionParser;
     private FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer;
 
+    private boolean reUpdateAssociationsOfUnknownUnits;
+
     ///
     public UnitManagerBuilder(){
         this(Locale.getDefault());
@@ -88,14 +90,11 @@ public class UnitManagerBuilder {
         nonBaseUnits = new ArrayList<>();
 
         //Since there are many structural components that need to be setup, start with some default structural implementations that are most commonly used
-        initializeDataModels();
-        initializeDataModelDependencies();
-        initializeDataModelWithHashedRepositories();
-        initializeUnitsDataModelComponents();
+        initializeAllStructuralDefaults();
     }
 
     ///Default structural implementations
-    public UnitManagerBuilder initializeDataModelWithHashedRepositories(){
+    public UnitManagerBuilder initializeDefaultDataModelWithHashedRepositories(){
         return setPrefixesRepositoryWithDualKeyNCategory(new PrefixesDualKeyNCategoryHashedRepository())
                 .setUnitsRepositoryWithDualKeyNCategory(new UnitsDualKeyNCategoryHashedRepository())
                 .setFundamentalUnitsRepositoryWithDualKeyNCategory(new FundamentalUnitsHashDualKeyNCategoryHashedRepository())
@@ -103,32 +102,39 @@ public class UnitManagerBuilder {
                 .setConversionFavoritesRepositoryWithDualKeyNCategory(new ConversionFavoritesDualKeyNCategoryHashedRepository())
                 .setSignificanceRankRepository(new SignificanceRankHashedRepository());
     }
-    public UnitManagerBuilder initializeUnitsDataModelComponents(){
+    public UnitManagerBuilder initializeDefaultUnitsDataModelComponents(){
         return setUnitsDataModelUnitsContentQuerier(new UnitsContentQuerier())
                 .setUnitsDataModelUnitsContentMainRetriever(new UnitsContentMainRetriever())
                 .setUnitsDataModelUnitsContentModifier(new UnitsContentModifier())
                 .setUnitsDataModelUnitsContentDeterminer(new UnitsContentDeterminer());
     }
-    public UnitManagerBuilder initializeDataModels(){
+    public UnitManagerBuilder initializeDefaultDataModels(){
         return setUnitsDataModel(new UnitsDataModel())
                 .setPrefixesDataModel(new PrefixesDataModel())
                 .setFundamentalUnitsDataModel(new FundamentalUnitsDataModel())
                 .setUnitsClassifierDataModel(new UnitsClassifierDataModel())
                 .setConversionFavoritesDataModel(new ConversionFavoritesDataModel());
     }
-    public UnitManagerBuilder initializeDataModelDependencies(){
+    public UnitManagerBuilder initializeDefaultDataModelDependencies(){
         try {
             return setPluralTextParser(new EnglishPluralTextParser())
                     .setAbbreviationFormatter(new AbbreviationFormatter(locale))
                     .setUnitParser(new UnitParser(componentUnitsDimensionParser))
                     .setComponentUnitsDimensionParser(new ComponentUnitsDimensionParser())
-                    .setComponentUnitsDimensionSerializer(new ComponentUnitsDimensionSerializer(locale, new ComponentUnitsDimensionItemSerializer(locale, new GeneralTextFormatter(locale))))
+                    .setComponentUnitsDimensionSerializer(new ComponentUnitsDimensionSerializer(locale))
                     .setFundamentalUnitTypesDimensionParser(new FundamentalUnitTypesDimensionParser())
-                    .setFundamentalUnitTypesDimensionSerializer( new FundamentalUnitTypesDimensionSerializer(locale, new FundamentalUnitTypesDimensionItemSerializer(locale, new GeneralTextFormatter(locale))));
+                    .setFundamentalUnitTypesDimensionSerializer( new FundamentalUnitTypesDimensionSerializer(locale));
         } catch (ParsingException e) {
             return this;
         }
     }
+    public UnitManagerBuilder initializeAllStructuralDefaults(){
+        initializeDefaultDataModels();
+        initializeDefaultDataModelDependencies();
+        initializeDefaultDataModelWithHashedRepositories();
+        return initializeDefaultUnitsDataModelComponents();
+    }
+
 
     ///
     public UnitManagerBuilder setPrefixesRepositoryWithDualKeyNCategory(IDualKeyNCategoryRepository<String, Double, UnitsContentDeterminer.DATA_MODEL_CATEGORY> repositoryWithDualKeyNCategory){
@@ -137,35 +143,30 @@ public class UnitManagerBuilder {
             prefixesDataModel.setRepositoryWithDualKeyNCategory(repositoryWithDualKeyNCategory);
         return this;
     }
-
     public UnitManagerBuilder setUnitsRepositoryWithDualKeyNCategory(IDualKeyNCategoryRepository<String, Unit, UnitsContentDeterminer.DATA_MODEL_CATEGORY> repositoryWithDualKeyNCategory){
         unitsRepositoryWithDualKeyNCategory = repositoryWithDualKeyNCategory;
         if(unitsDataModel != null)
             unitsDataModel.setRepositoryWithDualKeyNCategory(repositoryWithDualKeyNCategory);
         return this;
     }
-
     public UnitManagerBuilder setFundamentalUnitsRepositoryWithDualKeyNCategory(IDualKeyNCategoryRepository<String, UNIT_TYPE, String> repositoryWithDualKeyNCategory){
         fundamentalUnitsRepositoryWithDualKeyNCategory = repositoryWithDualKeyNCategory;
         if(fundamentalUnitsDataModel != null)
             fundamentalUnitsDataModel.setRepositoryWithDualKeyNCategory(repositoryWithDualKeyNCategory);
         return this;
     }
-
     public UnitManagerBuilder setUnitsClassifierRepositoryWithDualKeyNCategory(IDualKeyNCategoryRepository<String, Collection<String>, String> repositoryWithDualKeyNCategory){
         unitsClassifierRepositoryWithDualKeyNCategory = repositoryWithDualKeyNCategory;
         if(unitsClassifierDataModel != null)
             unitsClassifierDataModel.setRepositoryWithDualKeyNCategory(repositoryWithDualKeyNCategory);
         return this;
     }
-
     public UnitManagerBuilder setConversionFavoritesRepositoryWithDualKeyNCategory(IDualKeyNCategoryRepository<String, String, String> repositoryWithDualKeyNCategory){
         conversionFavoritesRepositoryWithDualKeyNCategory = repositoryWithDualKeyNCategory;
         if(conversionFavoritesDataModel != null)
             conversionFavoritesDataModel.setRepositoryWithDualKeyNCategory(repositoryWithDualKeyNCategory);
         return this;
     }
-
     public UnitManagerBuilder setSignificanceRankRepository(SignificanceRankHashedRepository significanceRankRepository){
         this.significanceRankHashedRepository = significanceRankRepository;
         if(conversionFavoritesDataModel != null)
@@ -178,22 +179,18 @@ public class UnitManagerBuilder {
         this.unitsDataModel = unitsDataModel;
         return this;
     }
-
     public UnitManagerBuilder setPrefixesDataModel(PrefixesDataModel prefixesDataModel) {
         this.prefixesDataModel = prefixesDataModel;
         return this;
     }
-
     public UnitManagerBuilder setUnitsClassifierDataModel(UnitsClassifierDataModel unitsClassifierDataModel) {
         this.unitsClassifierDataModel = unitsClassifierDataModel;
         return this;
     }
-
     public UnitManagerBuilder setFundamentalUnitsDataModel(FundamentalUnitsDataModel fundamentalUnitsDataModel) {
         this.fundamentalUnitsDataModel = fundamentalUnitsDataModel;
         return this;
     }
-
     public UnitManagerBuilder setConversionFavoritesDataModel(ConversionFavoritesDataModel conversionFavoritesDataModel) {
         this.conversionFavoritesDataModel = conversionFavoritesDataModel;
         return this;
@@ -223,32 +220,26 @@ public class UnitManagerBuilder {
         this.pluralTextParser = pluralTextParser;
         return this;
     }
-
     public UnitManagerBuilder setAbbreviationFormatter(IFormatter abbreviationFormatter){
         this.abbreviationFormatter = abbreviationFormatter;
         return this;
     }
-
     public UnitManagerBuilder setUnitParser(UnitParser unitParser) {
         this.unitParser = unitParser;
         return this;
     }
-
     public UnitManagerBuilder setComponentUnitsDimensionParser(ComponentUnitsDimensionParser componentUnitsDimensionParser) {
         this.componentUnitsDimensionParser = componentUnitsDimensionParser;
         return this;
     }
-
     public UnitManagerBuilder setComponentUnitsDimensionSerializer(ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer) {
         this.componentUnitsDimensionSerializer = componentUnitsDimensionSerializer;
         return this;
     }
-
     public UnitManagerBuilder setFundamentalUnitTypesDimensionParser(FundamentalUnitTypesDimensionParser fundamentalUnitTypesDimensionParser) {
         this.fundamentalUnitTypesDimensionParser = fundamentalUnitTypesDimensionParser;
         return this;
     }
-
     public UnitManagerBuilder setFundamentalUnitTypesDimensionSerializer(FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer) {
         this.fundamentalUnitTypesDimensionSerializer = fundamentalUnitTypesDimensionSerializer;
         return this;
@@ -269,6 +260,10 @@ public class UnitManagerBuilder {
         return locale;
     }
 
+    public void setReUpdateAssociationsOfUnknownUnits(boolean reUpdateAssociationsOfUnknownUnits){
+        this.reUpdateAssociationsOfUnknownUnits = reUpdateAssociationsOfUnknownUnits;
+    }
+
     ///
     public UnitManagerBuilder addBaseUnits(Iterable<Unit> baseUnits) {
         if (baseUnits != null) {
@@ -278,7 +273,6 @@ public class UnitManagerBuilder {
         }
         return this;
     }
-
     public UnitManagerBuilder addBaseUnit(Unit baseUnit) {
         if (baseUnit != null && baseUnit.isBaseUnit()) {
             baseUnits.add(baseUnit);
@@ -286,13 +280,11 @@ public class UnitManagerBuilder {
         }
         return this;
     }
-
     public UnitManagerBuilder clearBaseUnits() {
         baseUnits.clear();
         componentContentStates[0] = false;
         return this;
     }
-
     public UnitManagerBuilder addNonBaseUnits(Iterable<Unit> nonBaseUnits) {
         if (nonBaseUnits != null) {
             for (Unit nonBaseUnit : nonBaseUnits) {
@@ -301,7 +293,6 @@ public class UnitManagerBuilder {
         }
         return this;
     }
-
     public UnitManagerBuilder addNonBaseUnit(Unit nonBaseUnit) {
         if (nonBaseUnit != null && !nonBaseUnit.isBaseUnit()) {
             nonBaseUnits.add(nonBaseUnit);
@@ -309,11 +300,14 @@ public class UnitManagerBuilder {
         }
         return this;
     }
-
     public UnitManagerBuilder clearNonBaseUnits() {
         nonBaseUnits.clear();
         componentContentStates[1] = false;
         return this;
+    }
+    public UnitManagerBuilder clearAllUnits(){
+        clearBaseUnits();
+        return clearNonBaseUnits();
     }
 
     ///
@@ -327,26 +321,22 @@ public class UnitManagerBuilder {
         componentContentStates[3] = this.prefixesDataModel.hasDynamicPrefixes();
         return this;
     }
-
     public UnitManagerBuilder addCorePrefix(String prefixFullName, String prefixAbbreviation, Double prefixValue) {
         prefixesDataModel.addCorePrefix(prefixFullName, prefixAbbreviation, prefixValue);
         componentContentStates[2] = true;
         return this;
     }
-
     public UnitManagerBuilder clearCorePrefixes() {
         prefixesDataModel.removeAllCorePrefixes();
         componentContentStates[2] = false;
         return this;
     }
-
     public UnitManagerBuilder addDynamicPrefix(String prefixFullName, String prefixAbbreviation, Double prefixValue) {
         prefixesDataModel.addDynamicPrefix(prefixFullName, prefixAbbreviation, prefixValue);
         componentContentStates[3] = true;
         return this;
     }
-
-    public UnitManagerBuilder cleaDynamicPrefixesNAbbreviations() {
+    public UnitManagerBuilder clearDynamicPrefixesNAbbreviations() {
         prefixesDataModel.removeAllDynamicPrefixes();
         componentContentStates[3] = false;
         return this;
@@ -362,13 +352,11 @@ public class UnitManagerBuilder {
         componentContentStates[4] = true;
         return this;
     }
-
     public UnitManagerBuilder addFundamentalUnit(String unitSystem, String unitName, UNIT_TYPE unitType) {
         fundamentalUnitsDataModel.addFundamentalUnit(unitSystem, unitName, unitType);
         componentContentStates[4] = true;
         return this;
     }
-
     public UnitManagerBuilder clearFundUnits() {
         fundamentalUnitsDataModel.removeAllFundamentalUnits();
         componentContentStates[4] = false;
@@ -376,26 +364,18 @@ public class UnitManagerBuilder {
     }
 
     ///
-    public UnitManagerBuilder clearAll() {
-        clearBaseUnits();
-        clearNonBaseUnits();
-        clearCorePrefixes();
-        cleaDynamicPrefixesNAbbreviations();
-        return clearFundUnits();
-    }
-
-    ///
-
     /**
      * Attempts to merge with the CONTENT of the data models in another unit manager builder if they are structurally compatible.
      */
     public UnitManagerBuilder combineWith(UnitManagerBuilder otherBuilder) throws UnitManagerBuilderException {
-        this.addPrefixDataModel(otherBuilder.prefixesDataModel)
-                .addFundamentalUnitsDataModel(otherBuilder.fundamentalUnitsDataModel)
-                .addBaseUnits(otherBuilder.baseUnits)
-                .addNonBaseUnits(otherBuilder.nonBaseUnits);
+        if(otherBuilder != null) {
+            this.addPrefixDataModel(otherBuilder.prefixesDataModel)
+                    .addFundamentalUnitsDataModel(otherBuilder.fundamentalUnitsDataModel)
+                    .addBaseUnits(otherBuilder.baseUnits)
+                    .addNonBaseUnits(otherBuilder.nonBaseUnits);
 
-        this.conversionFavoritesDataModel.combineWith(otherBuilder.conversionFavoritesDataModel);
+            this.conversionFavoritesDataModel.combineWith(otherBuilder.conversionFavoritesDataModel);
+        }
 
         return this;
     }
@@ -405,7 +385,6 @@ public class UnitManagerBuilder {
         //Determines if the minimum needed components are available to create an adequately functional unit manager.
         return componentContentStates[0] && componentContentStates[1] && componentContentStates[2] && componentContentStates[4] && someFundamentalUnitsAreImplemented();
     }
-
     private boolean someFundamentalUnitsAreImplemented() {
         //Assumption is that only base units can be be defined as fundamental units.
         for (Unit baseUnit : baseUnits) {
@@ -414,7 +393,6 @@ public class UnitManagerBuilder {
         }
         return false;
     }
-
     public boolean areAnyComponentsAvailable() {
         for (boolean componentState : componentContentStates) {
             if (componentState)
@@ -439,7 +417,6 @@ public class UnitManagerBuilder {
     }
 
     ///
-
     private void injectUnitManagerComponents(UnitManager unitManager){
         unitManager.setUnitsModelData(unitsDataModel);
         unitManager.setPrefixesModelData(prefixesDataModel);
@@ -447,7 +424,6 @@ public class UnitManagerBuilder {
         unitManager.setUnitsClassifierDataModel(unitsClassifierDataModel);
         unitManager.setConversionFavoritesDataModel(conversionFavoritesDataModel);
     }
-
     private void injectUnitManagerDataModelRepositories(UnitManager unitManager){
         unitManager.getUnitsDataModel().setRepositoryWithDualKeyNCategory(unitsRepositoryWithDualKeyNCategory);
         unitManager.getPrefixesDataModel().setRepositoryWithDualKeyNCategory(prefixsRepositoryWithDualKeyNCategory);
@@ -456,14 +432,13 @@ public class UnitManagerBuilder {
         unitManager.getConversionFavoritesDataModel().setRepositoryWithDualKeyNCategory(conversionFavoritesRepositoryWithDualKeyNCategory);
         unitManager.getConversionFavoritesDataModel().setSignificanceRankRepository(significanceRankHashedRepository);
     }
-
     private void injectUnitsDataModelDependencies(UnitsDataModel unitsDataModel){
         unitsDataModel.setPluralTextParser(pluralTextParser);
         unitsDataModel.setComponentUnitsDimensionParser(componentUnitsDimensionParser);
         unitsDataModel.setComponentUnitsDimensionSerializer(componentUnitsDimensionSerializer);
         unitsDataModel.setFundamentalUnitTypesDimensionSerializer(fundamentalUnitTypesDimensionSerializer);
+        unitsDataModel.setAbbreviationFormatter(abbreviationFormatter);
     }
-
     private void injectUnitsDataModelSubComponents(UnitsDataModel unitsDataModel){
         unitsDataModel.setUnitsContentMainRetriever(unitsDataModelUnitsContentMainRetriever);
         unitsDataModel.setUnitsContentModifier(unitsDataModelUnitsContentModifier);
@@ -518,6 +493,8 @@ public class UnitManagerBuilder {
         {
             unitManager.getFundamentalUnitsDataModel().combineWith(fundamentalUnitsDataModel);
         }
+
+        unitManager.getUnitsDataModel().getUnitsContentModifier().setUpdateAssociationsOfUnknownUnits(reUpdateAssociationsOfUnknownUnits);
 
         //Base units depend on the fundamental units map being set first in order to ensure that their types can be determined.
         if (componentContentStates[0])
