@@ -14,6 +14,7 @@ public class UnitParser implements IParser<Unit> {
 
     private UnitManager unitManager;
     private IParser<Map<String, Double>> componentUnitDimensionParser;
+    private boolean unknownUnitsAreSaved;
 
     ///
     public UnitParser(IParser<Map<String, Double>> componentUnitDimensionParser) {
@@ -34,7 +35,7 @@ public class UnitParser implements IParser<Unit> {
 
         unit = new Unit(componentUnitDimensionParser.parse(unitDefinition));
 
-        if(unitManager != null) {
+        if(unitManager != null && unknownUnitsAreSaved) {
             try {
                 return unitManager.getUnitsDataModel().getUnitsContentModifier().addUnit(unit);
             } catch (UnitException e) {
@@ -49,8 +50,14 @@ public class UnitParser implements IParser<Unit> {
     public UnitManager getUnitManager() {
         return unitManager;
     }
-
     public void setUnitManager(UnitManager unitManager) {
         this.unitManager = unitManager;
+    }
+
+    public boolean areUnknownUnitsSaved(){
+        return unknownUnitsAreSaved;
+    }
+    public void setUnknownUnitsAreSaved(boolean unknownUnitsAreSaved){
+        this.unknownUnitsAreSaved = unknownUnitsAreSaved;
     }
 }

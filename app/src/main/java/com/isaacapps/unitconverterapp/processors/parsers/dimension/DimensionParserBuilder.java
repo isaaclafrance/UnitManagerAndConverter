@@ -331,7 +331,6 @@ public class DimensionParserBuilder<T> implements IParser<Map<T, Double>> {
             return multiGroupRegExMatcher.reset(stringToBeMatched);
         }
     }
-
     private Matcher getSingleGroupRegExMatcher(String stringToBeMatched){
         if(!isOptimized || singleGroupRegExMatcher == null || singleGroupRegExMatcher.pattern().pattern()
                 .equalsIgnoreCase(dimensionComponentDefiner.getSingleGroupRegExPattern().pattern()))
@@ -353,7 +352,6 @@ public class DimensionParserBuilder<T> implements IParser<Map<T, Double>> {
             return exponentialGroupRegExMatcher.reset(stringToBeMatched);
         }
     }
-
     private Matcher getExponentValueRegExMatcher(String stringToBeMatched){
         if(!isOptimized || exponentValueRegExMatcher == null || exponentValueRegExMatcher.pattern().pattern()
                 .equalsIgnoreCase(dimensionComponentDefiner.getExponentValueRegexPattern().pattern()))
@@ -375,7 +373,6 @@ public class DimensionParserBuilder<T> implements IParser<Map<T, Double>> {
             return atomicTypeGroupRegExMatcher.reset(stringToBeMatched);
         }
     }
-
     private Matcher getDivisionSymbolsRegExMatcher(String stringToBeMatched){
         if(!isOptimized || divisionSymbolsRegExMatcher == null || divisionSymbolsRegExMatcher.pattern().pattern()
                 .equalsIgnoreCase(dimensionComponentDefiner.getDivisionSymbolsRegExPattern().pattern()))

@@ -14,7 +14,6 @@ import java.util.regex.Pattern;
 public class EnglishPluralTextParser extends PluralTextParser{
     private static final String VOWELS_REGEX = "[aeiou]";
     private static final String WORD_SEPERATOR_REGEX = "([ _]|\\Z)";
-    private static final String ONLY_LETTER_WORDS_REGEX = "([a-zA-Z]+" + WORD_SEPERATOR_REGEX + "?)+";
     private static final int MINIMUM_LENGTH = 4;
 
     //A rule consists of a regular expression to identify the plural ending and what to replace it with.
@@ -49,7 +48,7 @@ public class EnglishPluralTextParser extends PluralTextParser{
      */
     @Override
     public boolean hasPossiblePlural(String text, boolean useLessRestrictiveSecondPass) {
-        if (text.length() < MINIMUM_LENGTH || !text.matches(ONLY_LETTER_WORDS_REGEX))
+        if (text.length() < MINIMUM_LENGTH)
             return false;
 
         //Since the less restrictive second pass rule catches more cases, it should be tested first if parameter

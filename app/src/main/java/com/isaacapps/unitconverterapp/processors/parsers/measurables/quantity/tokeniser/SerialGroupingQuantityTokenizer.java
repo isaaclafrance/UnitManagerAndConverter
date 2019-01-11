@@ -53,8 +53,9 @@ public class SerialGroupingQuantityTokenizer {
         Matcher valueGroupingMatcher = quantityGroupingDefiner.getSingleValueGroupingPattern()
                 .matcher(extractSerialValuesGroupingString(groupings));
 
-        while (valueGroupingMatcher.find())
+        while (valueGroupingMatcher.find()) {
             valueGroupingList.add(Double.parseDouble(quantityGroupingDefiner.removeGroupingSymbol(valueGroupingMatcher.group())));
+        }
 
         return valueGroupingList;
     }

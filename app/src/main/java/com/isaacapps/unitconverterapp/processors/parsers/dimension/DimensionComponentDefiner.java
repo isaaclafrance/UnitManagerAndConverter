@@ -125,10 +125,10 @@ public class DimensionComponentDefiner {
      */
     Pattern createSingleGroupRegExPattern() {
         String optionalExponentialComponent = String.format("(?:%s)?", createExponentGroupRegex());
-        String optionalOperationalComponent = String.format("(?:(?<=\\s|\\b|[()]|\\A)(?:%s))?"
+        String optionalOperationalComponent = String.format("(?:(?<=\\s|\\W|\\b|[()]|\\A)(?:%s))?"
                 , createOperationComponentRegEx());
 
-        return Pattern.compile(String.format("(?:%s%s%s(?=\\b|\\Z))"
+        return Pattern.compile(String.format("(?:%s%s%s(?=\\b|\\Z|\\W))"
                 , optionalOperationalComponent, createInteriorGroupComponentRegEx()
                 , optionalExponentialComponent));
     }
@@ -336,27 +336,21 @@ public class DimensionComponentDefiner {
     public Pattern getExponentValueRegexPattern()  {
         return exponentValueRegexPattern;
     }
-
     public Pattern getExponentSymbolsRegExPattern(){
         return exponentSymbolsRegExPattern;
     }
-
     public Pattern getAtomicTypeRegExPattern()  {
         return atomicTypeRegExPattern;
     }
-
     public Pattern getSingleGroupRegExPattern() {
         return singleGroupRegExPattern;
     }
-
     public Pattern getMultiGroupRegExPattern(){
         return multiGroupRegExPattern;
     }
-
     public Pattern getDivisionSymbolsRegExPattern(){
         return divisionSymbolsRegExPattern;
     }
-
     public Pattern getMultiplicationSymbolsRegExPattern(){
         return multiplicationSymbolsRegExPattern;
     }

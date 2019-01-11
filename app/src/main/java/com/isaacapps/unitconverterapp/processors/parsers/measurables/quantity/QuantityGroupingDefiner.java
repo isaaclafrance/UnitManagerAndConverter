@@ -47,7 +47,7 @@ public class QuantityGroupingDefiner {
         compilePairedGroupingPatterns();
     }
     private void compileSerialGroupingPatterns(){
-        singleUnitGroupingPattern = Pattern.compile(String.format("%s(?:[\\s]*%s|%s[\\s]*)%s", regexEscapedGroupOpeningSymbol, dimensionComponentDefiner.getMultiGroupRegExPattern(), dimensionComponentDefiner.getSingleGroupRegExPattern(), regexEscapedGroupClosingSymbol));
+        singleUnitGroupingPattern = Pattern.compile(String.format("%s(?:[\\s]*%s|%s+[\\s]*)%s", regexEscapedGroupOpeningSymbol, dimensionComponentDefiner.getMultiGroupRegExPattern(), dimensionComponentDefiner.getSingleGroupRegExPattern(), regexEscapedGroupClosingSymbol));
         serialUnitsGroupingsPattern = Pattern.compile(String.format("(?:[\\s]*%s[\\s]*)+", singleUnitGroupingPattern.pattern()));
         singleValueGroupingPattern = Pattern.compile(String.format("%s[\\s]*%s[\\s]*%s", regexEscapedGroupOpeningSymbol, SIGNED_DOUBLE_VALUE_REGEX_PATTERN.pattern(), regexEscapedGroupClosingSymbol));
         serialValuesGroupingsPattern = Pattern.compile(String.format("(?:[\\s]*%s[\\s]*)+", singleValueGroupingPattern.pattern()));
