@@ -6,6 +6,7 @@ import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 import org.xmlpull.v1.XmlSerializer;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -23,7 +24,8 @@ public abstract class XmlWriter<T> {
 
     ///
     public void saveToXML(T entity) throws XmlPullParserException, IllegalArgumentException, IllegalStateException, IOException {
-        OutputStream xmlFileOutputStream = new FileOutputStream(context.getFilesDir().getPath() + destination, false);
+        File xmlFile = new File(context.getFilesDir().getPath() + destination);
+        OutputStream xmlFileOutputStream = new FileOutputStream(xmlFile, false);
         Writer xmlStreamWriter = new OutputStreamWriter(xmlFileOutputStream);
 
         try {
