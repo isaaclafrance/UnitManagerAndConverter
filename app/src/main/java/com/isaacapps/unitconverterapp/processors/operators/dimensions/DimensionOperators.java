@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 public final class DimensionOperators {
+    public enum DIMENSION_TYPE { DERIVED_SINGLE, DERIVED_MULTI, SIMPLE }
 
     ///
     public static <T> ChainedDimensionOperation<T> multiply(Map<T, Double> firstDimension){
@@ -59,6 +60,14 @@ public final class DimensionOperators {
     }
 
     ///
+    public static <T> Map<T, Double> inverse(Map<T, Double> dimension, boolean createNewDimension){
+        return exponentiate(dimension, -1.0, createNewDimension);
+    }
+    public static <T> Map<T, Double> inverse(Map<T, Double> dimension){
+        return inverse(dimension, true);
+    }
+
+    ///
     /**
      * Increases the exponent associated with dimension map by the provided exponent.
      * If the item did not already exist in map, then it first added with initial value of zero before increase.
@@ -77,7 +86,6 @@ public final class DimensionOperators {
             , Map<T, Double> secondDimension) {
         return equalsDimension(firstDimension, secondDimension, 0.00001);
     }
-
     /**
      * Compares two map dimensions to see if they have corresponding dimension items with identical
      * dimensions values (exponents). Ignores dimension items with zero dimension values.
@@ -121,13 +129,29 @@ public final class DimensionOperators {
         }
         return dimension;
     }
-
     public static <T> Map<T, Double> removeDimensionItemsRaisedToZero(Map<T, Double> dimension){
         return removeDimensionItemsRaisedToZero(dimension, 0.00001);
     }
+    public static <T> boolean isDimensionless(Map<T, Double> dimension){
+        return removeDimensionItemsRaisedToZero(new HashMap<>(dimension)).isEmpty();
+    }
 
     //
-    public static <T> boolean isDimensionaless(Map<T, Double> dimension){
-        return removeDimensionItemsRaisedToZero(new HashMap<>(dimension)).isEmpty();
+    public static <T> DIMENSION_TYPE determineDimensionType(Map<T, Double> dimension){
+        if (dimension.size() > 1) {
+            return DIMENSION_TYPE.DERIVED_MULTI;
+        }
+        else if (dimension.size() == 1
+                && (Math.abs(dimension.entrySet().iterator().next().getValue()) > 1
+                || dimension.containsValue(-1.0)
+                || dimension.containsValue(0.0)))
+        {
+            return DIMENSION_TYPE.DERIVED_SINGLE;
+        }
+
+        return DIMENSION_TYPE.SIMPLE;
+    }
+    public static <T> boolean hasComplexDimensionType(Map<T, Double> dimension){
+        return determineDimensionType(dimension) != DIMENSION_TYPE.SIMPLE;
     }
 }

@@ -15,12 +15,10 @@ public class QuantityConverter {
     public static Quantity determineConversionQuantityToTargetUnit(Quantity sourceQuantity, Unit targetUnit, boolean ensureValueOfLargestUnitIsLargerThanOne) throws QuantityException {
         return determineConversionQuantityToTargetUnitsGroup(sourceQuantity, Collections.singletonList(targetUnit), ensureValueOfLargestUnitIsLargerThanOne);
     }
-
     public static Quantity determineConversionQuantityToTargetUnitsGroup(Quantity sourceQuantity, List<Unit> targetUnitsGroup, boolean ensureValueOfLargestUnitIsLargerThanOne) throws QuantityException {
         return new Quantity(calculateConversionValuesToTargetUnitsGroup(sourceQuantity.getUnitValueMap()
                 , targetUnitsGroup, ensureValueOfLargestUnitIsLargerThanOne), targetUnitsGroup);
     }
-
     public static Quantity determineConversionQuantityToTargetUnitSystem(Quantity sourceQuantity, String targetUnitSystem, boolean ensureValueOfLargestUnitIsLargerThanOne) throws QuantityException {
         return determineConversionQuantityToTargetUnitsGroup(sourceQuantity
                 , Collections.singletonList(UnitConverter.determineConversionUnitToTargetUnitSystem(sourceQuantity.getLargestUnit(), targetUnitSystem))
@@ -73,14 +71,16 @@ public class QuantityConverter {
         if( !ensureValueOfLargestUnitIsLargerThanOne || (conversionValue > 1 || sortedTargetUnits.size() == 1) )
             targetValues.set(0, conversionValue);
 
+        double previousFullConversionValue = 0.0;
         for (int i = 1; i < sortedTargetUnits.size(); i++) {
-            boolean previousSkipped = targetValues.get(i - 1) == 0.0 && ensureValueOfLargestUnitIsLargerThanOne;
-            double cascadedRemainder = previousSkipped ? valueOfBasisUnit : (targetValues.get(i - 1) - (targetValues.get(i - 1) > 1 ? Math.floor(targetValues.get(i - 1)) : targetValues.get(i - 1)) );
+            boolean previousSkipped = previousFullConversionValue == 0.0 && ensureValueOfLargestUnitIsLargerThanOne;
+            double cascadedRemainder = previousSkipped ? valueOfBasisUnit : (previousFullConversionValue - (previousFullConversionValue > 1 ? Math.floor(previousFullConversionValue) : previousFullConversionValue) );
             conversionCoeffs = UnitConverter.calculateConversionCoeffsToTargetUnit(cascadedRemainder, previousSkipped ? basisUnit : sortedTargetUnits.get(i - 1), sortedTargetUnits.get(i));
 
             conversionValue = cascadedRemainder * conversionCoeffs[0] + conversionCoeffs[1];
-            if(!ensureValueOfLargestUnitIsLargerThanOne || (conversionValue > 1 || i == sortedTargetUnits.size() -1) )
-                targetValues.set(i, conversionValue);
+            if(!ensureValueOfLargestUnitIsLargerThanOne || (conversionValue > 1 || i == sortedTargetUnits.size()-1) )
+                targetValues.set(i, Math.floor(conversionValue));
+            previousFullConversionValue = conversionValue;
         }
 
         return targetValues;

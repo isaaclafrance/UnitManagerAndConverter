@@ -24,7 +24,7 @@ public class UnitConverter {
         }
 
         if(sourceUnit.getUnitManagerContext() != null){
-            if(UnitsContentDeterminer.determineGeneralDataModelCategory(sourceUnit) != UnitsContentDeterminer.DATA_MODEL_CATEGORY.UNKNOWN){
+            if(UnitsContentDeterminer.determineHighestPriorityDataModelCategory(sourceUnit) != UnitsContentDeterminer.DATA_MODEL_CATEGORY.UNKNOWN){
                 return sourceUnit.getUnitManagerContext().getFundamentalUnitsDataModel()
                         .transformFundamentalUnitsDimensionToComponentUnitDimension(sourceUnit.getFundamentalUnitTypesDimension(), targetUnitSystem);
             }

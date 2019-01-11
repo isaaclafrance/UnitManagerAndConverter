@@ -22,14 +22,12 @@ public class UnitOperators {
                         , secondUnit.getComponentUnitsDimension())
                 , retrieveValidUnitManagerContexts(firstUnit, secondUnit));
     }
-
     public static Unit divide(Unit firstUnit, Unit secondUnit) {
         return retrieveExistingUnitWithComparableDimension(
                 DimensionOperators.divide(firstUnit.getComponentUnitsDimension()
                         , secondUnit.getComponentUnitsDimension())
                 , retrieveValidUnitManagerContexts(firstUnit, secondUnit));
     }
-
     public static Unit exponentiate(Unit baseUnit, Double exponent){
         return retrieveExistingUnitWithComparableDimension(
                 DimensionOperators.exponentiate(baseUnit.getComponentUnitsDimension()
@@ -89,8 +87,8 @@ public class UnitOperators {
     ///
     public static boolean equalsDimension(Unit firstUnit, Unit secondUnit) {
         if (firstUnit.getUnitManagerContext() == secondUnit.getUnitManagerContext()
-                && UnitsContentDeterminer.determineGeneralDataModelCategory(firstUnit) != UnitsContentDeterminer.DATA_MODEL_CATEGORY.UNKNOWN
-                && UnitsContentDeterminer.determineGeneralDataModelCategory(secondUnit) != UnitsContentDeterminer.DATA_MODEL_CATEGORY.UNKNOWN) {
+                && UnitsContentDeterminer.determineHighestPriorityDataModelCategory(firstUnit) != UnitsContentDeterminer.DATA_MODEL_CATEGORY.UNKNOWN
+                && UnitsContentDeterminer.determineHighestPriorityDataModelCategory(secondUnit) != UnitsContentDeterminer.DATA_MODEL_CATEGORY.UNKNOWN) {
             //Since the units belong to same unit manager context and the unit manager is assumed to be internally consistent,
             //units with the same dimension are given the same base units
             return firstUnit.getBaseUnit() == secondUnit.getBaseUnit();
@@ -112,7 +110,6 @@ public class UnitOperators {
         }
         return true;
     }
-
     /**
      * Strictly compares the component units dimensions of the provided units.
      */
@@ -161,11 +158,9 @@ public class UnitOperators {
             return firstCoeffComparison;
         }
     }
-
     public static boolean lessThan(Unit lhsUnit, Unit rhsUnit) throws UnitException {
         return compareTo(lhsUnit, rhsUnit) < 0;
     }
-
     public static boolean greaterThan(Unit lhsUnit, Unit rhsUnit) throws UnitException {
         return compareTo(lhsUnit, rhsUnit) > 0;
     }

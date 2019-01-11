@@ -14,11 +14,9 @@ public class QuantityOperators {
     public static Quantity add(Quantity firstQuantity, Quantity secondQuantity) throws IncompatibleUnitDimensionException, QuantityException {
         return quantityOperation(1, firstQuantity, secondQuantity);
     }
-
     public static Quantity subtract(Quantity firstQuantity, Quantity secondQuantity) throws IncompatibleUnitDimensionException, QuantityException {
         return quantityOperation(-1, firstQuantity, secondQuantity);
     }
-
     private static Quantity quantityOperation(int sign, Quantity firstQuantity, Quantity secondQuantity) throws IncompatibleUnitDimensionException, QuantityException {
         if ( equalsUnitDimensionOf(firstQuantity, secondQuantity)) {
             //Coerce the unit of the second quantity to be that of the largest associated with the first quantity.
@@ -37,7 +35,6 @@ public class QuantityOperators {
         return new Quantity(firstQuantity.getWeightedValueWithRespectToLargestUnit() * secondQuantity.getWeightedValueWithRespectToLargestUnit()
                 , UnitOperators.multiply(firstQuantity.getLargestUnit(), secondQuantity.getLargestUnit()));
     }
-
     public static Quantity divide(Quantity firstQuantity, Quantity secondQuantity) throws QuantityException {
         //To reduce complexity only accounts for the largest unit and corresponding weighted value
         return new Quantity(firstQuantity.getWeightedValueWithRespectToLargestUnit() / secondQuantity.getWeightedValueWithRespectToLargestUnit()
@@ -58,7 +55,6 @@ public class QuantityOperators {
     public static boolean equalsUnitDimensionOf(Quantity firstQuantity, Quantity secondQuantity) {
         return UnitOperators.equalsDimension(firstQuantity.getLargestUnit(), secondQuantity.getLargestUnit());
     }
-
     public static boolean equalsValueNUnitDimensionWithRespectToLargestUnitOf(Quantity firstQuantity, Quantity secondQuantity) {
         return firstQuantity.getWeightedValueWithRespectToLargestUnit().equals(secondQuantity.getWeightedValueWithRespectToLargestUnit())
                 && equalsUnitDimensionOf(firstQuantity, secondQuantity);
