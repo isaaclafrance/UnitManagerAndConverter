@@ -19,7 +19,8 @@ import java.util.Map.Entry;
  */
 public class FundamentalUnitsDataModel extends BaseDataModel<String, FundamentalUnitsDataModel.UNIT_TYPE, String> {
     public enum UNIT_TYPE {
-        MASS, LENGTH, TIME, AMT_OF_SUBSTANCE, NUMBER, ANGLE, TEMPERATURE, CHARGE, LUMINOUS_INTENSITY, DERIVED_SINGLE_UNIT, DERIVED_MULTI_UNIT, UNKNOWN, CURRENCY
+        MASS, LENGTH, TIME, AMT_OF_SUBSTANCE, NUMBER, ANGLE, TEMPERATURE, CHARGE, LUMINOUS_INTENSITY, CURRENCY
+        , UNKNOWN, COMPLEX
     }
 
     public static final String DEFAULT_UNIT_SYSTEM = "si";
@@ -38,7 +39,7 @@ public class FundamentalUnitsDataModel extends BaseDataModel<String, Fundamental
         repositoryWithDualKeyNCategory.addItem(unitSystem.toLowerCase(), unitName.toLowerCase(), unitName.toLowerCase(), unitType);
         //Ideally, since the fundamental units data model is so integral as basis to the other data models, everything should reinitalize event for a minor change.
         if(unitsDataModel != null) {
-            unitsDataModel.getUnitsContentModifier().updateFundamentalUnitsDimensionOfKnownUnits();
+            unitsDataModel.getUnitsContentModifier().updateFundamentalUnitsDimensionOfKnownUnits(false);
             try {
                 unitsDataModel.getUnitsContentModifier().updateAssociationsOfUnknownUnits();
             } catch (UnitException e) {
@@ -107,14 +108,14 @@ public class FundamentalUnitsDataModel extends BaseDataModel<String, Fundamental
             componentUnit = unitsDataModel.getUnitsContentMainRetriever().getUnit(componentUnitName, createMissingComplexUnits);
 
             ///
-            if(componentUnit == null || componentUnit.getType() == UNIT_TYPE.UNKNOWN){
+            if(componentUnit == null || componentUnit.getUnitType() == UNIT_TYPE.UNKNOWN){
                 DimensionOperators.alterExponentOfDimensionItem(fundamentalUnitMap, getFirstSuitableUnitTypeWithinUnitSystemCollection(componentUnitName, failSafeUnitSystems), componentUnitExponent);
                 continue;
             }
 
             ///
-            if (componentUnit.getType() == UNIT_TYPE.DERIVED_MULTI_UNIT) {
-                Map<String, Double> selectedInnerComponentUnitsMap = ((componentUnit.getComponentUnitsDimension().size() == 1) ? componentUnit.getBaseUnit() : componentUnit).getComponentUnitsDimension();
+            if (componentUnit.getUnitType() == UNIT_TYPE.COMPLEX) {
+                Map<String, Double> selectedInnerComponentUnitsMap = ((componentUnit.getDimensionType() == DimensionOperators.DIMENSION_TYPE.SIMPLE) ? componentUnit.getBaseUnit() : componentUnit).getComponentUnitsDimension();
 
                 if(selectedInnerComponentUnitsMap.containsKey(componentUnitName)) {  //Prevent infinite recursion
                     DimensionOperators.alterExponentOfDimensionItem(fundamentalUnitMap, UNIT_TYPE.UNKNOWN, componentUnitExponent);
@@ -122,21 +123,11 @@ public class FundamentalUnitsDataModel extends BaseDataModel<String, Fundamental
                 }
 
                 Map<UNIT_TYPE, Double> recursedFundUnitMap = transformComponentUnitsDimensionToFundamentalUnitsDimension(selectedInnerComponentUnitsMap, failSafeUnitSystems, createMissingComplexUnits);
+                for (UNIT_TYPE unitType : recursedFundUnitMap.keySet())
+                    DimensionOperators.alterExponentOfDimensionItem(fundamentalUnitMap, unitType, componentUnitExponent * recursedFundUnitMap.get(unitType));
 
-                for (UNIT_TYPE unitType : UNIT_TYPE.values()) {
-                    if (recursedFundUnitMap.containsKey(unitType)) {
-                        DimensionOperators.alterExponentOfDimensionItem(fundamentalUnitMap, unitType, componentUnitExponent * recursedFundUnitMap.get(unitType));
-                    }
-                }
             } else {
-                if (componentUnit.getType() != UNIT_TYPE.DERIVED_SINGLE_UNIT) {
-                    DimensionOperators.alterExponentOfDimensionItem(fundamentalUnitMap, componentUnit.getBaseUnit().getType(), componentUnitExponent);
-
-                } else {
-                    for (Entry<UNIT_TYPE, Double> fundEntry : componentUnit.getBaseUnit().getFundamentalUnitTypesDimension().entrySet()) {
-                        DimensionOperators.alterExponentOfDimensionItem(fundamentalUnitMap, fundEntry.getKey(), fundEntry.getValue() * componentUnitExponent);
-                    }
-                }
+                DimensionOperators.alterExponentOfDimensionItem(fundamentalUnitMap, componentUnit.getBaseUnit().getUnitType(), componentUnitExponent);
             }
         }
 
