@@ -1,14 +1,14 @@
 package com.isaacapps.unitconverterapp.activities;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.LoaderManager;
-import android.support.v4.content.Loader;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.ViewGroup;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -19,8 +19,8 @@ import android.widget.TextView;
 
 import com.isaacapps.unitconverterapp.adapters.ConversionFavoritesExpandableListAdapter;
 import com.isaacapps.unitconverterapp.adapters.ConversionFavoritesRegularListAdapter;
-import com.isaacapps.unitconverterapp.dao.xml.readers.local.ConversionFavoritesListXmlLocalReader;
 import com.isaacapps.unitconverterapp.models.measurables.quantity.QuantityException;
+import com.isaacapps.unitconverterapp.models.measurables.unit.Unit;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.ConversionFavoritesDataModel;
 import com.isaacapps.unitconverterapp.processors.formatters.IFormatter;
 import com.isaacapps.unitconverterapp.processors.formatters.grouping.UnitNamesGroupingFormatter;
@@ -34,9 +34,10 @@ import com.isaacapps.unitconverterapp.processors.parsers.measurables.quantity.to
 import com.isaacapps.unitconverterapp.processors.parsers.measurables.unit.UnitParser;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 
-public class ConversionFavoritesActivity extends FragmentActivity implements LoaderManager.LoaderCallbacks<ConversionFavoritesDataModel> {
+public class ConversionFavoritesActivity extends FragmentActivity{
     private PersistentSharablesApplication pSharablesApplication;
 
     private ExpandableListView conversionsExpandableListView;
@@ -63,8 +64,7 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
 
     private Comparator<String> conversionRankComparator;
 
-    private final int FAVORITES_LOADER = 1;
-    private final int BY_RANK = 1, BY_CATGEORY = 2, BY_ALPHABETICAL = 3; //Unfortunately enums are not recommended on android
+    private final int BY_RANK = 1, BY_CATEGORY = 2, BY_ALPHABETICAL = 3; //Unfortunately enums are not recommended on android
 
     private int listMode;
 
@@ -111,10 +111,6 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
         addListenerOnConversionListView();
 
         setListMode(BY_RANK);
-        if (pSharablesApplication.getUnitManager().getConversionFavoritesDataModel().getAllFormattedConversions().isEmpty())
-        {
-            loadConversionFavorites();
-        }
     }
     @Override
     public void onWindowFocusChanged(boolean hasFocus){
@@ -134,7 +130,7 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.by_category:
-                setListMode(BY_CATGEORY);
+                setListMode(BY_CATEGORY);
                 break;
             case R.id.by_rank_item:
                 setListMode(BY_RANK);
@@ -176,7 +172,7 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
     }
     
     private void showSelectButtonIfAppropriate() {
-        if (pastSelectedConversionPosition != -1 || pastChildViewSelection != null
+        if (selectedConversion != null
                 || !pSharablesApplication.getUnitManager().getConversionFavoritesDataModel().getAllFormattedConversions().isEmpty()) {
             selectButton.setVisibility(View.VISIBLE);
             selectButton.setAnimation(AnimationUtils.loadAnimation(ConversionFavoritesActivity.this, android.R.anim.slide_in_left));
@@ -186,7 +182,7 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
         }
     }
     private void showRemoveButtonIfAppropriate() {
-        if (pastSelectedConversionPosition != -1 || pastChildViewSelection != null
+        if (selectedConversion != null
                 || !pSharablesApplication.getUnitManager().getConversionFavoritesDataModel().getAllFormattedConversions().isEmpty()) {
             removeButton.setVisibility(View.VISIBLE);
             removeButton.setAnimation(AnimationUtils.loadAnimation(ConversionFavoritesActivity.this, android.R.anim.fade_in));
@@ -195,32 +191,37 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
             removeButton.setAnimation(AnimationUtils.loadAnimation(ConversionFavoritesActivity.this, android.R.anim.slide_out_right));
         }
     }
-
-    ///Data Loading Methods
-    private void loadConversionFavorites() {
-        getSupportLoaderManager().initLoader(FAVORITES_LOADER, null, this).forceLoad();
-    }
-
+    
     ///Button Listeners Methods
     private void addListenerOnConversionFavoritesButtons() {
         selectButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
+                boolean hasMultipleUnits = false;
                 try {
-                    String sourceUnits = pSharablesApplication.getUnitManager().getConversionFavoritesDataModel()
+                    String sourceUnitNames = pSharablesApplication.getUnitManager().getConversionFavoritesDataModel()
                             .getSourceUnitNameFromConversion(selectedConversion);
-                    pSharablesApplication.getSourceQuantity().setUnits(serialGroupingQuantityTokenizer.parseSerialGroupingToUnitsList(sourceUnits));
+                    List<Unit> sourceUnits = serialGroupingQuantityTokenizer.parseSerialGroupingToUnitsList(sourceUnitNames);
+                    pSharablesApplication.getSourceQuantity().setUnits(sourceUnits);
 
-                    String targetUnits = pSharablesApplication.getUnitManager().getConversionFavoritesDataModel()
+                    String targetUnitNames = pSharablesApplication.getUnitManager().getConversionFavoritesDataModel()
                             .getTargetUnitNameFromConversion(selectedConversion);
-                    pSharablesApplication.getTargetQuantity().setUnits(serialGroupingQuantityTokenizer.parseSerialGroupingToUnitsList(targetUnits));
+                    List<Unit> targetUnits = serialGroupingQuantityTokenizer.parseSerialGroupingToUnitsList(targetUnitNames);
+                    pSharablesApplication.getTargetQuantity().setUnits(targetUnits);
 
                     pSharablesApplication.getUnitManager().getConversionFavoritesDataModel()
                             .modifySignificanceRankOfMultipleConversions(ConversionFavoritesDataModel.parseUnitCategoryFromConversion(selectedConversion), true);
+
+
+                    hasMultipleUnits = sourceUnits.size()>1 || targetUnits.size()>1;
                 } catch (QuantityException e) {
                     e.printStackTrace();
                 }
                 finally {
+                    Intent i = new Intent(getApplicationContext(), MainActivity.class);
+                    i.putExtra(PersistentSharablesApplication.MULTI_UNIT_MODE_BUNDLE_NAME, hasMultipleUnits);
+                    startActivity(i);
+
                     finish();
                 }
             }
@@ -234,6 +235,7 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
                 {
                     pastSelectedConversionPosition = -1;
                     pastChildViewSelection = null;
+                    selectedConversion = null;
 
                     repopulateCurrentList();
 
@@ -260,7 +262,7 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
             public boolean onChildClick(ExpandableListView expandableListView, View childView, int categoryIndex, int childIndex
                     , long arg3) {
 
-                alterExpandableListSelection(childView);
+                alterExpandableListSelection(((ViewGroup)childView).getChildAt(childIndex));
 
                 showSelectButtonIfAppropriate();
                 showRemoveButtonIfAppropriate();
@@ -284,39 +286,28 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
 
     ///
     private void alterExpandableListSelection(View currentChildView) {
-        if(pastChildViewSelection != currentChildView) {
-            currentChildView.setBackgroundColor(Color.CYAN);
-        }
-        else{
-            pastChildViewSelection = null;
-        }
-
+        currentChildView.setBackgroundColor(Color.CYAN);
         setExpandableListSelection(currentChildView);
     }
     private void setExpandableListSelection(View currentChildView) {
         selectedConversion = ((TextView)currentChildView).getText().toString().toLowerCase();
 
         //ensures that only one item at a time can be selected, by deselecting a previously selected alternate position.
-        if(pastChildViewSelection != null)
+        if(pastChildViewSelection != null && pastChildViewSelection != currentChildView)
             pastChildViewSelection.setBackgroundColor(Color.TRANSPARENT);
 
         pastChildViewSelection = currentChildView;
     }
 
     private void alterRegularListSelection(AdapterView<?> listView, int currentSelectedConversionPosition) {
-        if (currentSelectedConversionPosition != pastSelectedConversionPosition) {
-            setRegularListSelection(listView, (String) listView.getItemAtPosition(currentSelectedConversionPosition), currentSelectedConversionPosition);
-            listView.getChildAt(currentSelectedConversionPosition).setBackgroundColor(Color.CYAN);
-        } else if (pastSelectedConversionPosition == currentSelectedConversionPosition) {
-            setRegularListSelection(listView, null, -1);
-            listView.getChildAt(currentSelectedConversionPosition).setBackgroundColor(Color.TRANSPARENT);
-        }
+        listView.getChildAt(currentSelectedConversionPosition).setBackgroundColor(Color.CYAN);
+        setRegularListSelection(listView, currentSelectedConversionPosition);
     }
-    private void setRegularListSelection(AdapterView<?> listView, String formattedConversion, int currentSelectedConversionPosition) {
-        selectedConversion = formattedConversion.toLowerCase();
+    private void setRegularListSelection(AdapterView<?> listView, int currentSelectedConversionPosition) {
+        selectedConversion = ((String) listView.getItemAtPosition(currentSelectedConversionPosition)).toLowerCase();
 
         //ensures that only one item at a time can be selected, by deselecting a previously selected alternate position.
-        if (pastSelectedConversionPosition != -1)
+        if (pastSelectedConversionPosition != -1 && pastSelectedConversionPosition != currentSelectedConversionPosition)
             listView.getChildAt(pastSelectedConversionPosition).setBackgroundColor(Color.TRANSPARENT);
 
         pastSelectedConversionPosition = currentSelectedConversionPosition;
@@ -326,7 +317,7 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
     private void repopulateCurrentList() {
         if(canCurrentListBeUpdated()) {
             switch (listMode) {
-                case BY_CATGEORY:
+                case BY_CATEGORY:
                     conversionsExpandableListAdapter.refreshUsingBackingDataModel();
                     break;
                 case BY_RANK:
@@ -339,7 +330,7 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
     private void setListMode(int listMode){
         this.listMode = listMode;
         switch (listMode){
-            case BY_CATGEORY:
+            case BY_CATEGORY:
                 switchToExpandableList();
                 break;
             case BY_RANK:
@@ -368,7 +359,7 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
     }
     private boolean canCurrentListBeUpdated(){
         switch (listMode){
-            case BY_CATGEORY:
+            case BY_CATEGORY:
                 return conversionsExpandableListAdapter.getGroupCount() != 0;
             case BY_RANK:
             case BY_ALPHABETICAL:
@@ -376,25 +367,5 @@ public class ConversionFavoritesActivity extends FragmentActivity implements Loa
             default:
                 return false;
         }
-    }
-
-    ///Loader Manager Overriden Methods
-    @Override
-    public Loader<ConversionFavoritesDataModel> onCreateLoader(int id, Bundle bundle) {
-        if (id == FAVORITES_LOADER) {
-            return new ConversionFavoritesListXmlLocalReader(this, new ConversionFavoritesDataModel());
-        } else {
-            return null;
-        }
-    }
-    @Override
-    public void onLoadFinished(Loader<ConversionFavoritesDataModel> loader, ConversionFavoritesDataModel conversionFavoritesDataModel) {
-        if (conversionFavoritesDataModel != null) {
-            pSharablesApplication.getUnitManager().getConversionFavoritesDataModel().combineWith(conversionFavoritesDataModel);
-            repopulateCurrentList();
-        }
-    }
-    @Override
-    public void onLoaderReset(Loader<ConversionFavoritesDataModel> loader) {
     }
 }
