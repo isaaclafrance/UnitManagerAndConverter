@@ -14,16 +14,19 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class MultiAutoCompleteUnitsDefinitionArrayAdapter extends ArrayAdapter {
-    public static final String MULTI_AUTO_COMPLETE_UNIT_NAME_DELIMITER = " :: ";
+    public static final String MULTI_AUTO_COMPLETE_UNIT_DISPLAY_DELIMITER = " :: ";
+    private static final Pattern oneOrMoreWhiteSpacesPattern = Pattern.compile("\\s+");
 
     private final UnitsContentQuerier unitsContentQuerier;
     private final DimensionComponentDefiner dimensionComponentDefiner;
     private final Comparator<Unit> conversionFavoritesRankComparator;
     private final Filter unitDefinitionFilter;
 
-    public MultiAutoCompleteUnitsDefinitionArrayAdapter(Context context, int resource, UnitsContentQuerier unitsContentQuerier, DimensionComponentDefiner dimensionComponentDefiner, ConversionFavoritesDataModel conversionFavoritesDataModel) {
+    public MultiAutoCompleteUnitsDefinitionArrayAdapter(Context context, int resource, UnitsContentQuerier unitsContentQuerier
+            , DimensionComponentDefiner dimensionComponentDefiner, ConversionFavoritesDataModel conversionFavoritesDataModel) {
         super(context, resource);
 
         this.setNotifyOnChange(false);
@@ -67,46 +70,72 @@ public class MultiAutoCompleteUnitsDefinitionArrayAdapter extends ArrayAdapter {
     }
 
     /**
-     * Updates the content of the array adapter with the sorted list unit names that satisfy the provided reference property text.
+     * Retrieves a sorted list of unit names that satisfy the provided reference property text.
      * The following is the search order of precedence: by name, then by category, and then by unit system.
      * If the searching by category or unit system, then the result is order by sum of relevant conversion favorite ranks.
-     * @param referenceUnitPropertyText Text that can be of various unit properties. Can be a unit name, unit category, or unit system.
+     * @param referenceUnitPropertyText Text that can stand for various unit properties. It can be a unit name, unit category, or unit system.
      */
-    private Collection<String> retrieveSimilarFormattedUnitNames(String referenceUnitPropertyText){
-        List<String> validFormattedUnitNames = new ArrayList<>();
+    private Collection<String> retrieveFormattedUnitNameDisplaysForSimilarUnits(String referenceUnitPropertyText){
+        List<String> validFormattedUnitNameDisplays = new ArrayList<>();
 
-        Collection<Unit> unitCandidatesByName = unitsContentQuerier.queryUnitsOrderedBySimilarNames(referenceUnitPropertyText);
-        validFormattedUnitNames.addAll(transformCandidateUnitsToFormattedUnitNames(unitCandidatesByName));
+        Collection<Unit> unitCandidatesByName = unitsContentQuerier.queryUnitsOrderedBySimilarNames(referenceUnitPropertyText); //already stored based on ratios of length and similarity
+        validFormattedUnitNameDisplays.addAll(transformCandidateUnitsToFormattedUnitNameAbbreviationDisplay(unitCandidatesByName));
 
-        if(validFormattedUnitNames.isEmpty()){
+        if(validFormattedUnitNameDisplays.isEmpty()){
             List<Unit> unitCandidatesByUnitCategory = unitsContentQuerier.queryUnitsByUnitCategory(referenceUnitPropertyText);
             Collections.sort(unitCandidatesByUnitCategory, conversionFavoritesRankComparator);
-            validFormattedUnitNames.addAll(transformCandidateUnitsToFormattedUnitNames(unitCandidatesByUnitCategory));
+            validFormattedUnitNameDisplays.addAll(transformCandidateUnitsToFormattedUnitNameCategoryDisplay(unitCandidatesByUnitCategory));
         }
 
-        if(validFormattedUnitNames.isEmpty()){
+        if(validFormattedUnitNameDisplays.isEmpty()){
             List<Unit> unitCandidatesByUnitSystem = unitsContentQuerier.queryUnitsByUnitSystem(referenceUnitPropertyText);
             Collections.sort(unitCandidatesByUnitSystem, conversionFavoritesRankComparator);
-            validFormattedUnitNames.addAll(transformCandidateUnitsToFormattedUnitNames(unitCandidatesByUnitSystem));
+            validFormattedUnitNameDisplays.addAll(transformCandidateUnitsToFormattedUnitNameUnitSystemDisplay(unitCandidatesByUnitSystem));
         }
 
-        return validFormattedUnitNames;
+        return validFormattedUnitNameDisplays;
     }
     /**
      * Using a provided list of units, attempts to return a list unit name display of the following  format "{unit full name} :: {unit abbreviation}".
      * Inorder to save display space, the abbreviation dimension is only included if unit name is not complex OR it is complex and the number of component units dimension items is less than 4.
      */
-    private Collection<String> transformCandidateUnitsToFormattedUnitNames(Collection<Unit> unitCandidates){
-        Collection<String> formattedUnitNameDisplays = new ArrayList<>();
-
+    private Collection<String> transformCandidateUnitsToFormattedUnitNameAbbreviationDisplay(Collection<Unit> unitCandidates){
+        Collection<String> formattedUnitNameAbbreviationDisplays = new ArrayList<>();
         for(Unit unit:unitCandidates) {
-            String formattedUnitNameDisplay = !dimensionComponentDefiner.hasComplexDimensions(unit.getName()) || unit.getComponentUnitsDimension().size() < 4
-                    ? String.format("%s%s%s", unit.getName(), MULTI_AUTO_COMPLETE_UNIT_NAME_DELIMITER, unit.getAbbreviation())
-                    : unit.getAbbreviation();
-            formattedUnitNameDisplays.add(formattedUnitNameDisplay);
+            formattedUnitNameAbbreviationDisplays.add(constructFormattedUnitNameDisplay(unit, unit.getAbbreviation(), 4));
         }
-
-        return formattedUnitNameDisplays;
+        return formattedUnitNameAbbreviationDisplays;
+    }
+    /**
+     * Using a provided list of units, attempts to return a list unit name display of the following  format "{unit full name} :: {unit category}".
+     * Inorder to save display space, the abbreviation dimension is only included if unit name is not complex OR it is complex and the number of component units dimension items is less than 5.
+     */
+    private Collection<String> transformCandidateUnitsToFormattedUnitNameCategoryDisplay(Collection<Unit> unitCandidates){
+        Collection<String> formattedUnitNameCategoryDisplays = new ArrayList<>();
+        for(Unit unit:unitCandidates) {
+            //some categories are represented as component unit dimension text with spaces that need to be removed
+            formattedUnitNameCategoryDisplays.add(constructFormattedUnitNameDisplay(unit, oneOrMoreWhiteSpacesPattern.matcher(unit.getCategory()).replaceAll(""), 5));
+        }
+        return formattedUnitNameCategoryDisplays;
+    }
+    /**
+     * Using a provided list of units, attempts to return a list unit name display of the following  format "{unit full name} :: {unit system}".
+     * Inorder to save display space, the abbreviation dimension is only included if unit name is not complex OR it is complex and the number of component units dimension items is less than 5.
+     */
+    private Collection<String> transformCandidateUnitsToFormattedUnitNameUnitSystemDisplay(Collection<Unit> unitCandidates){
+        Collection<String> formattedUnitNameUnitSystemDisplays = new ArrayList<>();
+        for(Unit unit:unitCandidates) {
+            formattedUnitNameUnitSystemDisplays.add(constructFormattedUnitNameDisplay(unit, unit.getUnitSystem(), 5));
+        }
+        return formattedUnitNameUnitSystemDisplays;
+    }
+    private String constructFormattedUnitNameDisplay(Unit unit, String secondaryUnitProperty, int dimensionLimit){
+        if(!dimensionComponentDefiner.hasComplexDimensions(unit.getName()) || unit.getComponentUnitsDimension().size() < dimensionLimit) {
+            String unitNameWithoutWhiteSpaces = oneOrMoreWhiteSpacesPattern.matcher(unit.getName()).replaceAll("");
+            return String.format("%s%s%s", unitNameWithoutWhiteSpaces, MULTI_AUTO_COMPLETE_UNIT_DISPLAY_DELIMITER, secondaryUnitProperty);
+        }else {
+            return secondaryUnitProperty;
+        }
     }
 
     private class UnitDefinitionFilter extends Filter{
@@ -116,7 +145,7 @@ public class MultiAutoCompleteUnitsDefinitionArrayAdapter extends ArrayAdapter {
             FilterResults filterResults = new FilterResults();
 
             if(constraintSequence != null) {
-                Collection<String> results = retrieveSimilarFormattedUnitNames(constraintSequence.toString());
+                Collection<String> results = retrieveFormattedUnitNameDisplaysForSimilarUnits(constraintSequence.toString());
                 filterResults.values = results;
                 filterResults.count = results.size();
             }

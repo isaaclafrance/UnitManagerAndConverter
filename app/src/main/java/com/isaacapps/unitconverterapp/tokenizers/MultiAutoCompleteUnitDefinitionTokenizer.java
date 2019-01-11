@@ -2,11 +2,10 @@ package com.isaacapps.unitconverterapp.tokenizers;
 
 import android.widget.MultiAutoCompleteTextView;
 
-import static com.isaacapps.unitconverterapp.adapters.MultiAutoCompleteUnitsDefinitionArrayAdapter.MULTI_AUTO_COMPLETE_UNIT_NAME_DELIMITER;
+import static com.isaacapps.unitconverterapp.adapters.MultiAutoCompleteUnitsDefinitionArrayAdapter.MULTI_AUTO_COMPLETE_UNIT_DISPLAY_DELIMITER;
 import com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefiner;
 
 import com.florianingerl.util.regex.Matcher ;
-
 
 public class MultiAutoCompleteUnitDefinitionTokenizer implements MultiAutoCompleteTextView.Tokenizer {
     private DimensionComponentDefiner dimensionComponentDefiner;
@@ -21,6 +20,9 @@ public class MultiAutoCompleteUnitDefinitionTokenizer implements MultiAutoComple
 
         CharSequence unitDefinitionSubSequence = unitDefinitionText.subSequence(0, cursorPosition);
         int tokenPosition = -1;
+
+        //Try finding tokens consisting of larger and more complex dimension constructs first, then if that fails attempt to use smaller dimension sub components.
+        //Attempt this until the last possible token is obtained and then take the starting position of that token.
 
         Matcher unitDefinitionMultiGroupMatcher = dimensionComponentDefiner.getMultiGroupRegExPattern().matcher(unitDefinitionSubSequence);
         while(unitDefinitionMultiGroupMatcher.find()){
@@ -43,6 +45,9 @@ public class MultiAutoCompleteUnitDefinitionTokenizer implements MultiAutoComple
         CharSequence unitDefinitionSubSequence = unitDefinitionText.subSequence(cursorPosition, unitDefinitionText.length() - 1);
         int tokenPosition = -1;
 
+        //Try finding tokens consisting of larger and more complex dimension constructs first, then if that fails attempt to use smaller dimension sub components.
+        //Attempt this until the last possible token is obtained and then take the ending position of that token.
+
         Matcher unitDefinitionMultiGroupMatcher = dimensionComponentDefiner.getMultiGroupRegExPattern().matcher(unitDefinitionSubSequence);
         while(unitDefinitionMultiGroupMatcher.find()){
             tokenPosition = unitDefinitionMultiGroupMatcher.end();
@@ -60,7 +65,7 @@ public class MultiAutoCompleteUnitDefinitionTokenizer implements MultiAutoComple
 
     @Override
     public CharSequence terminateToken(CharSequence unitDefinitionText) {
-        int delimiterPosition = unitDefinitionText.toString().indexOf(MULTI_AUTO_COMPLETE_UNIT_NAME_DELIMITER);
+        int delimiterPosition = unitDefinitionText.toString().indexOf(MULTI_AUTO_COMPLETE_UNIT_DISPLAY_DELIMITER);
         CharSequence fullNameToken = delimiterPosition == -1 ? unitDefinitionText : unitDefinitionText.toString().substring(0, delimiterPosition);
         return fullNameToken + " ";
     }
