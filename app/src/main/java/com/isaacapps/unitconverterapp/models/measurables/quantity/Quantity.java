@@ -44,7 +44,6 @@ public class Quantity {
 
         setLocale(locale);
     }
-
     public Quantity() throws QuantityException {
         locale = Locale.getDefault();
 
@@ -62,25 +61,20 @@ public class Quantity {
             e.printStackTrace();
         }
     }
-
     public Quantity(Map<Unit, Double> unitValueMap) throws QuantityException {
         this();
         this.unitValueMap = quantityAttributesValidator.validatedSortedUnitValueMap(unitValueMap);
     }
-
     public Quantity(List<Double> values, List<Unit> units) throws QuantityException {
         this();
         setUnitsNValues(units, values);
     }
-
     public Quantity(double value, Unit unit) throws QuantityException {
         this(Collections.singletonList(value), Collections.singletonList(unit));
     }
-
     public Quantity(double value) throws QuantityException, ParsingException {
         this(Collections.singletonList(value), Collections.singletonList(new Unit()));
     }
-
     public Quantity(Unit unit) throws QuantityException {
         this(Collections.singletonList(0.0), Collections.singletonList(unit));
     }
@@ -98,8 +92,16 @@ public class Quantity {
     public void setValues(List<Double> values) throws QuantityException {
         this.unitValueMap = quantityAttributesValidator.validatedSortedUnitValueMap(new ArrayList<>(unitValueMap.keySet()), values);
     }
-    public void setValue(Double value) throws QuantityException {
+    public void setAllToValue(Double value) throws QuantityException {
         setValues(Collections.singletonList(value));
+    }
+
+    /**
+     * Set a value to be associated with a pre-existing unit.
+     */
+    public void setValue(Unit unit, Double value){
+        if(unitValueMap.containsKey(unit))
+            unitValueMap.put(unit, value);
     }
 
     public Unit getLargestUnit() {
@@ -121,7 +123,7 @@ public class Quantity {
     /**
      *Set the units in the sorted unit-value map. Units will be automatically sorted from largest to least based on base conversion.
      *
-     * @param units Compatible units. ie same unit manager reference, same dimnesion, etc.
+     * @param units Compatible units. ie same unit manager reference, same dimension, etc.
      * @param setExistingValuesToDefaults Indicates whether to replace with defaults the existing values that were associated with the previous units.
      * @throws QuantityException
      */

@@ -17,7 +17,7 @@ public class PrefixedUnit extends Unit {
     public PrefixedUnit(String prefixFullName, String prefixAbbreviation, Double prefixValue, Unit unit, boolean useAbbreviation
             , Locale locale, ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer, FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer, DimensionComponentDefiner dimensionComponentDefiner) throws UnitException {
         super(prefixFullName + unit.getName(), new HashSet<String>(), unit.getCategory(), unit.getDescription(), unit.getUnitSystem(), prefixAbbreviation + unit.getAbbreviation()
-                , new HashMap<String, Double>(), unit, new double[]{prefixValue, unit.getBaseConversionPolyCoeffs()[1]}, locale, componentUnitsDimensionSerializer, fundamentalUnitTypesDimensionSerializer, dimensionComponentDefiner);
+                , new HashMap<String, Double>(), unit, new double[]{prefixValue, 0.0}, locale, componentUnitsDimensionSerializer, fundamentalUnitTypesDimensionSerializer, dimensionComponentDefiner);
 
         addComponentUnit(useAbbreviation ? unit.getAbbreviation() : unit.getName(), 1.0, false);
 
@@ -29,11 +29,9 @@ public class PrefixedUnit extends Unit {
     public String getPrefix() {
         return prefix;
     }
-
     public String getPrefixlessFullName() {
         return getName().replace(prefix, "");
     }
-
     public Double getPrefixValue(){
         return prefixValue;
     }
@@ -41,6 +39,6 @@ public class PrefixedUnit extends Unit {
     ///
     @Override
     public String toString() {
-        return String.format(locale,"Prefix: %s; Prefix Value: %s; Prefixless Unit: %s", getPrefix(), getPrefixValue(), super.toString());
+        return String.format(locale,"Prefix: %s; Prefix Value: %s; Unit: %s", getPrefix(), getPrefixValue(), super.toString());
     }
 }
