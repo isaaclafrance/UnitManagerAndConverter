@@ -221,6 +221,11 @@ public class UnitsDualKeyNCategoryDatabaseRepository<T, U, V> implements IDualKe
     }
 
     @Override
+    public boolean areKeysValid(T key1, T key2) {
+        return false;
+    }
+
+    @Override
     public boolean combineWith(IDualKeyNCategoryRepository<T, U, V> otherDataModel) {
         return false;
     }

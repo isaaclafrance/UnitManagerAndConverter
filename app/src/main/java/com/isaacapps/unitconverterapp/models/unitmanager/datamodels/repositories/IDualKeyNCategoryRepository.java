@@ -15,7 +15,6 @@ public interface IDualKeyNCategoryRepository<T, U, V> {
      */
     U addItem(V category, T key1, T key2, U item);
 
-
     /**
      * Updates existing key1 or key2 with a new key so long as existing provided key was not a unidirectional alias
      */
@@ -103,6 +102,11 @@ public interface IDualKeyNCategoryRepository<T, U, V> {
     boolean isKey1(T key);
 
     boolean isAliasKey(T key);
+
+    /**
+     * Determine specified keys can maintain bijectiveness of data structure if that is requirement
+     */
+    boolean areKeysValid(T key1, T key2);
 
     ///
     boolean combineWith(IDualKeyNCategoryRepository<T, U, V> otherDataModel);

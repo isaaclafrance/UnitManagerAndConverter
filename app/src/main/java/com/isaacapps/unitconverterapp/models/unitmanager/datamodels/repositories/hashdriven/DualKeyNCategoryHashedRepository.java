@@ -48,7 +48,7 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
      * @return The provided item if it was successfully added or null otherwise.
      */
     public U addItem(V category, T key1, T key2, U item) {
-        if (!keysMustHaveBijectiveRelation || doKeysMaintainBijection(key1, key2))
+        if (areKeysValid(key1, key2))
         {
             if (duplicateItemsAreRemoved && containsItem(item)) // Make item not associated any other keys or categories.
                 removeItem(item);
@@ -68,6 +68,12 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
         return (key1ToKey2Map.get(key1) == null && key2ToKey1Map.get(key2) == null)
                 || (key1ToKey2Map.get(key1) != null && key1ToKey2Map.get(key1).equals(key2)
                 && key2ToKey1Map.get(key2) != null && key2ToKey1Map.get(key2).equals(key1));
+    }
+    /**
+     * Determine specified keys can maintain bijectiveness of data structure if that is requirement
+     */
+    public boolean areKeysValid(T key1, T key2){
+        return !keysMustHaveBijectiveRelation || doKeysMaintainBijection(key1, key2);
     }
 
     private void addBidirectionalKeyRelations(T key1, T key2) {
@@ -169,11 +175,12 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
      */
     private boolean removeItem(V category, T key, U item) {
         boolean someItemRemoved = false;
+        T alternateKey = getKey2FromKey1(isAliasKey(key) ? getKey1TargetOfAlias(key) : key);
+        boolean removeEverything = category == null && key == null && item == null;
+
         for (Iterator<Entry<V, Map<T, U>>> key2ToItemByCategoryIterator = key2ToItemMapsByCategory.entrySet().iterator()
              ; key2ToItemByCategoryIterator.hasNext(); ) {
             Entry<V, Map<T, U>> key2ToItemByCategoryEntry = key2ToItemByCategoryIterator.next();
-
-            boolean removeEverything = category == null && key == null && item == null;
 
             //
             if (category != null && key2ToItemByCategoryEntry.getKey().equals(category) || removeEverything) {
@@ -204,10 +211,10 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
                 }
 
                 if (key != null && (key2ToItemEntry.getKey().equals(key)
-                        || key2ToItemEntry.getKey().equals(getKey2FromKey1(isAliasKey(key) ? getKey1TargetOfAlias(key) : key)))) {
+                        || key2ToItemEntry.getKey().equals(alternateKey))) {
                     removeAllKeyRelationsForKey(key);
                     key2ToItemIterator.remove();
-                    if (keysMustHaveBijectiveRelation)
+                    if (keysMustHaveBijectiveRelation && duplicateItemsAreRemoved)
                         return true;
                     someItemRemoved = true;
                 }
@@ -385,7 +392,7 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
     }
 
     public Collection<T> getAllKey2s() {
-        return key1ToKey2Map.values();
+        return key2ToKey1Map.keySet();
     }
 
     public Collection<T> getAllKeys() {
