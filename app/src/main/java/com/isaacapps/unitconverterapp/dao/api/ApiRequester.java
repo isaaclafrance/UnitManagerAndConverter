@@ -6,11 +6,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.util.Random;
 
 import javax.net.ssl.HttpsURLConnection;
 
 public class ApiRequester {
-    public static final String DEFAULT_USER_AGENT = "(Android Device)sometestemail@gmail.com";
+    private static final Random random = new Random();
 
     public HttpsURLConnection createHttpsURLConnection(String requestURL, String userAgent) throws IOException {
         HttpsURLConnection requestHttpsURLConnection = (HttpsURLConnection) new URL(requestURL).openConnection();
@@ -20,7 +21,10 @@ public class ApiRequester {
     }
 
     public HttpsURLConnection createHttpURLConnection(String requestURI) throws IOException {
-        return createHttpsURLConnection(requestURI, DEFAULT_USER_AGENT);
+        return createHttpsURLConnection(requestURI, createRandomUserAgent());
+    }
+    private String createRandomUserAgent(){
+        return String.format("%d@gmail.com", random.nextInt(1000000));
     }
 
     public String retrieveResponseString(HttpsURLConnection httpsURLConnection) {

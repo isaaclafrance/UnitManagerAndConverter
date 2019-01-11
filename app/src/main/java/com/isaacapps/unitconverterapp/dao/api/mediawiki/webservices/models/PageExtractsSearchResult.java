@@ -21,7 +21,6 @@ public class PageExtractsSearchResult extends JSONObject {
             }
         };
     }
-
     public PageExtractsSearchResult() {
         super();
     }
@@ -46,13 +45,16 @@ public class PageExtractsSearchResult extends JSONObject {
             return Collections.emptyList();
         }
     }
-
     /**
-     * Uses the index property to rank
-     * @return
+     * Uses the index property to rank which page extract is most relevant.
      */
-    public PageExtract getBestMatchPageExtract(){
-        return Collections.min(getPageExtracts(), pageExtractBestMatchComparator);
+    public PageExtract getBestMatchPageExtract() throws JSONException {
+        Collection<PageExtract> pageExtracts = getPageExtracts();
+        if(!pageExtracts.isEmpty()) {
+            return Collections.min(getPageExtracts(), pageExtractBestMatchComparator);
+        }else{
+            return new PageExtract("");
+        }
     }
 
     public boolean hasContent() {
