@@ -1,5 +1,6 @@
 package com.isaacapps.unitconverterapp.models.unitmanager.datamodels;
 
+import com.isaacapps.unitconverterapp.models.measurables.unit.Unit;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.repositories.IDualKeyNCategoryRepository;
 
 public class BaseDataModel<T, U, V> {
@@ -22,8 +23,10 @@ public class BaseDataModel<T, U, V> {
         return this.repositoryWithDualKeyNCategory.combineWith(otherDataModel.repositoryWithDualKeyNCategory);
     }
 
+    IDualKeyNCategoryRepository<T, U, V> getRepositoryWithDualKeyNCategory() {
+        return repositoryWithDualKeyNCategory;
+    }
     public void setRepositoryWithDualKeyNCategory(IDualKeyNCategoryRepository<T,U,V> repositoryWithDualKeyNCategory){
         this.repositoryWithDualKeyNCategory = repositoryWithDualKeyNCategory;
     }
-
 }

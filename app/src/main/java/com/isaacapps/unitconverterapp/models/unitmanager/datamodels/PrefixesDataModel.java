@@ -5,6 +5,7 @@ import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.repositories
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentDeterminer.DATA_MODEL_CATEGORY;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsDataModel;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -19,8 +20,11 @@ public class PrefixesDataModel extends BaseDataModel<String, Double, DATA_MODEL_
     private int maxPrefixCharacterLength;
     private final Comparator<String> stringCharacterLengthComparator;
 
+    private boolean initiallySearchByPrefixValue;
+
     ///
     public PrefixesDataModel() {
+        initiallySearchByPrefixValue = false;
         stringCharacterLengthComparator = new Comparator<String>() {
             @Override
             public int compare(String s1, String s2) {
@@ -77,7 +81,6 @@ public class PrefixesDataModel extends BaseDataModel<String, Double, DATA_MODEL_
         if(prefixName.length() > maxPrefixCharacterLength)
             maxPrefixCharacterLength = prefixName.length();
     }
-
     private void adjustMaxPrefixCharacterLenghtAfterRemoval(){
         //Unlike addition of prefixes, removal requires full recalculation of prefix max character length to account for remaining prefixes.
         int prefixFullNameMaxLength = !getAllPrefixFullNames().isEmpty() ? Collections.max(getAllPrefixFullNames(), stringCharacterLengthComparator).length() : 0;
@@ -95,7 +98,6 @@ public class PrefixesDataModel extends BaseDataModel<String, Double, DATA_MODEL_
     }
 
     ///Retrieve Prefixes
-
     /**
      * Near constant time retrieval of value associated with a prefix. If provided prefix is invalid, then result is zero.
      * @param prefixName Valid prefix full name or abbreviation
@@ -175,28 +177,33 @@ public class PrefixesDataModel extends BaseDataModel<String, Double, DATA_MODEL_
      *
      * @param unitNameWithPrefix             Unit name prepended with a prefix. ie. 1000g (less typical) , kg, kilogram
      * @param constrainBasedOnValidUnitNames Indicates whether to constrain based on valid unit name and whether  unit and prefix are of same kind.
-     * @return A string array where the prefix full name is the first item, the abbreviation is the second item, the prefix less name is the third item.
+     * @return  Collection of String arrays. Each array is constructed such that the prefix full name is the first item, the abbreviation is the second item, the prefix less name is the third item.
      * If there are no matches, then the result is an empty array.
      */
-    public String[] findPrefixPairMatch(String unitNameWithPrefix, boolean constrainBasedOnValidUnitNames) {
-        String[] prefixMatch = findPrefixMatchByValue(unitNameWithPrefix, constrainBasedOnValidUnitNames);
-        if(prefixMatch.length == 0)
-            prefixMatch = findPrefixMatchByName(unitNameWithPrefix, constrainBasedOnValidUnitNames);
+    public Collection<String[]> findPrefixPairMatches(String unitNameWithPrefix, boolean constrainBasedOnValidUnitNames) {
+        Collection<String[]> prefixMatches = new ArrayList<>();
 
-        if(prefixMatch.length != 0) {
+        if(initiallySearchByPrefixValue) {
+            String[] prefixMatchByValue = findPrefixMatchByValue(unitNameWithPrefix, constrainBasedOnValidUnitNames);
+            if(prefixMatchByValue.length != 0)
+                prefixMatches.add(prefixMatchByValue);
+        }
+
+        prefixMatches.addAll(findPrefixMatchesByName(unitNameWithPrefix, constrainBasedOnValidUnitNames));
+
+        for(String[] prefixMatch:prefixMatches)
             setProperlyOrderedPrefixNamePairs(prefixMatch);
-            return prefixMatch;
-        }
-        else{
-            return NO_PREFIX_MATCH_ARRAY;
-        }
+
+        return prefixMatches;
     }
 
-    public String[] findPrefixMatchByName(String unitNameWithPrefix, boolean constrainBasedOnValidUnitNames){
+    private Collection<String[]> findPrefixMatchesByName(String unitNameWithPrefix, boolean constrainBasedOnValidUnitNames){
+        Collection<String[]> prefixMatches = new ArrayList<>();
+
         //Prevent out of bound exception when extracting substring;
         int adjustedMaxPrefixCharacterLength = (maxPrefixCharacterLength > unitNameWithPrefix.length())?unitNameWithPrefix.length():maxPrefixCharacterLength;
 
-        //Search is naturally faster when the provided prefixed unit name valid and is an abbreviation, in case usually only one or two passes is needed for identification.
+        //Search is naturally faster when the provided prefixed unit name valid and is an abbreviation, in most cases usually only one or two passes is needed for identification.
         for(int prefixCharLenBoundary = 1; prefixCharLenBoundary <= adjustedMaxPrefixCharacterLength ; prefixCharLenBoundary++){
             String potentialPrefixName = unitNameWithPrefix.substring(0, prefixCharLenBoundary);
             String unitNameWithoutPrefix = unitNameWithPrefix.substring(prefixCharLenBoundary);
@@ -204,13 +211,12 @@ public class PrefixesDataModel extends BaseDataModel<String, Double, DATA_MODEL_
             if(containsPrefixName(potentialPrefixName)
                     && (!constrainBasedOnValidUnitNames || (constrainedOnValidUnitName(unitNameWithoutPrefix) && validatePrefixNUnitNameAreSameKind(potentialPrefixName, unitNameWithoutPrefix))))
             {
-                return new String[]{potentialPrefixName, "", unitNameWithoutPrefix};
+                prefixMatches.add(new String[]{potentialPrefixName, "", unitNameWithoutPrefix});
             }
         }
 
-        return NO_PREFIX_MATCH_ARRAY;
+        return prefixMatches;
     }
-
     private String[] findPrefixMatchByValue(String unitNameWithPrefix, boolean constrainBasedOnValidUnitNames){
         if(!Character.isDigit(unitNameWithPrefix.charAt(0)))
             return NO_PREFIX_MATCH_ARRAY;
@@ -239,12 +245,10 @@ public class PrefixesDataModel extends BaseDataModel<String, Double, DATA_MODEL_
 
         return unitsDataModel != null && unitsDataModel.getUnitsContentQuerier().containsUnit(unitNameWithoutPrefix);
     }
-
     private boolean validatePrefixNUnitNameAreSameKind(String prefix, String unitNameWithoutPrefix){
         return (repositoryWithDualKeyNCategory.isKey1(prefix) && unitsDataModel.getUnitsContentMainRetriever().getAllUnitFullNames().contains(unitNameWithoutPrefix.toLowerCase())
                 || repositoryWithDualKeyNCategory.isKey2(prefix) && unitsDataModel.getUnitsContentMainRetriever().getAllUnitAbbreviatedNames().contains(unitNameWithoutPrefix));
     }
-
     /**
      * Given a three element array with any single full or abbreviated prefix name as the first element, returns a modified array always with the prefix full name first and the prefix abbreviation second.
      * @param prefixMatchArray A prefix full name or abbreviation name
@@ -254,6 +258,7 @@ public class PrefixesDataModel extends BaseDataModel<String, Double, DATA_MODEL_
         prefixMatchArray[1] = repositoryWithDualKeyNCategory.isKey2(prefixMatchArray[0]) ? prefixMatchArray[0] : repositoryWithDualKeyNCategory.getKey2FromKey1(prefixMatchArray[0]);
     }
 
+    ///
     /**
      * Determines if prefix full name, abbreviation, or value can be found in the name.
      * Optionally constrains based on if the unit name component is associated with a valid unit.
@@ -261,13 +266,25 @@ public class PrefixesDataModel extends BaseDataModel<String, Double, DATA_MODEL_
      * @param unitNameWithPrefix             Unit name prepended with a prefix. ie. 1000g, kg, kilogram
      * @param constrainBasedOnValidUnitNames Indicates whether to constrain based on valid unit name and whether  unit and prefix are of same kind.
      */
-    public boolean hasPrefix(String unitNameWithPrefix, boolean constrainBasedOnValidUnitNames){
-        return findPrefixPairMatch(unitNameWithPrefix, constrainBasedOnValidUnitNames).length != 0;
+    public boolean unitNameHasPrefix(String unitNameWithPrefix, boolean constrainBasedOnValidUnitNames){
+        return !findPrefixPairMatches(unitNameWithPrefix, constrainBasedOnValidUnitNames).isEmpty();
     }
 
     ///
     public DATA_MODEL_CATEGORY getDataModelCategory(String prefixName) {
         return repositoryWithDualKeyNCategory.getCategoryOfKey(prefixName);
+    }
+
+    public boolean isInitiallySearchByPrefixValue() {
+        return initiallySearchByPrefixValue;
+    }
+
+    /**
+     * Determines if the prefix parsing search should also attempt to find instances where unit name is preceded by a prefix value instead of just by prefix name.
+     * For example, 1000g rather than just kilogram or kg.
+     */
+    public void setInitiallySearchByPrefixValue(boolean initiallySearchByPrefixValue) {
+        this.initiallySearchByPrefixValue = initiallySearchByPrefixValue;
     }
 
     ///
