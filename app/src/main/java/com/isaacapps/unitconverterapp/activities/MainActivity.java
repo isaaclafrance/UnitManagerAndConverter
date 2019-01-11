@@ -27,17 +27,21 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
+import com.isaacapps.unitconverterapp.adapters.MultiAutoCompleteUnitsDefinitionArrayAdapter;
+import com.isaacapps.unitconverterapp.dao.xml.readers.local.ConversionFavoritesListXmlLocalReader;
 import com.isaacapps.unitconverterapp.dao.xml.readers.local.FundamentalUnitsMapXmlLocalReader;
+import com.isaacapps.unitconverterapp.dao.xml.readers.local.NonStandardUnitsMapsXmlLocalReader;
 import com.isaacapps.unitconverterapp.dao.xml.readers.local.PrefixesMapXmlLocalReader;
-import com.isaacapps.unitconverterapp.dao.xml.readers.local.UnitsMapXmlLocalReader;
+import com.isaacapps.unitconverterapp.dao.xml.readers.local.StandardCoreUnitsMapXmlLocalReader;
 import com.isaacapps.unitconverterapp.dao.xml.readers.online.EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader;
 import com.isaacapps.unitconverterapp.dao.xml.readers.online.PrefixesNUnitsMapXmlOnlineReader;
 import com.isaacapps.unitconverterapp.models.measurables.quantity.Quantity;
+import com.isaacapps.unitconverterapp.models.measurables.quantity.QuantityException;
 import com.isaacapps.unitconverterapp.models.measurables.unit.Unit;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManagerBuilder;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.ConversionFavoritesDataModel;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.FundamentalUnitsDataModel;
-import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.FundamentalUnitsDataModel.UNIT_TYPE;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.PrefixesDataModel;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.repositories.hashdriven.FundamentalUnitsHashDualKeyNCategoryHashedRepository;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.repositories.hashdriven.PrefixesDualKeyNCategoryHashedRepository;
@@ -54,17 +58,18 @@ import com.isaacapps.unitconverterapp.processors.formatters.numbers.MixedFractio
 import com.isaacapps.unitconverterapp.processors.formatters.numbers.RoundingFormatter;
 import com.isaacapps.unitconverterapp.processors.formatters.text.GeneralTextFormatter;
 import com.isaacapps.unitconverterapp.processors.formatters.text.SnakeCaseFormatter;
+import com.isaacapps.unitconverterapp.processors.operators.dimensions.DimensionOperators.DIMENSION_TYPE;
 import com.isaacapps.unitconverterapp.processors.operators.measurables.quantity.QuantityOperators;
 import com.isaacapps.unitconverterapp.processors.parsers.ParsingException;
+import com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefiner;
 import com.isaacapps.unitconverterapp.processors.parsers.dimension.componentunits.ComponentUnitsDimensionParser;
 import com.isaacapps.unitconverterapp.processors.parsers.measurables.quantity.QuantityGroupingDefiner;
 import com.isaacapps.unitconverterapp.processors.parsers.measurables.quantity.tokeniser.SerialGroupingQuantityTokenizer;
 import com.isaacapps.unitconverterapp.processors.parsers.measurables.unit.UnitParser;
 import com.isaacapps.unitconverterapp.processors.serializers.SerializingException;
-import com.isaacapps.unitconverterapp.processors.serializers.dimension.componentnunit.ComponentUnitsDimensionItemSerializer;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.componentnunit.ComponentUnitsDimensionSerializer;
-import com.isaacapps.unitconverterapp.processors.serializers.dimension.fundamentalunit.FundamentalUnitTypesDimensionItemSerializer;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.fundamentalunit.FundamentalUnitTypesDimensionSerializer;
+import com.isaacapps.unitconverterapp.tokenizers.MultiAutoCompleteUnitDefinitionTokenizer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -75,15 +80,22 @@ import java.util.Locale;
 
 public class MainActivity extends FragmentActivity implements LoaderManager.LoaderCallbacks<UnitManagerBuilder> {
     //It's a shame that the use of Enum's is not recommended on android
-    private static final int LOCAL_UNITS_LOADER = 0, FUND_UNITS_LOADER = 1, ONLINE_CURRENCY_UNITS_LOADER = 2, LOCAL_PREFIXES_LOADER = 3, ONLINE_PREFIXES_N_UNITS_LOADER = 4, POST_LOADER = 5, UPDATE_LOADER = 6;
+    private static final int NON_STANDARD_LOCAL_UNITS_LOADER = 0, FUND_UNITS_LOADER = 1, ONLINE_CURRENCY_UNITS_LOADER = 2, LOCAL_PREFIXES_LOADER = 3, ONLINE_PREFIXES_N_UNITS_LOADER = 4, POST_LOADER = 5, UPDATE_LOADER = 6, FAVORITES_LOADER = 7, STANDARD_CORE_LOCAL_UNITS_LOADER = 8;
 
     public static final String SOURCE_NAME = "Source";
     public static final String TARGET_NAME = "Target";
     public static final String CURRENCY_CATEGORY = "currency_unit";
 
     private static final String DUMMY_UNIT = "<unit>";
-    private static final String DUMMY_VALUE = "1";
-    private static final int INITIAL_GROUP_NUM_IN_MULTI_UNIT_MODE = 3;
+    private static final String DUMMY_VALUE = "1.0";
+    private static final int INITIAL_GROUP_NUM_IN_MULTI_UNIT_MODE = 2;
+
+    private boolean currencyUnitsLoaded;
+    private boolean standardLocalCoreUnitsLoaded;
+    private boolean nonStandardLocalUnitsLoaded;
+    private boolean onlineUnitsPreviouslySaved;
+    private boolean localPrefixesLoaded;
+    private boolean favoritesLoaded;
 
     private SharedPreferences sharedPreferences;
 
@@ -102,6 +114,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     private GroupingFormatter generalGroupingFormatter;
     private UnitNamesGroupingFormatter unitNamesGroupingFormatter;
     private ValuesGroupingFormatter valuesGroupingFormatter;
+    private IFormatter overallValuesGroupingFormatter;
     private IFormatter conversionRoundingFormatter;
     private IFormatter conversionCurrencyFormatter;
     private IFormatter sourceValueFormatter;
@@ -110,11 +123,13 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     private Button sourceUnitViewInfoButton;
     private ToggleButton sourceValueExpressionToggleButton;
     private MultiAutoCompleteTextView sourceUnitsTextView;
+    private MultiAutoCompleteUnitsDefinitionArrayAdapter sourceUnitsTextViewArrayAdapter;
     private TextView sourceValueTextView;
 
     private Button targetUnitViewInfoButton;
     private Button targetUnitBrowseButton;
     private MultiAutoCompleteTextView targetUnitsTextView;
+    private MultiAutoCompleteUnitsDefinitionArrayAdapter targetUnitsTextViewArrayAdapter;
 
     private TextView conversionValueTextView;
     private Animation convertButtonAnimation;
@@ -132,8 +147,14 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         setContentView(R.layout.activity_main);
 
         sharedPreferences = getPreferences(MODE_PRIVATE);
+        onlineUnitsPreviouslySaved = sharedPreferences.getBoolean(getString(R.string.online_units_previously_saved_pref_key), false);
 
         pSharablesApplication = (PersistentSharablesApplication) this.getApplication();
+
+        //
+        Bundle extras = getIntent().getExtras();
+        boolean multiUnitMode = (extras != null ? extras.getBoolean(PersistentSharablesApplication.MULTI_UNIT_MODE_BUNDLE_NAME):false);
+        pSharablesApplication.setMultiUnitModeOn(multiUnitMode);
 
         sourceQuantity = pSharablesApplication.getSourceQuantity();
         targetQuantity = pSharablesApplication.getTargetQuantity();
@@ -145,13 +166,14 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
             generalGroupingFormatter = new GroupingFormatter(locale, quantityGroupingDefiner);
             unitNamesGroupingFormatter = new UnitNamesGroupingFormatter(locale, quantityGroupingDefiner);
             valuesGroupingFormatter = new ValuesGroupingFormatter(locale, quantityGroupingDefiner, 1.0);
-
             sourceValueFormatter = new MixedFractionToDecimalFormatter(locale);
-            conversionRoundingFormatter = new RoundingFormatter(locale, 8);
+            overallValuesGroupingFormatter = new ChainedFormatter(locale).AddFormatter(valuesGroupingFormatter).AddFormatter(sourceValueFormatter);
+
+            conversionRoundingFormatter = new RoundingFormatter(locale, 5);
             conversionCurrencyFormatter = new CurrencyFormatter(locale);
 
-            fundamentalUnitTypesDimensionSerializer = new FundamentalUnitTypesDimensionSerializer(locale, new FundamentalUnitTypesDimensionItemSerializer(locale, new GeneralTextFormatter(locale)));
-            componentUnitsDimensionSerializer  = new ComponentUnitsDimensionSerializer(locale, new ComponentUnitsDimensionItemSerializer(locale, new GeneralTextFormatter(locale)));
+            fundamentalUnitTypesDimensionSerializer = new FundamentalUnitTypesDimensionSerializer(locale, new GeneralTextFormatter(locale), new RoundingFormatter(locale, 2));
+            componentUnitsDimensionSerializer  = new ComponentUnitsDimensionSerializer(locale, new GeneralTextFormatter(locale), new RoundingFormatter(locale, 2));
 
             componentUnitsDimensionParser = new ComponentUnitsDimensionParser();
         } catch (ParsingException e1) {
@@ -168,28 +190,40 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         setListenersOnMainButtons();
         setListenersOnTextViews();
 
-        loadUnitManager();
+        initiateLoadUnitManagerComponent();
     }
     @Override
     protected void onResume(){
         super.onResume();
+
+        if(unitManager != null){
+            populateTextViews();
+            checkUnits();
+        }
     }
     @Override
     protected void onPause() {
         super.onPause();
+
+        boolean unitsAbleToBeSaved = false;
+        if(standardLocalCoreUnitsLoaded)
+            unitsAbleToBeSaved = pSharablesApplication.saveUnits(!onlineUnitsPreviouslySaved);
+
+        if(!onlineUnitsPreviouslySaved && unitsAbleToBeSaved && pSharablesApplication.isOnlineUnitsCurrentlyLoaded())
+            sharedPreferences.edit().putBoolean(getString(R.string.online_units_previously_saved_pref_key), true).commit();
+
+        if(favoritesLoaded)
+            pSharablesApplication.saveConversionFavorites();
     }
     @Override
     protected void onDestroy(){
         super.onDestroy();
-
-        pSharablesApplication.saveUnits();
-        pSharablesApplication.saveConversionFavorites();
     }
     @Override
     public void onWindowFocusChanged(boolean hasFocus){
         if(hasFocus && unitManager != null){
-            populateTextViews();
-            checkUnits();
+            //populateTextViews();
+            //checkUnits();
         }
     }
 
@@ -199,6 +233,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
         multiModeMenuItem = menu.findItem(R.id.multi_unit_mode_item);
+        setMultiUnitMode(multiModeMenuItem, pSharablesApplication.isMultiUnitModeOn());
         return true;
     }
     @Override
@@ -261,57 +296,75 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
             processConversion();
     }
     private void setMultiUnitMode(MenuItem item) {
-        boolean isMultiUnitMode = !item.isChecked();
-        item.setChecked(isMultiUnitMode);
-        item.setTitle(item.getTitle().toString().replaceFirst(":.+", isMultiUnitMode ? ":ON" : ":OFF"));
-        item.setTitleCondensed(item.getTitleCondensed().toString().replaceFirst(":.+", isMultiUnitMode ? ":ON" : ":OFF"));
+        setMultiUnitMode(item, !item.isChecked());
+    }
+    private void setMultiUnitMode(MenuItem item, boolean isMultiUnitModeOn) {
+        pSharablesApplication.setMultiUnitModeOn(isMultiUnitModeOn);
 
-        adjustTextViewsBasedOnMultiUnitState();
+        item.setChecked(isMultiUnitModeOn);
+        item.setTitle(item.getTitle().toString().replaceFirst(":.+", isMultiUnitModeOn ? ":ON" : ":OFF"));
+        item.setTitleCondensed(item.getTitleCondensed().toString().replaceFirst(":.+", isMultiUnitModeOn ? ":ON" : ":OFF"));
+
+        adjustAllTextViewUnitGroupingBasedOnMultiUnitState(true);
     }
 
     /**
-     *  If multi-unit mode is on, then the adjust gouping count up until an initial count.
+     *  If multi-unit mode is on, then the adjust grouping count up until an initial count.
      *  Otherwise, reduce group count to 1 and remove grouping symbols.
      */
-    private void adjustTextViewsBasedOnMultiUnitState(){
-        sourceUnitsTextView.setText(unitNamesGroupingFormatter.format(sourceUnitsTextView.getText().toString()));
-        sourceValueTextView.setText(valuesGroupingFormatter.format(sourceValueTextView.getText().toString()));
-        targetUnitsTextView.setText(unitNamesGroupingFormatter.format(targetUnitsTextView.getText().toString()));
-
-        int sourceUnitGroupCount = generalGroupingFormatter.calculateGroupingCount(sourceUnitsTextView.getText().toString());
-        int targetUnitGroupCount = generalGroupingFormatter.calculateGroupingCount(targetUnitsTextView.getText().toString());
+    private void adjustAllTextViewUnitGroupingBasedOnMultiUnitState(boolean multiUnitStateChanged){
+        formatAllTextViewUnitGroupings();
 
         if (multiModeMenuItem.isChecked()) {
-            //If not enough groupings exist, then add some extra dummy ones for demonstration purposes
-            if (sourceUnitGroupCount <= 1) {
-                adjustTextViewGroupingsCount(sourceUnitsTextView, INITIAL_GROUP_NUM_IN_MULTI_UNIT_MODE, DUMMY_UNIT);
-            }
-            if (targetUnitGroupCount <= 1) {
-                adjustTextViewGroupingsCount(targetUnitsTextView, INITIAL_GROUP_NUM_IN_MULTI_UNIT_MODE, DUMMY_UNIT);
+            if(multiUnitStateChanged) { //If not enough groupings exist, then add some extra dummy ones for demonstration purposes, but only after the multi-unit state changes.
+                adjustAllTextViewsUnitGroupings(INITIAL_GROUP_NUM_IN_MULTI_UNIT_MODE, INITIAL_GROUP_NUM_IN_MULTI_UNIT_MODE);
             }
 
-            adjustSourceValueTextViewGroupingsCountBaseOnSourceUnits();
             sourceValueExpressionToggleButton.setChecked(false); //Bracketed groupings are not recognized by the expression evaluator
         }
         else{
             //Reduce to one group and then remove grouping symbols
-            if(sourceUnitGroupCount > 1){
-                adjustTextViewGroupingsCount(sourceUnitsTextView, 1, DUMMY_UNIT);
-            }
-            String sourceUnitTextWithoutGrouping = quantityGroupingDefiner.removeGroupingSymbol(sourceUnitsTextView.getText().toString());
-            sourceUnitsTextView.setText(sourceUnitTextWithoutGrouping);
+            adjustAllTextViewsUnitGroupings(1, 1);
 
-            if(targetUnitGroupCount > 1){
-                adjustTextViewGroupingsCount(targetUnitsTextView, 1, DUMMY_UNIT);
-            }
-            String targetUnitTextWithoutGrouping = quantityGroupingDefiner.removeGroupingSymbol(targetUnitsTextView.getText().toString());
-            targetUnitsTextView.setText(targetUnitTextWithoutGrouping);
+            setSourceUnitsIntoQuantity();
+            setTargetUnitIntoQuantity();
+            if(checkUnits())
+                checkNSetSourceValuesIntoQuantity();
 
-            adjustSourceValueTextViewGroupingsCountBaseOnSourceUnits();
-            String sourceValuesTextWithoutGrouping = quantityGroupingDefiner.removeGroupingSymbol(sourceValueTextView.getText().toString());
-            sourceValueTextView.setText(sourceValuesTextWithoutGrouping );
+            removeAllGroupingSymbols();
+            removeAllUnknownUnitTokens();
         }
     }
+    private void adjustAllTextViewsUnitGroupings(int desiredSourceUnitGroupingCount, int desiredTargetUnitGroupingCount){
+        adjustTextViewGroupingsCount(sourceUnitsTextView, desiredSourceUnitGroupingCount, DUMMY_UNIT);
+        adjustTextViewGroupingsCount(targetUnitsTextView, desiredTargetUnitGroupingCount, DUMMY_UNIT);
+        adjustSourceValueTextViewGroupingsCountBaseOnSourceUnits();
+    }
+    private void removeAllGroupingSymbols(){
+        String sourceUnitTextWithoutGrouping = quantityGroupingDefiner.removeGroupingSymbol(sourceUnitsTextView.getText().toString());
+        sourceUnitsTextView.setText(sourceUnitTextWithoutGrouping);
+
+        String targetUnitTextWithoutGrouping = quantityGroupingDefiner.removeGroupingSymbol(targetUnitsTextView.getText().toString());
+        targetUnitsTextView.setText(targetUnitTextWithoutGrouping);
+
+        String sourceValuesTextWithoutGrouping = quantityGroupingDefiner.removeGroupingSymbol(sourceValueTextView.getText().toString());
+        sourceValueTextView.setText(sourceValuesTextWithoutGrouping );
+    }
+    private void formatAllTextViewUnitGroupings(){
+        sourceUnitsTextView.setText(unitNamesGroupingFormatter.format(sourceUnitsTextView.getText().toString()));
+        sourceValueTextView.setText(overallValuesGroupingFormatter.format(sourceValueTextView.getText().toString()));
+        targetUnitsTextView.setText(unitNamesGroupingFormatter.format(targetUnitsTextView.getText().toString()));
+    }
+    private void removeAllUnknownUnitTokens(){
+        try {
+            sourceUnitsTextView.setText(sourceQuantity.getUnitNames().replace(Unit.UNKNOWN_UNIT_NAME, "").replace(DUMMY_UNIT, ""));
+            sourceValueTextView.setText(sourceQuantity.getValuesString());
+            targetUnitsTextView.setText(targetQuantity.getUnitNames().replace(Unit.UNKNOWN_UNIT_NAME, "").replace(DUMMY_UNIT, ""));
+        } catch (SerializingException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void updateCurrency(MenuItem item){
         getSupportLoaderManager().initLoader(ONLINE_CURRENCY_UNITS_LOADER, null, this).forceLoad();
     }
@@ -325,7 +378,6 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         setupButtons();
         setupTextViews();
         setupDialogs();
-
     }
     private void setupButtons(){
         sourceUnitBrowseButton = (Button) findViewById(R.id.sourceUnitBrowseButton);
@@ -336,9 +388,11 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     }
     private void setupTextViews(){
         sourceUnitsTextView = (MultiAutoCompleteTextView) findViewById(R.id.sourceUnitTextView);
+        targetUnitsTextView = (MultiAutoCompleteTextView) findViewById(R.id.targetUnitTextView);
+
         sourceValueTextView = (TextView) findViewById(R.id.sourceValueTextView);
         sourceValueTextView.setText("1");
-        targetUnitsTextView = (MultiAutoCompleteTextView) findViewById(R.id.targetUnitTextView);
+
         conversionValueTextView = (TextView) findViewById(R.id.conversionOutputTextView);
     }
     private void setupDialogs(){
@@ -351,15 +405,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         });
     }
     private void populateTextViews(){
-        try {
-            sourceUnitsTextView.setText(sourceQuantity.getUnitNames().replace(Unit.UNKNOWN_UNIT_NAME, ""));
-            sourceValueTextView.setText(sourceQuantity.getValuesString());
-            targetUnitsTextView.setText(targetQuantity.getUnitNames().replace(Unit.UNKNOWN_UNIT_NAME, ""));
-
-            adjustTextViewsBasedOnMultiUnitState();
-        } catch (SerializingException e) {
-            e.printStackTrace();
-        }
+        adjustAllTextViewUnitGroupingBasedOnMultiUnitState(false);
     }
 
     ///Setup Animation Methods
@@ -368,18 +414,15 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     }
 
     ///Unit Manager Loading Methods
-    private void loadUnitManager() {
-        if (!pSharablesApplication.getIsUnitManagerPreReqLoadingComplete()) {
-            boolean onlineUnitsAlreadyLoaded = sharedPreferences.getBoolean(getString(R.string.loaded_online_units_pref_key), false);
-            if(!onlineUnitsAlreadyLoaded) {
-                getSupportLoaderManager().initLoader(ONLINE_PREFIXES_N_UNITS_LOADER, null, this).forceLoad();
-            }
+    private void initiateLoadUnitManagerComponent() {
+        if (!pSharablesApplication.isUnitManagerPreReqLoadingComplete()) {
 
-            ///
-            getSupportLoaderManager().initLoader(LOCAL_UNITS_LOADER, null, this).forceLoad();
             getSupportLoaderManager().initLoader(LOCAL_PREFIXES_LOADER, null, this).forceLoad();
             getSupportLoaderManager().initLoader(FUND_UNITS_LOADER, null, this).forceLoad();
             getSupportLoaderManager().initLoader(ONLINE_CURRENCY_UNITS_LOADER, null, this).forceLoad();
+
+            //Always load the standard core units first since they are few to load and they are most frequently used.
+            getSupportLoaderManager().initLoader(STANDARD_CORE_LOCAL_UNITS_LOADER, null, this).forceLoad();
 
             //
             findViewById(R.id.progressBarLinearLayout).setVisibility(View.VISIBLE);
@@ -388,8 +431,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
             findViewById(R.id.targetLinearLayout).setVisibility(View.INVISIBLE);
         }
     }
-
-    private void postLoadSetup() {
+    private void postLoadUnitManagerComponentSetup() {
         findViewById(R.id.progressBarLinearLayout).setVisibility(View.GONE);
         findViewById(R.id.sourceLinearLayout).setVisibility(View.VISIBLE);
         findViewById(R.id.convertLinearLayout).setVisibility(View.VISIBLE);
@@ -397,6 +439,27 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 
         unitManager = pSharablesApplication.getUnitManager();
         unitParser.setUnitManager(unitManager);
+
+        setupTextViewAutoCompleteBasedOnUnitManagerComponents();
+    }
+    private void setupTextViewAutoCompleteBasedOnUnitManagerComponents(){
+        DimensionComponentDefiner dimensionComponentDefiner = componentUnitsDimensionParser.getDimensionParserBuilder().getDimensionComponentDefiner();
+
+        sourceUnitsTextViewArrayAdapter = new MultiAutoCompleteUnitsDefinitionArrayAdapter(this, android.R.layout.simple_list_item_1
+                , unitManager.getUnitsDataModel().getUnitsContentQuerier()
+                , dimensionComponentDefiner
+                , unitManager.getConversionFavoritesDataModel());
+        sourceUnitsTextView.setAdapter(sourceUnitsTextViewArrayAdapter);
+        sourceUnitsTextView.setThreshold(1);
+        sourceUnitsTextView.setTokenizer(new MultiAutoCompleteUnitDefinitionTokenizer(dimensionComponentDefiner));
+
+        targetUnitsTextViewArrayAdapter = new MultiAutoCompleteUnitsDefinitionArrayAdapter(this, android.R.layout.simple_list_item_1
+                , unitManager.getUnitsDataModel().getUnitsContentQuerier()
+                , dimensionComponentDefiner
+                , unitManager.getConversionFavoritesDataModel());
+        targetUnitsTextView.setAdapter(targetUnitsTextViewArrayAdapter);
+        sourceUnitsTextView.setThreshold(1);
+        targetUnitsTextView.setTokenizer(new MultiAutoCompleteUnitDefinitionTokenizer(dimensionComponentDefiner));
     }
 
     ///Listeners Methods
@@ -423,6 +486,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         sourceUnitViewInfoButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
+                setSourceUnitsIntoQuantity();
+
                 unitInfoDialog.setTitle(SOURCE_NAME + " Unit(s) Details");
                 unitInfoDialog.setMessage(composeUnitsDetailsMessage(sourceQuantity.getUnits()));
                 unitInfoDialog.show();
@@ -432,6 +497,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         targetUnitViewInfoButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
+                setTargetUnitIntoQuantity();
+
                 unitInfoDialog.setTitle(TARGET_NAME + " Unit(s) Details");
                 unitInfoDialog.setMessage(composeUnitsDetailsMessage(targetQuantity.getUnits()));
                 unitInfoDialog.show();
@@ -475,41 +542,51 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     }
     private void appendPerUnitInfo(StringBuilder detailsBuilder, Collection<Unit> unitsGroup){
         for(Unit unit:unitsGroup){
-            detailsBuilder.append("Name: ").append(unit.getName()).append("(").append(unit.getAbbreviation()).append(")").append("\n");
+            detailsBuilder.append("NAME: ").append(unit.getName()).append("(").append(unit.getAbbreviation()).append(")").append("\n");
             if(!unit.getAliases().isEmpty())
-                detailsBuilder.append("Aliases: ").append(Arrays.toString(unit.getAliases().toArray())).append("\n\n");
+                detailsBuilder.append("ALIASES: ").append(Arrays.toString(unit.getAliases().toArray())).append("\n\n");
             if(!unit.getDescription().isEmpty())
-                detailsBuilder.append("Description: ").append(unit.getDescription()).append("\n\n");
-            detailsBuilder.append("Unit System: ").append(unit.getUnitSystem()).append("\n\n");
+                detailsBuilder.append("DESCRIPTION: ").append(unit.getDescription()).append("\n\n");
+            detailsBuilder.append("UNIT SYSTEM: ").append(unit.getUnitSystem()).append("\n\n");
 
             String componentUnitsDimension = "";
             try {
-                if(UnitsContentDeterminer.determineGeneralDataModelCategory(unit) != DATA_MODEL_CATEGORY.UNKNOWN
-                        && (unit.getType() == UNIT_TYPE.DERIVED_MULTI_UNIT || unit.getType() == UNIT_TYPE.DERIVED_SINGLE_UNIT))
+                if(UnitsContentDeterminer.determineHighestPriorityDataModelCategory(unit) != DATA_MODEL_CATEGORY.UNKNOWN
+                        && unit.getDimensionType() != DIMENSION_TYPE.SIMPLE)
                 {
                     componentUnitsDimension = componentUnitsDimensionSerializer.serialize(unit.getComponentUnitsDimension());
                 }
             } catch (SerializingException e) { }
 
             if(!componentUnitsDimension.isEmpty())
-                detailsBuilder.append("Component Units Dimension: ").append(componentUnitsDimension).append("\n\n");
+                detailsBuilder.append("COMPONENT UNITS DIMENSION: ").append(componentUnitsDimension).append("\n\n");
+
+            detailsBuilder.append("-------------");
         }
     }
     private void appendInvariantInfo(StringBuilder detailsBuilder, Unit groupRepresentativeUnit){
         String fundamentalTypesDimension = "";
         try {
-            if(UnitsContentDeterminer.determineGeneralDataModelCategory(groupRepresentativeUnit) != DATA_MODEL_CATEGORY.UNKNOWN)
+            if(UnitsContentDeterminer.determineHighestPriorityDataModelCategory(groupRepresentativeUnit) != DATA_MODEL_CATEGORY.UNKNOWN)
                 fundamentalTypesDimension =fundamentalUnitTypesDimensionSerializer.serialize(groupRepresentativeUnit.getFundamentalUnitTypesDimension());
         } catch (SerializingException e) { }
 
         detailsBuilder.append("-------------").append("\n");
         if(!fundamentalTypesDimension.isEmpty())
-            detailsBuilder.append("Fundamental Types Dimension: ").append(fundamentalTypesDimension).append("\n");
+            detailsBuilder.append("FUNDAMENTAL TYPES DIMENSION: ").append(fundamentalTypesDimension).append("\n");
         if(!groupRepresentativeUnit.getCategory().equalsIgnoreCase(fundamentalTypesDimension)) //Prevent display of duplicate data in case of complex units
-            detailsBuilder.append("Category: ").append(groupRepresentativeUnit.getCategory()).append("\n");
+            detailsBuilder.append("CATEGORY: ").append(groupRepresentativeUnit.getCategory()).append("\n");
     }
 
     private void setListenersOnTextViews() {
+        sourceUnitsTextView.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //removeAllUnknownUnitTokens();
+                //if(!multiModeMenuItem.isChecked())
+                    //removeAllGroupingSymbols();
+            }
+        });
         sourceUnitsTextView.setOnFocusChangeListener(new OnFocusChangeListener() {
             @Override
             public void onFocusChange(View view, boolean hasFocus) {
@@ -530,11 +607,21 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
                     }
                 }
                 else{
-                    ((TextView) view).setText(((TextView) view).getText().toString().replace(DUMMY_UNIT, " "));
+                    removeAllUnknownUnitTokens();
+                    if(!multiModeMenuItem.isChecked())
+                        removeAllGroupingSymbols();
                 }
             }
         });
 
+        targetUnitsTextView.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //removeAllUnknownUnitTokens();
+                //if(!multiModeMenuItem.isChecked())
+                    //removeAllGroupingSymbols();
+            }
+        });
         targetUnitsTextView.setOnFocusChangeListener(new OnFocusChangeListener() {
             @Override
             public void onFocusChange(View view, boolean hasFocus) {
@@ -553,7 +640,9 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
                     }
                 }
                 else{
-                    ((TextView) view).setText(((TextView) view).getText().toString().replace(DUMMY_UNIT, " "));
+                    removeAllUnknownUnitTokens();
+                    if(!multiModeMenuItem.isChecked())
+                        removeAllGroupingSymbols();
                 }
             }
         });
@@ -563,7 +652,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
             public void onFocusChange(View view, boolean hasFocus) {
                 if (!hasFocus) {
                     if (multiModeMenuItem.isChecked()) {
-                        String sourceValueText = valuesGroupingFormatter.format(((TextView) view).getText().toString());
+                        String sourceValueText = overallValuesGroupingFormatter.format(((TextView) view).getText().toString());
                         ((TextView) view).setText(sourceValueText);
 
                         if(valuesGroupingFormatter.calculateGroupingCount(sourceValueText) > unitNamesGroupingFormatter.calculateGroupingCount(sourceUnitsTextView.getText().toString()))
@@ -579,7 +668,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     private boolean adjustTextViewGroupingsCount(TextView textViewToBeAdjusted, int referenceGroupCount, String dummyTextForEmptyGroupings) {
         if (referenceGroupCount > 0) {
             String initialText = textViewToBeAdjusted.getText().toString();
-            String textWithAdjustedGroupingCount = generalGroupingFormatter.adjustGroupingsCount(initialText, referenceGroupCount);
+            String textWithAdjustedGroupingCount = generalGroupingFormatter.adjustGroupingsCount(initialText, referenceGroupCount, GroupingFormatter.GROUP_ADJUSTMENT_LOCATION.END);
             String adjustedTextWithReplacedEmptyGroupings = generalGroupingFormatter.replaceEmptyGroupingsWithDefaultGrouping(textWithAdjustedGroupingCount, dummyTextForEmptyGroupings);
 
             textViewToBeAdjusted.setText(adjustedTextWithReplacedEmptyGroupings);
@@ -606,8 +695,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     }
     private void setUnitsIntoQuantity(boolean isTargetQuantity) {
         String unitNamesOrDimension = (isTargetQuantity ? targetUnitsTextView : sourceUnitsTextView).getText().toString().trim();
-
         Quantity selectedQuantity = (isTargetQuantity) ? targetQuantity : sourceQuantity;
+        boolean valueSettingFailed = false;
 
         try {
             //Only replace anything only if there is difference
@@ -625,8 +714,13 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
             for (Unit unit : (isTargetQuantity ? targetQuantity.getUnits() : sourceQuantity.getUnits())) {
                 unitManager.getConversionFavoritesDataModel().modifySignificanceRankOfMultipleConversions(unit, true);
             }
+        } catch (QuantityException qException){
+            Toast.makeText(this, String.format("Problem Setting Values: %s", qException.getScenario()), Toast.LENGTH_SHORT).show();
+        } catch (SerializingException sException) {
+            Toast.makeText(this, String.format("Problem Setting Values: %s", sException.getScenario()), Toast.LENGTH_SHORT).show();
         }
-        catch(Exception e){
+
+        if(valueSettingFailed){
             try {
                 Unit unknownUnit = pSharablesApplication.getUnitManager().getUnitsDataModel().getUnitsContentMainRetriever().getUnknownUnit();
                 if (isTargetQuantity) {
@@ -634,7 +728,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
                 } else {
                     pSharablesApplication.getSourceQuantity().setUnit(unknownUnit, true);
                 }
-            } catch (Exception e1) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -646,7 +740,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 
     private boolean checkNSetSourceValuesIntoQuantity() {
         try {
-            String formattedSourceValuesText = sourceValueFormatter.format(sourceValueTextView.getText().toString());
+            String formattedSourceValuesText = overallValuesGroupingFormatter.format(sourceValueTextView.getText().toString());
 
             sourceQuantity.setValues(serialGroupingQuantityTokenizer.parseSerialGroupingToValuesList(formattedSourceValuesText));
             sourceValueTextView.setTextColor(Color.BLACK);
@@ -660,8 +754,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         }
     }
     private boolean checkUnits() {
-        boolean sourceUnitIsUnknown = UnitsContentDeterminer.determineGeneralDataModelCategory(sourceQuantity.getLargestUnit()) == DATA_MODEL_CATEGORY.UNKNOWN;
-        boolean targetUnitIsUnknown = UnitsContentDeterminer.determineGeneralDataModelCategory(targetQuantity.getLargestUnit()) == DATA_MODEL_CATEGORY.UNKNOWN;
+        boolean sourceUnitIsUnknown = UnitsContentDeterminer.determineHighestPriorityDataModelCategory(sourceQuantity.getLargestUnit()) == DATA_MODEL_CATEGORY.UNKNOWN;
+        boolean targetUnitIsUnknown = UnitsContentDeterminer.determineHighestPriorityDataModelCategory(targetQuantity.getLargestUnit()) == DATA_MODEL_CATEGORY.UNKNOWN;
         boolean UnitsMatch = QuantityOperators.equalsUnitDimensionOf(sourceQuantity, targetQuantity);
         boolean UnitsAreOK = !(sourceUnitIsUnknown || targetUnitIsUnknown) && UnitsMatch;
 
@@ -692,10 +786,10 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 
         return UnitsAreOK;
     }
-    private void createUnknownUnitsInformationToast(String contextualPrefixText, String unitGroupText){
+    private void createUnknownUnitsInformationToast(String contextualPrefixText, String unitsGroupText){
         StringBuilder unknownSourceUnitsInformationBuilder = new StringBuilder(contextualPrefixText);
 
-        List<String> unknownSourceUnitNames = determineUnknownUnitsInGroup(unitGroupText);
+        List<String> unknownSourceUnitNames = determineUnknownUnitsInGroup(unitsGroupText);
         for(String unknownUnitName:unknownSourceUnitNames){
             String formattedUnknownUnitName = String.format("%s%s%s", quantityGroupingDefiner.getGroupOpeningSymbol(), unknownUnitName, quantityGroupingDefiner.getGroupClosingSymbol());
             unknownSourceUnitsInformationBuilder.append(",").append(formattedUnknownUnitName);
@@ -708,7 +802,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 
         List<String> unknownUnitNames = new ArrayList<>();
         for(Unit unit:sourceUnits){
-            if(UnitsContentDeterminer.determineGeneralDataModelCategory(unit) == DATA_MODEL_CATEGORY.UNKNOWN)
+            if(UnitsContentDeterminer.determineHighestPriorityDataModelCategory(unit) == DATA_MODEL_CATEGORY.UNKNOWN)
                 unknownUnitNames.add(unit.getName());
         }
 
@@ -745,8 +839,17 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     }
 
     private String formatConversionValue(String rawConversionValue){
+        //TODO: Conditionally format value as a fraction or as scientific notation based on which takes less space.
+
         if(targetQuantity.getLargestUnit().getCategory().equalsIgnoreCase(CURRENCY_CATEGORY)) {
-            return conversionCurrencyFormatter.format(rawConversionValue);
+            Locale guessedLocale = CurrencyFormatter.guessCurrencyLocaleBasedOnCode(targetQuantity.getLargestUnit().getAbbreviation());
+            if(guessedLocale != null) {
+                conversionCurrencyFormatter.setLocale(guessedLocale);
+                return conversionCurrencyFormatter.format(rawConversionValue);
+            }
+            else{
+                return conversionRoundingFormatter.format(rawConversionValue);
+            }
         }
         else{
             return conversionRoundingFormatter.format(rawConversionValue);
@@ -757,9 +860,12 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     @Override
     public Loader<UnitManagerBuilder> onCreateLoader(int id, Bundle arg1) {
         switch (id) {
-            case LOCAL_UNITS_LOADER:
-                Toast.makeText(this, "Loading Local Units...", Toast.LENGTH_SHORT).show();
-                return new UnitsMapXmlLocalReader(this, this.locale, this.componentUnitsDimensionSerializer, this.fundamentalUnitTypesDimensionSerializer, this.componentUnitsDimensionParser.getDimensionParserBuilder().getDimensionComponentDefiner());
+            case STANDARD_CORE_LOCAL_UNITS_LOADER:
+                Toast.makeText(this, "Loading Standard Core Local Units...", Toast.LENGTH_SHORT).show();
+                return new StandardCoreUnitsMapXmlLocalReader(this, this.locale, this.componentUnitsDimensionSerializer, this.fundamentalUnitTypesDimensionSerializer, this.componentUnitsDimensionParser.getDimensionParserBuilder().getDimensionComponentDefiner());
+            case NON_STANDARD_LOCAL_UNITS_LOADER:
+                Toast.makeText(this, "Loading Regular Local Units...", Toast.LENGTH_LONG).show();
+                return new NonStandardUnitsMapsXmlLocalReader(this, this.locale, this.componentUnitsDimensionSerializer, this.fundamentalUnitTypesDimensionSerializer, this.componentUnitsDimensionParser.getDimensionParserBuilder().getDimensionComponentDefiner());
             case LOCAL_PREFIXES_LOADER:
                 Toast.makeText(this, "Loading Local Prefixes...", Toast.LENGTH_SHORT).show();
                 return new PrefixesMapXmlLocalReader(this, new PrefixesDataModel(new PrefixesDualKeyNCategoryHashedRepository()));
@@ -773,11 +879,22 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
                         , new ChainedFormatter(locale).AddFormatter(new GeneralTextFormatter(locale)).AddFormatter(new SnakeCaseFormatter(locale)));
             case ONLINE_PREFIXES_N_UNITS_LOADER:
                 try {
-                    Toast.makeText(this, "Loading Online Units...", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Loading Online Units From \"Unified Code for Units of Measure\"...", Toast.LENGTH_LONG).show();
                     return new PrefixesNUnitsMapXmlOnlineReader(this, this.locale, new PrefixesDataModel(new PrefixesDualKeyNCategoryHashedRepository()), this.componentUnitsDimensionSerializer, this.fundamentalUnitTypesDimensionSerializer, this.componentUnitsDimensionParser.getDimensionParserBuilder().getDimensionComponentDefiner());
                 } catch (ParsingException e) {
                     e.printStackTrace();
                 }
+            case FAVORITES_LOADER:
+                Toast.makeText(this, "Loading Conversion Favorites...", Toast.LENGTH_SHORT).show();
+                return new AsyncTaskLoader<UnitManagerBuilder>(this) {
+                    @Override
+                    public UnitManagerBuilder loadInBackground() {
+                        ConversionFavoritesDataModel loadedConversionFavoritesDataModel = new ConversionFavoritesListXmlLocalReader(this.getContext(),new ConversionFavoritesDataModel()).loadInBackground();
+                        if(loadedConversionFavoritesDataModel != null)
+                            ((PersistentSharablesApplication) getContext().getApplicationContext()).getUnitManager().getConversionFavoritesDataModel().combineWith(loadedConversionFavoritesDataModel);
+                        return null;
+                    }
+                };
             case POST_LOADER:
                 Toast.makeText(this, "Cool. Now Putting Things Together...", Toast.LENGTH_SHORT).show();
                 return new AsyncTaskLoader<UnitManagerBuilder>(this) {
@@ -789,7 +906,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
                 };
             case UPDATE_LOADER:
                 Toast.makeText(this, "Updating Units...", Toast.LENGTH_SHORT).show();
-                pSharablesApplication.getUnitManagerBuilder().clearAll();
+                pSharablesApplication.getUnitManagerBuilder().initializeAllStructuralDefaults();
+                pSharablesApplication.getUnitManagerBuilder().clearAllUnits();
                 return new AsyncTaskLoader<UnitManagerBuilder>(this) {
                     @Override
                     public UnitManagerBuilder loadInBackground() {
@@ -803,33 +921,73 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     }
     @Override
     public void onLoadFinished(Loader<UnitManagerBuilder> loader, UnitManagerBuilder loadedUnitManagerBuilderBundle) {
-        if (loadedUnitManagerBuilderBundle != null) {
-            try {
-                pSharablesApplication.getUnitManagerBuilder().combineWith(loadedUnitManagerBuilderBundle);
-            }
-            catch (Exception e){
-                postLoadSetup();
-            }
+        try {
+            pSharablesApplication.getUnitManagerBuilder().combineWith(loadedUnitManagerBuilderBundle);
+        }
+        catch (Exception e){
+            Toast.makeText(this, "All components needed for initialization may not have successfully been assembled.", Toast.LENGTH_SHORT).show();
         }
 
         //
-        if (pSharablesApplication.getIsUnitManagerPreReqLoadingComplete() && loader.getId() == POST_LOADER) {
-            postLoadSetup();
+        if(loader.getId() == ONLINE_PREFIXES_N_UNITS_LOADER &&  loadedUnitManagerBuilderBundle.areAnyComponentsAvailable()){
+            pSharablesApplication.setOnlineUnitsCurrentlyLoaded(true);
         }
-        else if(pSharablesApplication.getIsUnitManagerPreReqLoadingComplete() && !pSharablesApplication.getIsUnitManagerAlreadyCreated() && loadedUnitManagerBuilderBundle != null){
+        if(loader.getId() == ONLINE_CURRENCY_UNITS_LOADER && loadedUnitManagerBuilderBundle.areAnyComponentsAvailable()){
+            currencyUnitsLoaded = true;
+        }
+        if(loader.getId() == NON_STANDARD_LOCAL_UNITS_LOADER && loadedUnitManagerBuilderBundle.areAnyComponentsAvailable()){
+            nonStandardLocalUnitsLoaded = true;
+        }
+        if(loader.getId() == STANDARD_CORE_LOCAL_UNITS_LOADER && loadedUnitManagerBuilderBundle.areAnyComponentsAvailable()){
+            standardLocalCoreUnitsLoaded = true;
+        }
+        if(loader.getId() == LOCAL_PREFIXES_LOADER && loadedUnitManagerBuilderBundle.areAnyComponentsAvailable()){
+            localPrefixesLoaded = true;
+        }
+        if(loader.getId() == FAVORITES_LOADER ){
+            favoritesLoaded = true;
+        }
+
+        //
+        String loaderUpdateName;
+        switch (loader.getId()){
+            case ONLINE_CURRENCY_UNITS_LOADER:
+                loaderUpdateName = "Currency Units";
+                break;
+            case ONLINE_PREFIXES_N_UNITS_LOADER:
+                loaderUpdateName = "Online Units";
+                break;
+            case STANDARD_CORE_LOCAL_UNITS_LOADER:
+            case NON_STANDARD_LOCAL_UNITS_LOADER:
+                loaderUpdateName = "Local Units";
+                break;
+            default:
+                loaderUpdateName = "";
+        }
+
+        //
+        if (pSharablesApplication.isUnitManagerPreReqLoadingComplete() && pSharablesApplication.isUnitManagerAlreadyCreated() && loader.getId() == POST_LOADER) {
+            postLoadUnitManagerComponentSetup();
+            getSupportLoaderManager().initLoader(FAVORITES_LOADER, null, this).forceLoad();
+            if(!onlineUnitsPreviouslySaved){
+                getSupportLoaderManager().initLoader(ONLINE_PREFIXES_N_UNITS_LOADER, null, this).forceLoad();
+            }
+            else{
+                //If the on units had been previously loaded AND saved, then they will be in these local loaded units set
+                //Depending pending on how many online units and dynamic units were saved, this may take a while to fully load
+                getSupportLoaderManager().initLoader(NON_STANDARD_LOCAL_UNITS_LOADER, null, this).forceLoad();
+            }
+        }
+        else if( standardLocalCoreUnitsLoaded && currencyUnitsLoaded && localPrefixesLoaded
+                && pSharablesApplication.isUnitManagerPreReqLoadingComplete() && !pSharablesApplication.isUnitManagerAlreadyCreated()){
             getSupportLoaderManager().initLoader(POST_LOADER, null, this).forceLoad();
         }
-        else if(pSharablesApplication.getIsUnitManagerAlreadyCreated() && loader.getId() != UPDATE_LOADER){
+        else if(pSharablesApplication.isUnitManagerAlreadyCreated() && loader.getId() != UPDATE_LOADER){
             getSupportLoaderManager().initLoader(UPDATE_LOADER, null, this).forceLoad();
         }
-        else if(pSharablesApplication.getIsUnitManagerAlreadyCreated()){
-            pSharablesApplication.setUnitManagerUpdated(false);
-            Toast.makeText(this, "Units Updated.", Toast.LENGTH_SHORT).show();
-        }
 
-        //
-        if(loader.getId() == ONLINE_PREFIXES_N_UNITS_LOADER && loadedUnitManagerBuilderBundle.areAnyComponentsAvailable()){
-            sharedPreferences.edit().putBoolean(getString(R.string.loaded_online_units_pref_key), true).commit();
+        if(!loaderUpdateName.isEmpty()){
+            Toast.makeText(this, String.format("%s Updated.", loaderUpdateName), Toast.LENGTH_SHORT).show();
         }
     }
     @Override

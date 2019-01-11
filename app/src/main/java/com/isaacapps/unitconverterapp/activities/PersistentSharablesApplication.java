@@ -3,7 +3,8 @@ package com.isaacapps.unitconverterapp.activities;
 import android.app.Application;
 
 import com.isaacapps.unitconverterapp.dao.xml.writers.local.ConversionFavoritesLocalXmlWriter;
-import com.isaacapps.unitconverterapp.dao.xml.writers.local.UnitsMapXmlLocalWriter;
+import com.isaacapps.unitconverterapp.dao.xml.writers.local.NonStandardCoreUnitsMapsXmlLocalWriter;
+import com.isaacapps.unitconverterapp.dao.xml.writers.local.NonStandardDynamicUnitsMapXmlLocalWriter;
 import com.isaacapps.unitconverterapp.models.measurables.quantity.Quantity;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManagerBuilder;
@@ -14,14 +15,19 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 public class PersistentSharablesApplication extends Application {
+    public static final String MULTI_UNIT_MODE_BUNDLE_NAME = "multiUnitModeOn";
+
     private UnitManagerBuilder unitManagerBuilder;
     private UnitManager unitManager;
     private Quantity fromQuantity, toQuantity;
-    private boolean unitManagerUpdated;
+    private boolean onlineUnitsCurrentlyLoaded;
+    private boolean multiUnitModeOn;
 
     ///
     public PersistentSharablesApplication() {
         unitManagerBuilder = new UnitManagerBuilder();
+        unitManagerBuilder.setReUpdateAssociationsOfUnknownUnits(true);
+
         try {
             fromQuantity = new Quantity();
             toQuantity = new Quantity();
@@ -32,10 +38,16 @@ public class PersistentSharablesApplication extends Application {
     }
 
     ///
-    public void saveUnits() {
+    public boolean saveUnits(boolean coreUnitsUpdated) {
         try {
-            new UnitsMapXmlLocalWriter(getApplicationContext()).saveToXML(getUnitManager().getUnitsDataModel()
+            if(coreUnitsUpdated)
+                new NonStandardCoreUnitsMapsXmlLocalWriter(getApplicationContext()).saveToXML(getUnitManager().getUnitsDataModel()
+                        .getUnitsContentMainRetriever().getCoreUnits());
+
+            new NonStandardDynamicUnitsMapXmlLocalWriter(getApplicationContext()).saveToXML(getUnitManager().getUnitsDataModel()
                     .getUnitsContentMainRetriever().getDynamicUnits());
+
+            return true;
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
         } catch (IllegalStateException e) {
@@ -47,8 +59,8 @@ public class PersistentSharablesApplication extends Application {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return false;
     }
-
     public void saveConversionFavorites() {
         try {
             new ConversionFavoritesLocalXmlWriter(getApplicationContext()).saveToXML(unitManager.getConversionFavoritesDataModel());
@@ -84,7 +96,6 @@ public class PersistentSharablesApplication extends Application {
     public boolean updateUnitManager(){
         try {
             unitManagerBuilder.updateContent(unitManager);
-            unitManagerUpdated = true;
             return true;
         }
         catch (Exception e){
@@ -93,27 +104,33 @@ public class PersistentSharablesApplication extends Application {
         }
     }
 
-    public boolean getIsUnitManagerPreReqLoadingComplete() {
+    public boolean isUnitManagerPreReqLoadingComplete() {
         return unitManagerBuilder.areMinComponentsForCreationAvailable();
     }
-
-    public boolean getIsUnitManagerAlreadyCreated(){
+    public boolean isUnitManagerAlreadyCreated(){
         return unitManager != null;
-    }
-
-    public boolean isUnitManagerUpdated(){
-        return unitManagerUpdated;
-    }
-    public void setUnitManagerUpdated(boolean isUpdated){
-        unitManagerUpdated = isUpdated;
     }
 
     ///
     public Quantity getSourceQuantity() {
         return fromQuantity;
     }
-
     public Quantity getTargetQuantity() {
         return toQuantity;
+    }
+
+    ///
+    public boolean isOnlineUnitsCurrentlyLoaded(){
+        return onlineUnitsCurrentlyLoaded;
+    }
+    public void setOnlineUnitsCurrentlyLoaded(boolean onlineUnitsCurrentlyLoaded){
+        this.onlineUnitsCurrentlyLoaded = onlineUnitsCurrentlyLoaded;
+    }
+
+    public boolean isMultiUnitModeOn() {
+        return multiUnitModeOn;
+    }
+    public void setMultiUnitModeOn(boolean multiUnitModeOn){
+        this.multiUnitModeOn = multiUnitModeOn;
     }
 }
