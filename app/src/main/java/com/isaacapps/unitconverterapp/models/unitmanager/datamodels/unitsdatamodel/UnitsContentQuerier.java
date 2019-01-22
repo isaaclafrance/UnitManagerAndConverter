@@ -58,7 +58,6 @@ public class UnitsContentQuerier {
 
         return unitsMatched;
     }
-
     public List<Unit> queryUnitsWithMatchingFundamentalUnitDimension(Unit unit) {
         List<Unit> unitsMatched = new ArrayList<>();
 
@@ -72,15 +71,6 @@ public class UnitsContentQuerier {
         }
 
         return unitsMatched;
-    }
-
-    public List<Unit> queryUnitsByUnitSystem(String unitSystem) {
-        List<Unit> unitMatches = new ArrayList<>();
-
-        for (String unitName : unitsDataModel.getUnitManagerContext().getUnitsClassifierDataModel().getUnitNamesByUnitSystem(unitSystem.trim()))
-            unitMatches.add(unitsDataModel.getUnitsContentMainRetriever().getUnit(unitName, false));
-
-        return unitMatches;
     }
 
     public List<Unit> queryUnitsByUnitCategory(String unitCategory) {
@@ -97,11 +87,22 @@ public class UnitsContentQuerier {
     }
 
     /**
+     * Finds any units with the same specified unit system.
+     */
+    public List<Unit> queryUnitsByUnitSystem(String unitSystem) {
+        List<Unit> unitMatches = new ArrayList<>();
+
+        for (String unitName : unitsDataModel.getUnitManagerContext().getUnitsClassifierDataModel().getUnitNamesByUnitSystem(unitSystem.trim()))
+            unitMatches.add(unitsDataModel.getUnitsContentMainRetriever().getUnit(unitName, false));
+
+        return unitMatches;
+    }
+    /**
      * Queries data models to find units with same dimension but with all component units in the specified target unit system.
      * @param createMissingValidComplexUnit Indicates whether to attempt creating a new unit with component units in specified target unit system if none exists already.
-     * @return
+     * @return List of units meeting criteria.
      */
-    public List<Unit> queryCorrespondingUnitsWithUnitSystem(Unit sourceUnit, String targetUnitSystemString, boolean createMissingValidComplexUnit) {
+    public List<Unit> queryCorrespondingUnitsWithUnitSystem(Unit sourceUnit, String targetUnitSystem, boolean createMissingValidComplexUnit) {
         List<Unit> correspondingUnits = new ArrayList<>();
 
         if (sourceUnit.getUnitManagerContext() != unitsDataModel.getUnitManagerContext())
@@ -109,7 +110,7 @@ public class UnitsContentQuerier {
 
         //First use the unit classifier data model to find corresponding unit target unit system
         Collection<String> matchCandidateNames = unitsDataModel.getUnitManagerContext().getUnitsClassifierDataModel()
-                .getUnitNamesByUnitSystemNCategory(targetUnitSystemString, sourceUnit.getCategory());
+                .getUnitNamesByUnitSystemNCategory(targetUnitSystem, sourceUnit.getCategory());
 
         for (String unitName : matchCandidateNames) {
             correspondingUnits.add(unitsDataModel.getRepositoryWithDualKeyNCategory().getFirstItemByAnyKey(unitName));
@@ -136,7 +137,7 @@ public class UnitsContentQuerier {
 
             for (Map.Entry<String, Double> componentUnitEntry : sourceUnit.getComponentUnitsDimension().entrySet()) {
                 Iterator<Unit> replacementUnitIterator = queryCorrespondingUnitsWithUnitSystem(unitsDataModel.getUnitsContentMainRetriever().getUnit(componentUnitEntry.getKey(), createMissingValidComplexUnit)
-                        , targetUnitSystemString, true).iterator();
+                        , targetUnitSystem, true).iterator();
 
                 if (replacementUnitIterator.hasNext())
                     properComponentUnitDimension.put(replacementUnitIterator.next().getName(), componentUnitEntry.getValue());
@@ -158,38 +159,77 @@ public class UnitsContentQuerier {
      * Sort the candidates list by the significance of the provided name with respect to their full name and abbreviated name
      */
     private class UnitsWithSimilarNameComparator implements Comparator<Unit>{
-        private int providedNameLength;
+        private final String providedName;
 
-        public UnitsWithSimilarNameComparator(int providedNameLength){
-            this.providedNameLength = providedNameLength;
+        public UnitsWithSimilarNameComparator(String providedName){
+            this.providedName = providedName;
         }
 
         @Override
         public int compare(Unit lhsUnit, Unit rhsUnit) {
-            Double lhsUnitFullNameSignificance = (double) providedNameLength / lhsUnit.getName().length();
-            Double lhsUnitAbbreviationSignificance = (double) providedNameLength / lhsUnit.getAbbreviation().length();
+            double lhsUnitFullNameSignificanceRatio = (double) providedName.length() / lhsUnit.getName().length();
+            double lhsUnitAbbreviationSignificanceRatio = (double) providedName.length() / lhsUnit.getAbbreviation().length();
+            boolean lhsUnitFullNameContains = lhsUnit.getName().contains(providedName);
+            boolean lhsUnitAbbreviationContains = lhsUnit.getAbbreviation().contains(providedName);
 
-            Double rhsUnitFullNameSignificance = (double) providedNameLength / rhsUnit.getName().length();
-            Double rhsUnitAbbreviationSignificance = (double) providedNameLength / rhsUnit.getAbbreviation().length();
+            double rhsUnitFullNameSignificanceRatio = (double) providedName.length() / rhsUnit.getName().length();
+            double rhsUnitAbbreviationSignificanceRatio = (double) providedName.length() / rhsUnit.getAbbreviation().length();
+            boolean rhsUnitFullNameContains = rhsUnit.getName().contains(providedName);
+            boolean rhsUnitAbbreviationContains = rhsUnit.getAbbreviation().contains(providedName);
 
-            /*Only select the abbreviation significance if the length of provided name is less than the length of the abbreviation,
-             *otherwise the Full Name significance is utilized.This is to ensure that abbreviations take precedence
-             *when the length of the provided name is similar to the length of the available abbreviations
+
+            /*Only select the abbreviation significance ratio if the length of provided name is less than the length of the abbreviation,
+             *otherwise the Full Name significance is utilized.This is to ensure that abbreviation significance take precedence
+             *when the length of the provided name is closer to the length of the available abbreviations.
              */
-            Double preferredLhsSignificance = (lhsUnitAbbreviationSignificance < 1) ? lhsUnitAbbreviationSignificance : lhsUnitFullNameSignificance;
-            Double preferredRhsSignificance = (rhsUnitAbbreviationSignificance < 1) ? rhsUnitAbbreviationSignificance : rhsUnitFullNameSignificance;
 
-            return -preferredLhsSignificance.compareTo(preferredRhsSignificance); //need to take negative to order from greatest to least.
+            double preferredLhsSignificanceRatio;
+            int lhsDistanceFromStart;
+            if(lhsUnitAbbreviationContains && lhsUnitFullNameContains){
+                preferredLhsSignificanceRatio = (lhsUnitAbbreviationSignificanceRatio <= 1) ? lhsUnitAbbreviationSignificanceRatio : lhsUnitFullNameSignificanceRatio;
+                lhsDistanceFromStart = (lhsUnitAbbreviationSignificanceRatio <= 1) ? lhsUnit.getAbbreviation().indexOf(providedName) : lhsUnit.getName().indexOf(providedName);
+            }
+            else if(lhsUnitAbbreviationContains){
+                preferredLhsSignificanceRatio = lhsUnitAbbreviationSignificanceRatio;
+                lhsDistanceFromStart = lhsUnit.getAbbreviation().indexOf(providedName);
+            }
+            else{
+                preferredLhsSignificanceRatio = lhsUnitFullNameSignificanceRatio;
+                lhsDistanceFromStart = lhsUnit.getName().indexOf(providedName);
+            }
+
+            double preferredRhsSignificanceRatio;
+            int rhsDistanceFromStart;
+            if(rhsUnitAbbreviationContains && rhsUnitFullNameContains){
+                preferredRhsSignificanceRatio = (rhsUnitAbbreviationSignificanceRatio <= 1) ? rhsUnitAbbreviationSignificanceRatio : rhsUnitFullNameSignificanceRatio;
+                rhsDistanceFromStart = (rhsUnitAbbreviationSignificanceRatio <= 1) ? rhsUnit.getAbbreviation().indexOf(providedName) : rhsUnit.getName().indexOf(providedName);
+            }
+            else if(rhsUnitAbbreviationContains){
+                preferredRhsSignificanceRatio = rhsUnitAbbreviationSignificanceRatio;
+                rhsDistanceFromStart = rhsUnit.getAbbreviation().indexOf(providedName);
+            }
+            else{
+                preferredRhsSignificanceRatio = rhsUnitFullNameSignificanceRatio;
+                rhsDistanceFromStart = rhsUnit.getName().indexOf(providedName);
+            }
+
+            int prefSigRatioCompareToResult = -1 * Double.compare(preferredLhsSignificanceRatio, preferredRhsSignificanceRatio);
+            if(prefSigRatioCompareToResult == 0){
+                return Integer.compare(lhsDistanceFromStart, rhsDistanceFromStart); // Ratio are the same, then subsequence closer to the being preferred.
+            }else{
+                return prefSigRatioCompareToResult;
+            }
+
         }
     }
     /**
-     * Finds a set of units sorted by the degree of similarity of their names to the provided name
+     * Finds a set of units sorted by the degree of similarity of their names to the provided name.
      */
     public SortedSet<Unit> queryUnitsOrderedBySimilarNames(final String providedName) {
         //TODO: Incorporate the levenshtein distance algorithm, soundex, metaphone ????
 
         //Non duplicate data structure since there are instances where full name may be the same as abbreviations.
-        SortedSet<Unit> unitCandidates = new TreeSet<>(new UnitsWithSimilarNameComparator(providedName.length()));
+        SortedSet<Unit> unitCandidates = new TreeSet<>(new UnitsWithSimilarNameComparator(providedName));
 
         for (String unitName : unitsDataModel.getRepositoryWithDualKeyNCategory().getAllKeys()) {
             if (unitName.contains(providedName))

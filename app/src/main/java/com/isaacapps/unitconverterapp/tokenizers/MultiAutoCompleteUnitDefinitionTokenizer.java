@@ -9,10 +9,16 @@ import com.florianingerl.util.regex.Matcher ;
 
 public class MultiAutoCompleteUnitDefinitionTokenizer implements MultiAutoCompleteTextView.Tokenizer {
     private DimensionComponentDefiner dimensionComponentDefiner;
+    private final String tokenTerminator;
 
     public MultiAutoCompleteUnitDefinitionTokenizer(DimensionComponentDefiner dimensionComponentDefiner){
-        this.dimensionComponentDefiner = dimensionComponentDefiner;
+        this(dimensionComponentDefiner, " ");
     }
+    public MultiAutoCompleteUnitDefinitionTokenizer(DimensionComponentDefiner dimensionComponentDefiner, String tokenTerminator){
+        this.dimensionComponentDefiner = dimensionComponentDefiner;
+        this.tokenTerminator = tokenTerminator;
+    }
+
 
     @Override
     public int findTokenStart(CharSequence unitDefinitionText, int cursorPosition) {
@@ -67,6 +73,6 @@ public class MultiAutoCompleteUnitDefinitionTokenizer implements MultiAutoComple
     public CharSequence terminateToken(CharSequence unitDefinitionText) {
         int delimiterPosition = unitDefinitionText.toString().indexOf(MULTI_AUTO_COMPLETE_UNIT_DISPLAY_DELIMITER);
         CharSequence fullNameToken = delimiterPosition == -1 ? unitDefinitionText : unitDefinitionText.toString().substring(0, delimiterPosition);
-        return fullNameToken + " ";
+        return String.format("%s%s", fullNameToken, tokenTerminator);
     }
 }
