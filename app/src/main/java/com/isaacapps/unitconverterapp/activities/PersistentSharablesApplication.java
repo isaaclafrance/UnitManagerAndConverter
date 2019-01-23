@@ -3,8 +3,8 @@ package com.isaacapps.unitconverterapp.activities;
 import android.app.Application;
 
 import com.isaacapps.unitconverterapp.dao.xml.writers.local.ConversionFavoritesLocalXmlWriter;
-import com.isaacapps.unitconverterapp.dao.xml.writers.local.NonStandardCoreUnitsMapsXmlLocalWriter;
-import com.isaacapps.unitconverterapp.dao.xml.writers.local.NonStandardDynamicUnitsMapXmlLocalWriter;
+import com.isaacapps.unitconverterapp.dao.xml.writers.local.units.NonStandardCoreUnitsMapsXmlLocalWriter;
+import com.isaacapps.unitconverterapp.dao.xml.writers.local.units.NonStandardDynamicUnitsMapXmlLocalWriter;
 import com.isaacapps.unitconverterapp.models.measurables.quantity.Quantity;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManagerBuilder;

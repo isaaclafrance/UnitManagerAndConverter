@@ -31,13 +31,13 @@ public class MultiAutoCompleteUnitDefinitionTokenizer implements MultiAutoComple
         //Attempt this until the last possible token is obtained and then take the starting position of that token.
 
         Matcher unitDefinitionMultiGroupMatcher = dimensionComponentDefiner.getMultiGroupRegExPattern().matcher(unitDefinitionSubSequence);
-        while(unitDefinitionMultiGroupMatcher.find()){
+        if(unitDefinitionMultiGroupMatcher.find()){
             tokenPosition = unitDefinitionMultiGroupMatcher.start();
         }
 
         if(tokenPosition == -1){
             Matcher unitDefinitionSingleGroupMatcher = dimensionComponentDefiner.getSingleGroupRegExPattern().matcher(unitDefinitionSubSequence);
-            while(unitDefinitionSingleGroupMatcher.find()){
+            if(unitDefinitionSingleGroupMatcher.find()){
                 tokenPosition = unitDefinitionSingleGroupMatcher.start();
             }
         }

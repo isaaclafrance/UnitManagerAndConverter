@@ -13,7 +13,7 @@ public class LowercaseFormatter implements IFormatter {
 
     @Override
     public String format(String text) {
-        return text.toUpperCase(locale);
+        return text.toLowerCase(locale);
     }
 
     @Override

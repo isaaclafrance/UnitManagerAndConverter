@@ -98,7 +98,6 @@ public class UnitsDataModel extends BaseDataModel<String, Unit, DATA_MODEL_CATEG
         if(unitsContentDeterminer != null)
             unitsContentDeterminer.setComponentUnitsDimensionParser(componentUnitsDimensionParser);
     }
-
     public void setComponentUnitsDimensionSerializer(ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer) {
         this.componentUnitsDimensionSerializer = componentUnitsDimensionSerializer;
         if(unitsContentMainRetriever != null)
@@ -106,7 +105,6 @@ public class UnitsDataModel extends BaseDataModel<String, Unit, DATA_MODEL_CATEG
         if(unitsContentDeterminer != null)
             unitsContentDeterminer.setComponentUnitsDimensionSerializer(componentUnitsDimensionSerializer);
     }
-
     public void setFundamentalUnitTypesDimensionSerializer(FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer) {
         this.fundamentalUnitTypesDimensionSerializer = fundamentalUnitTypesDimensionSerializer;
         if(unitsContentMainRetriever != null)
@@ -118,7 +116,6 @@ public class UnitsDataModel extends BaseDataModel<String, Unit, DATA_MODEL_CATEG
         if(unitsContentMainRetriever != null)
             unitsContentMainRetriever.setAbbreviationFormatter(abbreviationFormatter);
     }
-
     public void setLocale(Locale locale) {
         this.locale = locale;
         componentUnitsDimensionSerializer.setLocale(locale);

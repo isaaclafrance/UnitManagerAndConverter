@@ -52,14 +52,16 @@ public class PairedGroupingQuantityTokenizer {
      * If there are serial groupings ie "{1}{2}{meter}{inch}", then an empty map is returned.
      */
     public Map<String, Double> parsePairedValueUnitNameGroupingsToNameValueMap(String pairedValueUnitNameGroupings) {
-        Pattern unitNamePattern = Pattern.compile(UnitParser.UNIT_NAME_REGEX);
+        Pattern unitNamePattern = quantityGroupingDefiner.getDimensionComponentDefiner().getUnitAnyGroupRegexPattern();
         Pattern valuePattern = SIGNED_DOUBLE_VALUE_REGEX_PATTERN;
-
         Map<String, Double> nameValueMap = new HashMap<>();
 
         for(String pairedValueUnitNameGrouping:extractPairedValueUnitGroupingList(pairedValueUnitNameGroupings)){
-            nameValueMap.put(unitNamePattern.matcher(pairedValueUnitNameGrouping).group()
-                    , Double.parseDouble(valuePattern.matcher(pairedValueUnitNameGrouping).group()));
+            String[] groupingPairs = pairedValueUnitNameGrouping.split(quantityGroupingDefiner.getPairedGroupingDelimiter());
+            String valuePart = valuePattern.matcher(groupingPairs[0]).group();
+            String unitPart = unitNamePattern.matcher(groupingPairs[1]).group();
+
+            nameValueMap.put(unitPart, Double.parseDouble(valuePart));
         }
 
         return nameValueMap;

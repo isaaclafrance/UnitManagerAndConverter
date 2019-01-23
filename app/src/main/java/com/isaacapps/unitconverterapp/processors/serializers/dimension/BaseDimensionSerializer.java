@@ -65,11 +65,18 @@ public class BaseDimensionSerializer<T> implements ISerializer<Map<T, Double>> {
     /**
      * Indicates whether parentheses should be included in exponentials. ie. x^2 * y^3 becomes (x)^2 * (y)^3
      */
-    public boolean isIncludeParenthesesInExponentials() {
-        return dimensionSerializerBuilder.isIncludeParenthesesInExponentials();
+    public boolean doesIncludeParenthesesInExponentials() {
+        return dimensionSerializerBuilder.doesIncludeParenthesesInExponentials();
     }
     public void setIncludeParenthesesInExponentials(boolean includeParentheses) {
         dimensionSerializerBuilder.setIncludeParenthesesInExponentials(includeParentheses);
+    }
+
+    public boolean doesIncludeSpaceAfterOperator(){
+        return dimensionSerializerBuilder.doesIncludeSpaceAfterOperators();
+    }
+    public void setIncludeSpaceAfterOperator(boolean includeSpaceAfterOperator){
+        dimensionSerializerBuilder.setIncludeSpaceAfterOperators(includeSpaceAfterOperator);
     }
 
     public OPERATOR_DISPLAY_CONFIGURATION getOperatorDisplayConfiguration(){

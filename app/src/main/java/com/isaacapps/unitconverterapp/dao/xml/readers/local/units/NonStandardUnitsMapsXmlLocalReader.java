@@ -1,4 +1,4 @@
-package com.isaacapps.unitconverterapp.dao.xml.readers.local;
+package com.isaacapps.unitconverterapp.dao.xml.readers.local.units;
 
 import android.content.Context;
 
@@ -8,7 +8,6 @@ import com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComp
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.componentnunit.ComponentUnitsDimensionSerializer;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.fundamentalunit.FundamentalUnitTypesDimensionSerializer;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Locale;
 
@@ -48,6 +47,5 @@ public class NonStandardUnitsMapsXmlLocalReader extends UnitsMapXmlLocalReader {
         }
 
         return unitManagerBuilder;
-
     }
 }

@@ -9,6 +9,7 @@ import com.isaacapps.unitconverterapp.processors.parsers.dimension.componentunit
 import com.isaacapps.unitconverterapp.processors.parsers.generaltext.PluralTextParser;
 import com.isaacapps.unitconverterapp.processors.serializers.SerializingException;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.componentnunit.ComponentUnitsDimensionSerializer;
+import static com.isaacapps.unitconverterapp.processors.operators.dimensions.DimensionOperators.DIMENSION_TYPE;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,7 +34,8 @@ public class UnitsContentDeterminer {
     public UnitsContentDeterminer() { }
 
     /**
-     * Simplifies a group into one category based on order of precedence. If a unit is explicitly defined unknown, no other categories matter.
+     * Simplifies a data model category group into one category based on a specific order of precedence.
+     * If a unit is explicitly defined unknown, no other categories matter.
      * Whether or not a unit is core or dynamic has greater functional implications than whether or not it is a base unit.
      * If the unit does not fit any predefined data model categories, then it it implicitly defined as unknown.
      */
@@ -51,6 +53,9 @@ public class UnitsContentDeterminer {
         }
     }
 
+    /**
+     *
+     */
     public static Collection<DATA_MODEL_CATEGORY> determineDataModelCategories(Unit unit) {
         Collection<DATA_MODEL_CATEGORY> dataModelCategories = new HashSet<>();
 
@@ -81,12 +86,10 @@ public class UnitsContentDeterminer {
     ///
 
     /**
-     * Finds the corresponding singularized unit definition for a provided definition containing
-     * plural component units.
-     *
+     * Finds the corresponding singularized unit definition for a provided unit definition containing plural component units.
      * @param pluralUnitDefinition Complex (ie. a^2*b^2) or atomic unit definition with a plural component.
      * @return New formatted unit definition with all potential plural components singualrized to an existing unit name.
-     * if nothing can be singularized then it is returned as is.
+     * If nothing can be singularized, then the whole provided unit definition is returned as is.
      */
     public String determineSingularOfUnitName(String pluralUnitDefinition) {
         try {
@@ -117,36 +120,6 @@ public class UnitsContentDeterminer {
         }
     }
 
-    /**
-     * Returns the appropriate derived type when there are multiple component units or the fundamental unit type when
-     * there is only one component unit. Even if the unit is determined to be derived that does not necessarily mean that it is entirely 'known'
-     * within the context of the units data model since its base unit may be unknown or any one of its component units may also be unknown.
-     */
-    public FundamentalUnitsDataModel.UNIT_TYPE determineUnitType(Unit unit) {
-        if (unit.getDimensionType() != DimensionOperators.DIMENSION_TYPE.SIMPLE) {
-            return UNIT_TYPE.COMPLEX;
-        }
-        else if (unit.getBaseUnit() != null && !unit.getComponentUnitsDimension().isEmpty()) //If base unit is available it might provide some insight into some properties.
-        {
-            FundamentalUnitsDataModel.UNIT_TYPE type = unitsDataModel.getUnitManagerContext().getFundamentalUnitsDataModel().getUnitTypeByUnitSystemNUnitName(unit.getBaseUnit().getUnitSystem()
-                            , unit.getBaseUnit().getName());
-
-            if (type == null)
-            {
-                type = unit.getBaseUnit().getUnitType();
-                if (type != FundamentalUnitsDataModel.UNIT_TYPE.UNKNOWN) {
-                    return type;
-                } else { //If still unknown, then try using the singular component unit.
-                    Unit componentUnit = unitsDataModel.getUnitsContentMainRetriever().getUnit(unit.getComponentUnitsDimension().keySet().iterator().next());
-                    if(componentUnit != null)
-                        return componentUnit.getUnitType();
-                }
-            }
-            return type;
-        }
-        return FundamentalUnitsDataModel.UNIT_TYPE.UNKNOWN;
-    }
-
     ///
 
     /**
@@ -160,14 +133,19 @@ public class UnitsContentDeterminer {
      * ,then that base unit will be returned. Otherwise, tries to match the unit with a corresponding base unit in the data model.
      */
     public Unit determineBaseUnit(Unit unit, boolean initiallyUseHeuristic) {
-        if (initiallyUseHeuristic && determineHighestPriorityDataModelCategory(unit) != DATA_MODEL_CATEGORY.UNKNOWN
-                && unit.getUnitManagerContext() == unitsDataModel.getUnitManagerContext()) {
+        boolean shortCircuitToBase = initiallyUseHeuristic && determineHighestPriorityDataModelCategory(unit) != DATA_MODEL_CATEGORY.UNKNOWN
+                && unit.getUnitManagerContext() == unitsDataModel.getUnitManagerContext();
+
+        //shortCircuitToBase = shortCircuitToBase || unit.isBaseUnit() && unit.getDimensionType() == DIMENSION_TYPE.SIMPLE
+               // && unit.getComponentUnitsDimension().containsKey(unit.getName().toLowerCase());
+
+        if (shortCircuitToBase) {
             return unit.getBaseUnit();
         } else {
             for (Unit unitMatch : unitsDataModel.getUnitsContentMainRetriever().getBaseUnits()) {
                 if (!unitMatch.getName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME)
                         && !unitMatch.getName().equalsIgnoreCase(unit.getName())
-                        && (unit.getCategory().equalsIgnoreCase(unitMatch.getCategory()) || UnitOperators.equalsFundamentalUnitsDimension(unit, unitMatch)))
+                        && (UnitOperators.equalsFundamentalUnitsDimension(unit, unitMatch, true) || UnitOperators.equalsFundamentalUnitsDimension(unit, unitMatch, false)))
                     return unitMatch;
             }
             return unitsDataModel.getUnitsContentMainRetriever().getUnknownUnit();
@@ -177,9 +155,11 @@ public class UnitsContentDeterminer {
     ///
 
     /**
+     * TODO: Create unit tests testing both the heuristic and non-heuristic code paths.
+     *
      * Tries to find a matching unit with a specific unit system that has a smaller component units dimension.
      * @param initiallyUseQuickerHeuristic Indicates whether to initially use a less computationally intensive method first.
-     *                                     The trade-off is that return unit may have the smallest dimension out of all possible compatible units.
+     *                                     The trade-off is that return unit may not have the absolute smallest dimension out of all possible compatible units.
      * @throws SerializingException
      */
     public Unit determineReducedUnit(Unit unit, String unitSystem, boolean initiallyUseQuickerHeuristic) throws SerializingException {
@@ -194,7 +174,7 @@ public class UnitsContentDeterminer {
             searchableSet.addAll(unit.getBaseUnit().getConversionsToDescendents().keySet());
 
             Unit candidateUnitWithSmallestDimension = findSmallestDimensionUnitWithSameUnitSystem(searchableSet, unitSystem);
-            if(candidateUnitWithSmallestDimension != null && unit.getComponentUnitsDimension().size() < candidateUnitWithSmallestDimension.getComponentUnitsDimension().size())
+            if(candidateUnitWithSmallestDimension != null && candidateUnitWithSmallestDimension.getComponentUnitsDimension().size() < unit.getComponentUnitsDimension().size())
                 return candidateUnitWithSmallestDimension;
         }
 
@@ -276,15 +256,16 @@ public class UnitsContentDeterminer {
 
         return componentUnitDimensionFromRecombinationOfPartitions;
     }
-    private Unit determineReducedMatchedUnitByFundamentalUnitsTypeDimensionUsingUsingPermutations(Map<UNIT_TYPE, Double> fundamentalUnitsTypeDimension, final String unitSystem, List<UNIT_TYPE> keyList, int keyListIndex){
+    private Unit determineReducedMatchedUnitByFundamentalUnitsTypeDimensionUsingUsingPermutations(Map<UNIT_TYPE, Double> fundamentalUnitsTypeDimension, final String unitSystem, List<UNIT_TYPE> keyList, int currentKeyListIndex){
        //TODO: Make this more efficient by attempting to make use of better dynamic programming techniques and memoization where appropriate.
        //TODO: Future, create a custom class that inherits from iterator that keeps track of the successive permutation matches
 
-        if(keyListIndex < keyList.size()){
-            UNIT_TYPE currentUnitType = keyList.get(keyListIndex);
+        if(currentKeyListIndex < keyList.size()){
+            UNIT_TYPE currentUnitType = keyList.get(currentKeyListIndex);
+            int nextKeyListIndex = currentKeyListIndex++;
             for(Double permutatedExponent = fundamentalUnitsTypeDimension.get(currentUnitType); permutatedExponent > 0; permutatedExponent--){
                 fundamentalUnitsTypeDimension.put(currentUnitType, permutatedExponent);
-                Unit matchedUnit = determineReducedMatchedUnitByFundamentalUnitsTypeDimensionUsingUsingPermutations(fundamentalUnitsTypeDimension, unitSystem, keyList, keyListIndex++);
+                Unit matchedUnit = determineReducedMatchedUnitByFundamentalUnitsTypeDimensionUsingUsingPermutations(fundamentalUnitsTypeDimension, unitSystem, keyList, nextKeyListIndex);
                 if(matchedUnit != null)
                     return  matchedUnit;
             }
@@ -297,7 +278,7 @@ public class UnitsContentDeterminer {
     }
     /**
      * Finds the unit with smallest dimension and that is exclusively of the specified unit system.
-     * For example, if "SI" was specified unit system, then a unit a combined unit system of "SI and Metric" would not be selected.
+     * For example, if "SI" was the specified unit system, then a unit with a combined unit system of "SI and Metric" would not be selected.
      * @return Smallest dimension unit that meet criteria or null
      */
     private Unit findSmallestDimensionUnitWithSameUnitSystem(Collection<Unit> unitsToBeCompared, String unitSystem){
@@ -336,10 +317,16 @@ public class UnitsContentDeterminer {
     ///
 
     /**
-     * Determine if no other units in data model have the same component and fundamental units dimension.
+     * Determine if no other units in data model have the same category, or component or fundamental units dimension.
      */
-    public boolean determineIfUnitIsUniqueByDimension(Unit unit){
-       return unitsDataModel.getUnitsContentQuerier().queryUnitsByComponentUnitsDimension(unit.getComponentUnitsDimension(), true).isEmpty();
+    public boolean determineIfUnitIsUnique(Unit unit){
+       if(unitsDataModel.getUnitsContentQuerier().queryUnitsByUnitCategory(unit.getCategory()).isEmpty())
+           return true;
+
+       if(unitsDataModel.getUnitsContentQuerier().queryUnitsByComponentUnitsDimension(unit.getComponentUnitsDimension(), true).isEmpty())
+           return true;
+
+       return false;
     }
 
     ///

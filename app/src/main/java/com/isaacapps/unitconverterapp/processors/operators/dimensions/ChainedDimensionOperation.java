@@ -1,5 +1,7 @@
 package com.isaacapps.unitconverterapp.processors.operators.dimensions;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,7 +41,11 @@ public class ChainedDimensionOperation<T> {
      * Default tolerance is 0.00001.
      */
     public boolean equalsDimension(Map<T, Double> secondDimension) {
-        return DimensionOperators.equalsDimension(resultantDimension, secondDimension, 0.00001);
+        return DimensionOperators.equalsDimension(resultantDimension, secondDimension);
+    }
+
+    public boolean equalsDimension(Map<T, Double> secondDimension, Collection<T> dimensionItemsToIgnore) {
+        return DimensionOperators.equalsDimension(resultantDimension, secondDimension, dimensionItemsToIgnore);
     }
 
     ///

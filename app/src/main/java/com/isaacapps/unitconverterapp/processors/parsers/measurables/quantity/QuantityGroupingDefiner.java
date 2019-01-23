@@ -9,36 +9,46 @@ import com.isaacapps.unitconverterapp.utilities.RegExUtility;
 import static com.isaacapps.unitconverterapp.utilities.RegExUtility.SIGNED_DOUBLE_VALUE_REGEX_PATTERN;
 
 public class QuantityGroupingDefiner {
+    public static final String DEFAULT_PAIRED_GROUPING_DELIMITER = " ";
     public static final String DEFAULT_GROUP_OPENING_SYMBOL = "{";
     public static final String DEFAULT_GROUP_CLOSING_SYMBOL = "}";
+
+    private String pairedGroupingDelimiter;
+    private String regexEscapedPairedGroupingDelimiter;
 
     private String groupOpeningSymbol;
     private String groupClosingSymbol;
     private String regexEscapedGroupOpeningSymbol;
     private String regexEscapedGroupClosingSymbol;
 
-    private Pattern anyGroupingPattern;
+    private Pattern singlePairedValueUnitNameGroupingPattern, pairedValueUnitNameGroupingPattern;
+
     private Pattern singleUnitGroupingPattern, serialUnitsGroupingsPattern;
     private Pattern singleValueGroupingPattern, serialValuesGroupingsPattern;
-    private Pattern singlePairedValueUnitNameGroupingPattern, pairedValueUnitNameGroupingPattern;
+
+    private Pattern anyGroupingPattern;
     private Pattern emptyGroupingPattern;
 
     private DimensionComponentDefiner dimensionComponentDefiner;
 
     public QuantityGroupingDefiner() throws ParsingException {
-        this(new DimensionComponentDefiner(UnitParser.UNIT_NAME_REGEX), DEFAULT_GROUP_OPENING_SYMBOL, DEFAULT_GROUP_CLOSING_SYMBOL);
+        this(new DimensionComponentDefiner(UnitParser.UNIT_NAME_REGEX), DEFAULT_GROUP_OPENING_SYMBOL, DEFAULT_GROUP_CLOSING_SYMBOL, DEFAULT_PAIRED_GROUPING_DELIMITER);
     }
 
-    public QuantityGroupingDefiner(DimensionComponentDefiner dimensionComponentDefiner, String groupOpeningSymbol, String groupClosingSymbol){
+    public QuantityGroupingDefiner(DimensionComponentDefiner dimensionComponentDefiner,  String groupOpeningSymbol, String groupClosingSymbol, String pairedGroupingDelimiter){
         this.dimensionComponentDefiner = dimensionComponentDefiner;
+
+        this.pairedGroupingDelimiter = pairedGroupingDelimiter;
 
         this.groupOpeningSymbol = groupOpeningSymbol;
         this.groupClosingSymbol = groupClosingSymbol;
+
         compileGroupingIdentificationPatterns();
     }
 
     ///
     private void compileGroupingIdentificationPatterns(){
+        regexEscapedPairedGroupingDelimiter = RegExUtility.escapeRegexReservedCharacters(pairedGroupingDelimiter);
         regexEscapedGroupOpeningSymbol = RegExUtility.escapeRegexReservedCharacters(groupOpeningSymbol);
         regexEscapedGroupClosingSymbol = RegExUtility.escapeRegexReservedCharacters(groupClosingSymbol);
         anyGroupingPattern = Pattern.compile(String.format("%s.+%s", regexEscapedGroupOpeningSymbol, regexEscapedGroupClosingSymbol));
@@ -47,13 +57,13 @@ public class QuantityGroupingDefiner {
         compilePairedGroupingPatterns();
     }
     private void compileSerialGroupingPatterns(){
-        singleUnitGroupingPattern = Pattern.compile(String.format("%s(?:[\\s]*%s|%s+[\\s]*)%s", regexEscapedGroupOpeningSymbol, dimensionComponentDefiner.getMultiGroupRegExPattern(), dimensionComponentDefiner.getSingleGroupRegExPattern(), regexEscapedGroupClosingSymbol));
+        singleUnitGroupingPattern = Pattern.compile(String.format("%s(?:[\\s]*%s|%s+[\\s]*)%s", regexEscapedGroupOpeningSymbol, dimensionComponentDefiner.getMultiGroupRegExPattern().pattern(), dimensionComponentDefiner.getSingleGroupRegExPattern().pattern(), regexEscapedGroupClosingSymbol));
         serialUnitsGroupingsPattern = Pattern.compile(String.format("(?:[\\s]*%s[\\s]*)+", singleUnitGroupingPattern.pattern()));
         singleValueGroupingPattern = Pattern.compile(String.format("%s[\\s]*%s[\\s]*%s", regexEscapedGroupOpeningSymbol, SIGNED_DOUBLE_VALUE_REGEX_PATTERN.pattern(), regexEscapedGroupClosingSymbol));
         serialValuesGroupingsPattern = Pattern.compile(String.format("(?:[\\s]*%s[\\s]*)+", singleValueGroupingPattern.pattern()));
     }
     private void compilePairedGroupingPatterns(){
-        singlePairedValueUnitNameGroupingPattern = Pattern.compile(String.format("%s[\\s]*%s[\\s]+(?:%s|%s)[\\s]*%s", regexEscapedGroupOpeningSymbol, SIGNED_DOUBLE_VALUE_REGEX_PATTERN.pattern(), dimensionComponentDefiner.getMultiGroupRegExPattern(), dimensionComponentDefiner.getSingleGroupRegExPattern(), regexEscapedGroupClosingSymbol));
+        singlePairedValueUnitNameGroupingPattern = Pattern.compile(String.format("%s[\\s]*%s[\\s]*%s[\\s]*%s[\\s]*%s", regexEscapedGroupOpeningSymbol, SIGNED_DOUBLE_VALUE_REGEX_PATTERN.pattern(), regexEscapedPairedGroupingDelimiter, dimensionComponentDefiner.getUnitAnyGroupRegexPattern().pattern(), regexEscapedGroupClosingSymbol));
         pairedValueUnitNameGroupingPattern = Pattern.compile(String.format("([\\s]*%s[\\s]*)+", singlePairedValueUnitNameGroupingPattern.pattern()));
     }
 
@@ -67,20 +77,27 @@ public class QuantityGroupingDefiner {
     public boolean hasValueUnitPairGrouping(String potentialGroupings) {
         return pairedValueUnitNameGroupingPattern.matcher(potentialGroupings).find();
     }
-
     public boolean hasValuesGrouping(String potentialGroupings) {
         return singleValueGroupingPattern.matcher(potentialGroupings).find();
     }
-
     public boolean hasUnitsGrouping(String potentialGroupings) {
         return singleUnitGroupingPattern.matcher(potentialGroupings).find();
     }
-
     public boolean hasAnyGrouping(String potentialGrouping){
         return anyGroupingPattern.matcher(potentialGrouping).find();
     }
 
     ///
+    public String getPairedGroupingDelimiter() {
+        return pairedGroupingDelimiter;
+    }
+    public void setDefaultPairedGroupingDelimiter(String pairedGroupingDelimiter){
+        this.pairedGroupingDelimiter = pairedGroupingDelimiter;
+    }
+    public String getRegexEscapedPairedGroupingDelimiter(){
+        return regexEscapedPairedGroupingDelimiter;
+    }
+
     public String getGroupOpeningSymbol() {
         return groupOpeningSymbol;
     }
@@ -132,6 +149,11 @@ public class QuantityGroupingDefiner {
     }
     public Pattern getPairedValueUnitNameGroupingPattern() {
         return pairedValueUnitNameGroupingPattern;
+    }
+
+    ///
+    public DimensionComponentDefiner getDimensionComponentDefiner(){
+        return dimensionComponentDefiner;
     }
 
 }

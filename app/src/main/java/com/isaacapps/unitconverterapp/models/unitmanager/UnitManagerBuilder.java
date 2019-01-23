@@ -120,9 +120,9 @@ public class UnitManagerBuilder {
             return setPluralTextParser(new EnglishPluralTextParser())
                     .setAbbreviationFormatter(new AbbreviationFormatter(locale))
                     .setUnitParser(new UnitParser(componentUnitsDimensionParser))
-                    .setComponentUnitsDimensionParser(new ComponentUnitsDimensionParser())
+                    .setComponentUnitsDimensionParser(new ComponentUnitsDimensionParser(locale))
                     .setComponentUnitsDimensionSerializer(new ComponentUnitsDimensionSerializer(locale))
-                    .setFundamentalUnitTypesDimensionParser(new FundamentalUnitTypesDimensionParser())
+                    .setFundamentalUnitTypesDimensionParser(new FundamentalUnitTypesDimensionParser(locale))
                     .setFundamentalUnitTypesDimensionSerializer( new FundamentalUnitTypesDimensionSerializer(locale));
         } catch (ParsingException e) {
             return this;

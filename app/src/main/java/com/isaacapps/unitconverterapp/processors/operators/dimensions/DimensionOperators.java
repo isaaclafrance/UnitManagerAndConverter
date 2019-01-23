@@ -1,11 +1,13 @@
 package com.isaacapps.unitconverterapp.processors.operators.dimensions;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
 public final class DimensionOperators {
-    public enum DIMENSION_TYPE { DERIVED_SINGLE, DERIVED_MULTI, SIMPLE }
+    public enum DIMENSION_TYPE { DERIVED_SINGLE, DERIVED_MULTI, SIMPLE, UNKNOWN }
 
     ///
     public static <T> ChainedDimensionOperation<T> multiply(Map<T, Double> firstDimension){
@@ -78,40 +80,49 @@ public final class DimensionOperators {
     }
 
     /**
-     * Compares two generic map dimensions to see if they have corresponding dimension items with identical
-     * dimensions values (exponents). Ignores dimension items with zero dimension values.
-     * Default tolerance is 0.00001.
+     * Compares equality of two dimensions.Default tolerance is 0.00001. No dimension items are ignored. Wrapper for {@link #equalsDimension(Map, Map, Collection, Double)}
      */
     public static <T> boolean equalsDimension(Map<T, Double> firstDimension
             , Map<T, Double> secondDimension) {
-        return equalsDimension(firstDimension, secondDimension, 0.00001);
+        return equalsDimension(firstDimension, secondDimension, Collections.emptyList());
+    }
+
+    /**
+     * Compares equality of two dimensions. Default tolerance is 0.00001. Wrapper for {@link #equalsDimension(Map, Map, Collection, Double)}
+     */
+    public static <T> boolean equalsDimension(Map<T, Double> firstDimension
+            , Map<T, Double> secondDimension, Collection<T> dimensionItemsToIgnore) {
+        return equalsDimension(firstDimension, secondDimension, dimensionItemsToIgnore, 0.00001);
     }
     /**
      * Compares two map dimensions to see if they have corresponding dimension items with identical
-     * dimensions values (exponents). Ignores dimension items with zero dimension values.
+     * dimensions values (exponents). Ignores dimension items with zero dimension values and other dimension items that are explicitly specified to be ignored.
+     * If either dimension is empty, then the dimension comparison is false. See {@link #equalsDirectDimension(Map, Map, Double)}
+     * @param dimensionItemsToIgnore Collection of items that if encountered should be ignored when performing comparisons.
+     * @param tolerance
      */
     public static <T> boolean equalsDimension(Map<T, Double> firstDimension
-            , Map<T, Double> secondDimension, Double tolerance) {
-        if (firstDimension.isEmpty() || secondDimension.isEmpty())
-            return false;
+            , Map<T, Double> secondDimension, Collection<T> dimensionItemsToIgnore, Double tolerance) {
 
-        secondDimension = new HashMap<>(secondDimension); //clone map since it will be modified
+        firstDimension = removeDimensionalessItems(new HashMap<>(firstDimension), dimensionItemsToIgnore);
+        secondDimension = removeDimensionalessItems(new HashMap<>(secondDimension), dimensionItemsToIgnore);
+
+        return equalsDirectDimension(firstDimension, secondDimension, tolerance);
+    }
+
+    public static <T> boolean equalsDirectDimension(Map<T, Double> firstDimension
+            , Map<T, Double> secondDimension) {
+        return equalsDirectDimension(firstDimension, secondDimension, 0.00001);
+    }
+    public static <T> boolean equalsDirectDimension(Map<T, Double> firstDimension
+            , Map<T, Double> secondDimension, Double tolerance) {
+        if (firstDimension.isEmpty() || secondDimension.isEmpty() || firstDimension.size() != secondDimension.size())
+            return false;
 
         for (Map.Entry<T, Double> entry : firstDimension.entrySet()) {
             if (!secondDimension.containsKey(entry.getKey())) {
-                if (Math.abs(entry.getValue()) > 0.0) {
-                    return false;
-                }
-            } else if (Math.abs(secondDimension.get(entry.getKey()) - entry.getValue()) > tolerance) {
                 return false;
-            }
-            secondDimension.remove(entry.getKey());
-        }
-
-        //Although the number of components may be the same, there maybe some components that are raised to zero and
-        // not compared in the Second dimension since first dimension map was the initial basis of comparison.
-        for (Map.Entry<T, Double> entry : secondDimension.entrySet()) {
-            if (Math.abs(entry.getValue()) > 0.0) {
+            } else if ( Math.abs(secondDimension.get(entry.getKey()) - entry.getValue()) > tolerance) {
                 return false;
             }
         }
@@ -120,11 +131,20 @@ public final class DimensionOperators {
     }
 
     //
+    public static <T> Map<T, Double> removeIgnoredDimensionItems(Map<T, Double> dimension, Collection<T> dimensionItemsToIgnore){
+        Iterator<Map.Entry<T, Double>> dimensionEntryIterator = dimension.entrySet().iterator();
+        while(dimensionEntryIterator.hasNext()){
+            T dimensionItem = dimensionEntryIterator.next().getKey();
+            if(dimensionItemsToIgnore.contains(dimensionItem))
+                dimensionEntryIterator.remove();
+        }
+        return dimension;
+    }
     public static <T> Map<T, Double> removeDimensionItemsRaisedToZero(Map<T, Double> dimension, double tolerance){
         Iterator<Map.Entry<T, Double>> dimensionEntryIterator = dimension.entrySet().iterator();
         while(dimensionEntryIterator.hasNext()){
-            double exp = dimensionEntryIterator.next().getValue();
-            if((exp - Math.floor(exp)) < tolerance)
+            double exp = Math.abs(dimensionEntryIterator.next().getValue());
+            if(exp < tolerance)
                 dimensionEntryIterator.remove();
         }
         return dimension;
@@ -132,8 +152,12 @@ public final class DimensionOperators {
     public static <T> Map<T, Double> removeDimensionItemsRaisedToZero(Map<T, Double> dimension){
         return removeDimensionItemsRaisedToZero(dimension, 0.00001);
     }
-    public static <T> boolean isDimensionless(Map<T, Double> dimension){
-        return removeDimensionItemsRaisedToZero(new HashMap<>(dimension)).isEmpty();
+
+    public static <T> Map<T, Double> removeDimensionalessItems(Map<T, Double> dimension, Collection<T> dimensionItemsToIgnore){
+        return removeDimensionItemsRaisedToZero(removeIgnoredDimensionItems(new HashMap<>(dimension), dimensionItemsToIgnore));
+    }
+    public static <T> boolean isDimensionless(Map<T, Double> dimension, Collection<T> dimensionItemsToIgnore){
+        return removeDimensionalessItems(new HashMap<>(dimension),dimensionItemsToIgnore).isEmpty();
     }
 
     //

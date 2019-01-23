@@ -8,11 +8,14 @@ import com.isaacapps.unitconverterapp.processors.parsers.dimension.componentunit
 import com.isaacapps.unitconverterapp.processors.parsers.generaltext.PluralTextParser;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.componentnunit.ComponentUnitsDimensionSerializer;
 import com.isaacapps.unitconverterapp.processors.serializers.dimension.fundamentalunit.FundamentalUnitTypesDimensionSerializer;
+import com.isaacapps.unitconverterapp.utilities.RegExUtility;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+
+import static com.isaacapps.unitconverterapp.utilities.RegExUtility.SIGNED_DOUBLE_VALUE_REGEX_PATTERN;
 
 public class UnitsContentMainRetriever {
     private UnitsDataModel unitsDataModel;
@@ -123,8 +126,11 @@ public class UnitsContentMainRetriever {
     }
     private boolean allComponentUnitsAreKnown(Map<String, Double> componentUnitsDimension){
         for(String componentUnitName:componentUnitsDimension.keySet()){
-            if(!unitsDataModel.getUnitsContentQuerier().containsUnit(componentUnitName))
+            if(!unitsDataModel.getUnitsContentQuerier().containsUnit(componentUnitName)
+                    && !SIGNED_DOUBLE_VALUE_REGEX_PATTERN.matcher(componentUnitName).matches())
+            {
                 return false;
+            }
         }
         return true;
     }
@@ -197,10 +203,6 @@ public class UnitsContentMainRetriever {
         this.unitsDataModel = unitsDataModel;
     }
 
-    public void setLocale(Locale locale) {
-        this.locale = locale;
-    }
-
     public void setPluralTextParser(PluralTextParser pluralTextParser) {
         this.pluralTextParser = pluralTextParser;
     }
@@ -213,7 +215,11 @@ public class UnitsContentMainRetriever {
     public void setFundamentalUnitTypesDimensionSerializer(FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer){
         this.fundamentalUnitTypesDimensionSerializer = fundamentalUnitTypesDimensionSerializer;
     }
+
     public void setAbbreviationFormatter(IFormatter abbreviationFormatter){
         this.abbreviationFormatter = abbreviationFormatter;
+    }
+    public void setLocale(Locale locale) {
+        this.locale = locale;
     }
 }

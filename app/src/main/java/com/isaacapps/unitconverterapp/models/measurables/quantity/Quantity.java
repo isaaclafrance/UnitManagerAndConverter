@@ -25,6 +25,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 public class Quantity {
+    private static final double DEFAULT_VALUE = 1.0;
+
     private Locale locale;
     private SortedMap<Unit, Double> unitValueMap;
     private ISerializer<Collection<Unit>> unitsGroupingCollectionSerializer;
@@ -76,7 +78,7 @@ public class Quantity {
         this(Collections.singletonList(value), Collections.singletonList(new Unit()));
     }
     public Quantity(Unit unit) throws QuantityException {
-        this(Collections.singletonList(0.0), Collections.singletonList(unit));
+        this(Collections.singletonList(DEFAULT_VALUE), Collections.singletonList(unit));
     }
 
     ///
@@ -129,7 +131,7 @@ public class Quantity {
      */
     public void setUnits(List<Unit> units, boolean setExistingValuesToDefaults) throws QuantityException {
         this.unitValueMap = quantityAttributesValidator.validatedSortedUnitValueMap(units
-                , setExistingValuesToDefaults ? Collections.nCopies(units.size(), 0.0): new ArrayList<>(unitValueMap.values()));
+                , setExistingValuesToDefaults ? Collections.nCopies(units.size(), DEFAULT_VALUE): new ArrayList<>(unitValueMap.values()));
     }
     public void setUnit(Unit unit, boolean setExistingValuesToDefaults) throws QuantityException {
         setUnits(Collections.singletonList(unit), setExistingValuesToDefaults);

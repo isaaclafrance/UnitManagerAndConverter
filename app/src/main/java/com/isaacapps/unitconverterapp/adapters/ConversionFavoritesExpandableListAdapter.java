@@ -60,7 +60,6 @@ public class ConversionFavoritesExpandableListAdapter extends BaseExpandableList
     public int getGroupCount() {
         return conversionFavoritesDataModel.getAllConversionCategories().size();
     }
-
     @Override
     public int getChildrenCount(int categoryIndex) {
         return conversionFavoritesDataModel.getFormattedConversionsAssociatedWithCategory(conversionCategoriesList.get(categoryIndex)).size();
@@ -70,7 +69,6 @@ public class ConversionFavoritesExpandableListAdapter extends BaseExpandableList
     public Object getGroup(int categoryIndex) {
         return groupFormatter.format(conversionCategoriesList.get(categoryIndex));
     }
-
     @Override
     public Object getChild(int categoryIndex, int childIndex) {
         String selectedCategory = conversionCategoriesList.get(categoryIndex);
@@ -88,12 +86,10 @@ public class ConversionFavoritesExpandableListAdapter extends BaseExpandableList
     public long getGroupId(int categoryIndex) {
         return categoryIndex;
     }
-
     @Override
     public long getChildId(int categoryIndex, int childIndex) {
         return childIndex;
     }
-
     @Override
     public boolean hasStableIds() {
         return false;
@@ -113,7 +109,6 @@ public class ConversionFavoritesExpandableListAdapter extends BaseExpandableList
 
         return groupView;
     }
-
     @Override
     public View getChildView(int categoryIndex, int childIndex, boolean b, View childView, ViewGroup viewGroup) {
         String selectedChildText = (String) getChild(categoryIndex, childIndex);

@@ -70,7 +70,6 @@ public class UnitsClassifierDataModel extends BaseDataModel<String, Collection<S
         }
         return false;
     }
-
     public void clearHierarchy() {
         repositoryWithDualKeyNCategory.removeAllItems();
     }
@@ -85,7 +84,6 @@ public class UnitsClassifierDataModel extends BaseDataModel<String, Collection<S
 
         return allUnitNames;
     }
-
     public Collection<String> getUnitNamesByUnitSystemNCategory(String unitSystem, String unitCategory) {
         unitSystem = unitSystem.toLowerCase();
         unitCategory = unitCategory.toLowerCase();
@@ -98,7 +96,6 @@ public class UnitsClassifierDataModel extends BaseDataModel<String, Collection<S
     public Collection<String> getAllUnitSystems() {
         return repositoryWithDualKeyNCategory.getAllAssignedCategories();
     }
-
     public Collection<String> getAllUnitCategories() {
         return repositoryWithDualKeyNCategory.getAllKey2s();
     }
@@ -117,7 +114,6 @@ public class UnitsClassifierDataModel extends BaseDataModel<String, Collection<S
     public Collection<Collection<String>> getUnitGroupsWithSameCategory(String unitNameOrCategory) {
         return repositoryWithDualKeyNCategory.getItemsByAnyKey(unitNameOrCategory.toLowerCase());
     }
-
     /**
      * Uses the provided unit name or category to find a group of units that are similar in terms of category for a particular unit system.
      * Since the data structure enforces a bijective relation between unit name and category, the unit name can also be used to return the name of other units that share the same category.
@@ -153,7 +149,6 @@ public class UnitsClassifierDataModel extends BaseDataModel<String, Collection<S
         }
         return repositoryWithDualKeyNCategory.containsCategory(unitSystem);
     }
-
     /**
      * Indicates whether or not the specified unit category can be found in the specified unit system.
      */
@@ -172,7 +167,6 @@ public class UnitsClassifierDataModel extends BaseDataModel<String, Collection<S
         }
         return repositoryWithDualKeyNCategory.containsKeyInCategory(unitSystem, unitCategory);
     }
-
     /**
      * Indicates whether or not the specified unit can be found in the specified unit category and unit system.
      * @param fuzzyMatch Match such that specified unit name is at least a token in existing unit names in unit category and unit system..

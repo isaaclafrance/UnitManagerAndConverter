@@ -1,4 +1,4 @@
-package com.isaacapps.unitconverterapp.dao.xml.readers.local;
+package com.isaacapps.unitconverterapp.dao.xml.readers.local.units;
 
 import android.content.Context;
 
@@ -56,8 +56,8 @@ public abstract class UnitsMapXmlLocalReader extends AsyncXmlReader<ArrayList<Ar
         partiallyConstructedUnits = new ArrayList<>();
         defectiveUnits = new ArrayList<>();
 
-        unitSystemFormatter = new ChainedFormatter(locale).AddFormatter(new SnakeCaseFormatter(locale)).AddFormatter(new LowercaseFormatter(locale));
-        unitNameFormatter = new ChainedFormatter(locale).AddFormatter(new SnakeCaseFormatter(locale)).AddFormatter(new LowercaseFormatter(locale));
+        unitSystemFormatter = new ChainedFormatter(locale).AddFormatter(new LowercaseFormatter(locale)).AddFormatter(new SnakeCaseFormatter(locale));
+        unitNameFormatter = new ChainedFormatter(locale).AddFormatter(new LowercaseFormatter(locale)).AddFormatter(new SnakeCaseFormatter(locale));
 
         try {
             defaultUnit = new Unit("base", Collections.emptySet(), "", "", "", "", Collections.emptyMap()

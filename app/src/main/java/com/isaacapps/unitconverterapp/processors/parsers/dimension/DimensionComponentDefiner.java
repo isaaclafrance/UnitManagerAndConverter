@@ -35,6 +35,7 @@ public class DimensionComponentDefiner {
     private Pattern atomicTypeRegExPattern;
     private Pattern singleGroupRegExPattern;
     private Pattern multiGroupRegExPattern;
+    private Pattern anyUnitGroupRegExPattern;
 
     private Pattern nestedExponentsRegExPattern;
 
@@ -132,6 +133,11 @@ public class DimensionComponentDefiner {
                 , optionalOperationalComponent, createInteriorGroupComponentRegEx()
                 , optionalExponentialComponent));
     }
+
+    Pattern createAnyGroupingsRegExPattern(){
+        return Pattern.compile(String.format("(?:%s|%s)", getMultiGroupRegExPattern(), getSingleGroupRegExPattern()));
+    }
+
 
     ///
     /**
@@ -320,6 +326,7 @@ public class DimensionComponentDefiner {
     private void setGroupingRegExPatterns() {
         singleGroupRegExPattern = createSingleGroupRegExPattern();
         multiGroupRegExPattern = createMultiGroupRegExPattern();
+        anyUnitGroupRegExPattern = createAnyGroupingsRegExPattern();
     }
 
     ///
@@ -353,6 +360,9 @@ public class DimensionComponentDefiner {
     }
     public Pattern getMultiplicationSymbolsRegExPattern(){
         return multiplicationSymbolsRegExPattern;
+    }
+    public Pattern getUnitAnyGroupRegexPattern() {
+        return anyUnitGroupRegExPattern;
     }
 
 }

@@ -30,9 +30,9 @@ import android.widget.ToggleButton;
 import com.isaacapps.unitconverterapp.adapters.MultiAutoCompleteUnitsDefinitionArrayAdapter;
 import com.isaacapps.unitconverterapp.dao.xml.readers.local.ConversionFavoritesListXmlLocalReader;
 import com.isaacapps.unitconverterapp.dao.xml.readers.local.FundamentalUnitsMapXmlLocalReader;
-import com.isaacapps.unitconverterapp.dao.xml.readers.local.NonStandardUnitsMapsXmlLocalReader;
+import com.isaacapps.unitconverterapp.dao.xml.readers.local.units.NonStandardUnitsMapsXmlLocalReader;
 import com.isaacapps.unitconverterapp.dao.xml.readers.local.PrefixesMapXmlLocalReader;
-import com.isaacapps.unitconverterapp.dao.xml.readers.local.StandardCoreUnitsMapXmlLocalReader;
+import com.isaacapps.unitconverterapp.dao.xml.readers.local.units.StandardCoreUnitsMapXmlLocalReader;
 import com.isaacapps.unitconverterapp.dao.xml.readers.online.EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader;
 import com.isaacapps.unitconverterapp.dao.xml.readers.online.PrefixesNUnitsMapXmlOnlineReader;
 import com.isaacapps.unitconverterapp.models.measurables.quantity.Quantity;
@@ -43,8 +43,10 @@ import com.isaacapps.unitconverterapp.models.unitmanager.UnitManagerBuilder;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.ConversionFavoritesDataModel;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.FundamentalUnitsDataModel;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.PrefixesDataModel;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.repositories.hashdriven.ConversionFavoritesDualKeyNCategoryHashedRepository;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.repositories.hashdriven.FundamentalUnitsHashDualKeyNCategoryHashedRepository;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.repositories.hashdriven.PrefixesDualKeyNCategoryHashedRepository;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.repositories.hashdriven.SignificanceRankHashedRepository;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentDeterminer;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsContentDeterminer.DATA_MODEL_CATEGORY;
 import com.isaacapps.unitconverterapp.processors.converters.QuantityConverter;
@@ -88,7 +90,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 
     private static final String DUMMY_UNIT = "<unit>";
     private static final String DUMMY_VALUE = "1.0";
-    private static final int INITIAL_GROUP_NUM_IN_MULTI_UNIT_MODE = 2;
+    private static final int INITIAL_GROUP_NUM_IN_MULTI_UNIT_MODE = 3;
 
     private boolean currencyUnitsLoaded;
     private boolean standardLocalCoreUnitsLoaded;
@@ -175,7 +177,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
             fundamentalUnitTypesDimensionSerializer = new FundamentalUnitTypesDimensionSerializer(locale, new GeneralTextFormatter(locale), new RoundingFormatter(locale, 2));
             componentUnitsDimensionSerializer  = new ComponentUnitsDimensionSerializer(locale, new GeneralTextFormatter(locale), new RoundingFormatter(locale, 2));
 
-            componentUnitsDimensionParser = new ComponentUnitsDimensionParser();
+            componentUnitsDimensionParser = new ComponentUnitsDimensionParser(locale);
         } catch (ParsingException e1) {
             e1.printStackTrace();
         }
@@ -212,7 +214,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         if(!onlineUnitsPreviouslySaved && unitsAbleToBeSaved && pSharablesApplication.isOnlineUnitsCurrentlyLoaded())
             sharedPreferences.edit().putBoolean(getString(R.string.online_units_previously_saved_pref_key), true).commit();
 
-        if(favoritesLoaded)
+        if(favoritesLoaded || !unitManager.getConversionFavoritesDataModel().getAllFormattedConversions().isEmpty())
             pSharablesApplication.saveConversionFavorites();
     }
     @Override
@@ -405,6 +407,14 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         });
     }
     private void populateTextViews(){
+        try {
+            sourceUnitsTextView.setText(sourceQuantity.getUnitNames());
+            targetUnitsTextView.setText(targetQuantity.getUnitNames());
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
+
         adjustAllTextViewUnitGroupingBasedOnMultiUnitState(false);
     }
 
@@ -607,7 +617,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
                     }
                 }
                 else{
-                    removeAllUnknownUnitTokens();
+                    //removeAllUnknownUnitTokens();
                     if(!multiModeMenuItem.isChecked())
                         removeAllGroupingSymbols();
                 }
@@ -640,7 +650,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
                     }
                 }
                 else{
-                    removeAllUnknownUnitTokens();
+                    //removeAllUnknownUnitTokens();
                     if(!multiModeMenuItem.isChecked())
                         removeAllGroupingSymbols();
                 }
@@ -655,8 +665,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
                         String sourceValueText = overallValuesGroupingFormatter.format(((TextView) view).getText().toString());
                         ((TextView) view).setText(sourceValueText);
 
-                        if(valuesGroupingFormatter.calculateGroupingCount(sourceValueText) > unitNamesGroupingFormatter.calculateGroupingCount(sourceUnitsTextView.getText().toString()))
-                            adjustSourceUnitTextViewGroupingsCountBasedOnSourceValue();
+                        //if(valuesGroupingFormatter.calculateGroupingCount(sourceValueText) > unitNamesGroupingFormatter.calculateGroupingCount(sourceUnitsTextView.getText().toString()))
+                            //adjustSourceUnitTextViewGroupingsCountBasedOnSourceValue();
                     }
                     checkNSetSourceValuesIntoQuantity();
                 }
@@ -812,6 +822,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     ///Conversion Methods
     private void processConversion() {
         try {
+            checkNSetSourceValuesIntoQuantity();
+
             List<Unit> targetUnits = Collections.list(Collections.enumeration(targetQuantity.getUnits()));
             List<Double> values = new ArrayList<>(QuantityConverter.determineConversionQuantityToTargetUnitsGroup(sourceQuantity, targetUnits, true).getValues());
 
@@ -889,7 +901,10 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
                 return new AsyncTaskLoader<UnitManagerBuilder>(this) {
                     @Override
                     public UnitManagerBuilder loadInBackground() {
-                        ConversionFavoritesDataModel loadedConversionFavoritesDataModel = new ConversionFavoritesListXmlLocalReader(this.getContext(),new ConversionFavoritesDataModel()).loadInBackground();
+                        ConversionFavoritesDataModel conversionFavoritesDataModel = new ConversionFavoritesDataModel(new ConversionFavoritesDualKeyNCategoryHashedRepository());
+                        conversionFavoritesDataModel.setSignificanceRankRepository(new SignificanceRankHashedRepository());
+
+                        ConversionFavoritesDataModel loadedConversionFavoritesDataModel = new ConversionFavoritesListXmlLocalReader(this.getContext(), conversionFavoritesDataModel).loadInBackground();
                         if(loadedConversionFavoritesDataModel != null)
                             ((PersistentSharablesApplication) getContext().getApplicationContext()).getUnitManager().getConversionFavoritesDataModel().combineWith(loadedConversionFavoritesDataModel);
                         return null;
@@ -973,7 +988,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
                 getSupportLoaderManager().initLoader(ONLINE_PREFIXES_N_UNITS_LOADER, null, this).forceLoad();
             }
             else{
-                //If the on units had been previously loaded AND saved, then they will be in these local loaded units set
+                //If the online units had been previously loaded AND saved, then they will be in this local loaded units set.
                 //Depending pending on how many online units and dynamic units were saved, this may take a while to fully load
                 getSupportLoaderManager().initLoader(NON_STANDARD_LOCAL_UNITS_LOADER, null, this).forceLoad();
             }

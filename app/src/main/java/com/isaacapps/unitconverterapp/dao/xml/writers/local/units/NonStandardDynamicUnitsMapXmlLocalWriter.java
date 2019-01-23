@@ -1,8 +1,8 @@
-package com.isaacapps.unitconverterapp.dao.xml.writers.local;
+package com.isaacapps.unitconverterapp.dao.xml.writers.local.units;
 
 import android.content.Context;
 
-import static com.isaacapps.unitconverterapp.dao.xml.readers.local.NonStandardUnitsMapsXmlLocalReader.NONSTANDARD_DYNAMIC_UNITS_FILE;
+import static com.isaacapps.unitconverterapp.dao.xml.readers.local.units.NonStandardUnitsMapsXmlLocalReader.NONSTANDARD_DYNAMIC_UNITS_FILE;
 
 public class NonStandardDynamicUnitsMapXmlLocalWriter extends UnitsMapXmlLocalWriter {
 

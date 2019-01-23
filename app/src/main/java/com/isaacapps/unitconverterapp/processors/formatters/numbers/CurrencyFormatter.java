@@ -16,11 +16,12 @@ public class CurrencyFormatter implements IFormatter {
         setLocale(locale);
     }
 
-    @Override
+
     /**
      * Produces a new formatted text where each instance of a double is transformed into a currency representation with a currency symbol that is local specific.
      * If there are no suitable instances, then the string is returned as is.
      */
+    @Override
     public String format(String textWithDouble) {
         String formattedCurrencyNumber = textWithDouble;
 

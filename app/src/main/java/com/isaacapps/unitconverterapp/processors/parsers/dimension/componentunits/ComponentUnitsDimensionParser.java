@@ -1,5 +1,9 @@
 package com.isaacapps.unitconverterapp.processors.parsers.dimension.componentunits;
 
+import com.isaacapps.unitconverterapp.processors.formatters.ChainedFormatter;
+import com.isaacapps.unitconverterapp.processors.formatters.IFormatter;
+import com.isaacapps.unitconverterapp.processors.formatters.numbers.MixedFractionToDecimalFormatter;
+import com.isaacapps.unitconverterapp.processors.formatters.numbers.RoundingFormatter;
 import com.isaacapps.unitconverterapp.processors.formatters.text.GeneralTextFormatter;
 import com.isaacapps.unitconverterapp.processors.parsers.ParsingException;
 import com.isaacapps.unitconverterapp.processors.parsers.dimension.BaseDimensionParser;
@@ -10,14 +14,19 @@ import java.util.Locale;
 public class ComponentUnitsDimensionParser extends BaseDimensionParser<String> {
     public static final String COMPONENT_NAME_REGEX = "(?:([a-zA-Z]+)?[_]?\\w+)"; //ex. h20, meter, 10, newton_meter
 
-    public ComponentUnitsDimensionParser(Locale locale) throws ParsingException {
+    public ComponentUnitsDimensionParser(Locale locale, IFormatter atomicTypeFormatter, IFormatter exponentialValueFormatter) throws ParsingException {
         super(locale, new DimensionComponentDefiner(COMPONENT_NAME_REGEX));
 
+        IFormatter augmentedExponentialValueFormatter = new ChainedFormatter(locale)
+                .AddFormatter(new MixedFractionToDecimalFormatter(locale))
+                .AddFormatter(exponentialValueFormatter);
+
         dimensionParserBuilder.setParsedDimensionUpdater(new ComponentUnitsParsedDimensionUpdater())
-                .setAtomicTypeFormatter(new GeneralTextFormatter(locale));
+                .setAtomicTypeFormatter(atomicTypeFormatter)
+                .setExponentValueFormatter(augmentedExponentialValueFormatter);
     }
-    public ComponentUnitsDimensionParser() throws ParsingException {
-        this(Locale.getDefault());
+    public ComponentUnitsDimensionParser(Locale locale) throws ParsingException {
+        this(locale, new GeneralTextFormatter(locale), new RoundingFormatter(locale, 5));
     }
 
 }

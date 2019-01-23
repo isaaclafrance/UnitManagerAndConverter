@@ -20,6 +20,7 @@ public class DimensionSerializerBuilder<T> implements ISerializer<Map<T, Double>
 
     private String multiplicationSymbol, divisionSymbol, exponentSymbol;
     private boolean includeParenthesesInExponentials;
+    private boolean includeSpaceAfterOperators;
 
     private IFormatter dimensionKeyFormatter;
     private IFormatter dimensionValueFormatter;
@@ -68,11 +69,17 @@ public class DimensionSerializerBuilder<T> implements ISerializer<Map<T, Double>
         for (Map.Entry<T, Double> dimensionEntry : dimensionMapEntries) {
             //
             if( dimensionEntry.getValue() < 0 && (operatorDisplayConfiguration == OPERATOR_DISPLAY_CONFIGURATION.DIVISION_PER_NEGATIVE_EXPONENT || operatorDisplayConfiguration == OPERATOR_DISPLAY_CONFIGURATION.SINGLE_DIVISION && !hasDivision)){
-                dimensionStringBuilder.append(divisionSymbol).append(" ");
+                dimensionStringBuilder.append(divisionSymbol);
+                if(includeSpaceAfterOperators) {
+                    dimensionStringBuilder.append(" ");
+                }
                 hasDivision = true;
             }
             else if(dimensionStringBuilder.length() > 0 && !( dimensionEntry.getValue() < 0 && operatorDisplayConfiguration == OPERATOR_DISPLAY_CONFIGURATION.DIVISION_PER_NEGATIVE_EXPONENT )) {
-                dimensionStringBuilder.append(multiplicationSymbol).append(" ");
+                dimensionStringBuilder.append(multiplicationSymbol);
+                if(includeSpaceAfterOperators) {
+                    dimensionStringBuilder.append(" ");
+                }
                 hasMultiplication = true;
             }
 
@@ -100,10 +107,13 @@ public class DimensionSerializerBuilder<T> implements ISerializer<Map<T, Double>
         if(dimensionMapEntries.size() != 1 && operatorDisplayConfiguration == OPERATOR_DISPLAY_CONFIGURATION.SINGLE_DIVISION  && hasDivision) {
             int index = dimensionStringBuilder.indexOf(divisionSymbol);
             dimensionStringBuilder.insert(index+1, "(");
-            dimensionStringBuilder.append(" )");
+            if(includeSpaceAfterOperators) {
+                dimensionStringBuilder.append(" ");
+            }
+            dimensionStringBuilder.append(")");
         }
 
-        //If any dimension items of negative exponents, then show as reciprocal. ie. 1/x or 1/(x * y * z)
+        //If none dimension items of negative exponents, then show as reciprocal. ie. 1/x or 1/(x * y * z)
         if((operatorDisplayConfiguration == OPERATOR_DISPLAY_CONFIGURATION.SINGLE_DIVISION && !someDimensionItemsHavePositiveExponents)
                 || (operatorDisplayConfiguration == OPERATOR_DISPLAY_CONFIGURATION.DIVISION_PER_NEGATIVE_EXPONENT && (!hasMultiplication && dimensionStringBuilder.indexOf(divisionSymbol) == 0))){
             dimensionStringBuilder.insert(0, "1");
@@ -177,8 +187,16 @@ public class DimensionSerializerBuilder<T> implements ISerializer<Map<T, Double>
         this.includeParenthesesInExponentials = includeParentheses;
         return this;
     }
-    public boolean isIncludeParenthesesInExponentials(){
+    public boolean doesIncludeParenthesesInExponentials(){
         return includeParenthesesInExponentials;
+    }
+
+    public DimensionSerializerBuilder<T> setIncludeSpaceAfterOperators(boolean includeSpaceAfterOperators){
+        this.includeSpaceAfterOperators = includeSpaceAfterOperators;
+        return this;
+    }
+    public boolean doesIncludeSpaceAfterOperators(){
+        return includeSpaceAfterOperators;
     }
 
     ///

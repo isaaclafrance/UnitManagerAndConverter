@@ -19,11 +19,12 @@ public class RoundingFormatter implements IFormatter {
         this.numOfDecimalPlaces = numOfDecimalPlaces;
     }
 
-    @Override
+
     /**
      * Produces a new formatted text where each instance of a double is transformed into rounded double.
      * If there are no suitable instances, then the string is returned as is.
      */
+    @Override
     public String format(String textWithDoubles) {
         String formattedNumber = textWithDoubles;
 

@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -31,8 +32,8 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
     ///
     public DualKeyNCategoryHashedRepository(boolean keysMustHaveBijectiveRelation, boolean duplicateItemsAreRemoved, boolean removeEmptyCategories) {
         key2ToItemMapsByCategory = new HashMap<>();
-        key1ToKey2Map = new HashMap<>();
-        key2ToKey1Map = new HashMap<>();
+        key1ToKey2Map = new LinkedHashMap<>();
+        key2ToKey1Map = new LinkedHashMap<>();
         this.keysMustHaveBijectiveRelation = keysMustHaveBijectiveRelation;
         this.duplicateItemsAreRemoved = duplicateItemsAreRemoved;
         this.emptyCategoriesAreRemoved = removeEmptyCategories;
@@ -126,7 +127,7 @@ public class DualKeyNCategoryHashedRepository<T, U, V> implements IDualKeyNCateg
 
     private U addItemToCategory(V category, T key2, U item) {
         if (!key2ToItemMapsByCategory.containsKey(category)) {
-            key2ToItemMapsByCategory.put(category, new HashMap<>());
+            key2ToItemMapsByCategory.put(category, new LinkedHashMap<>());
         }
         key2ToItemMapsByCategory.get(category).put(key2, item);
         return item;

@@ -185,17 +185,17 @@ public class UnitBrowserActivity extends Activity {
     }
 
     private void showDeleteButtonIfSelectedUnitDeleteable(String selectedUnitName) {
-        if(selectedUnitName.toLowerCase().matches("no.*unit.*"))
+        if(!selectedUnitName.toLowerCase().matches("no.*unit.*"))
             return;
 
-        Unit unitToBePotentiallyDeleted = pSharablesApplication.getUnitManager()
-                .getUnitsDataModel().getUnitsContentMainRetriever().getUnit(selectedUnitName);
+        Unit unitToBePotentiallyDeleted = !selectedUnitName.toLowerCase().matches("no.*unit.*")? pSharablesApplication.getUnitManager()
+                .getUnitsDataModel().getUnitsContentMainRetriever().getUnit(selectedUnitName) : null;
 		
 		/*Only delete units that meet the following criteria:
 		  1.Not currently being used as a 'from' or 'to' unit.
 		  2.Not a core unit (ie. meter, second, currency, etc)
 	    */
-        if (!unitToBePotentiallyDeleted.isCoreUnit()
+        if ( unitToBePotentiallyDeleted != null && !unitToBePotentiallyDeleted.isCoreUnit()
                 && !pSharablesApplication.getSourceQuantity().getUnits().contains(unitToBePotentiallyDeleted)
                 && !pSharablesApplication.getTargetQuantity().getUnits().contains(unitToBePotentiallyDeleted))
         {
@@ -374,8 +374,10 @@ public class UnitBrowserActivity extends Activity {
         String unitSystemSpinnerSelection = (String) unitSystemSpinner.getSelectedItem();
 
         if (quickDimSpinnerSelection.equals(quickDimensionFilters.get(DYNAMIC))) {
-            for (Unit dynamicUnit : pSharablesApplication.getUnitManager().getUnitsDataModel().getUnitsContentMainRetriever().getDynamicUnits())
-                unformattedFinalUnitCategories.add(dynamicUnit.getCategory());
+            for(Unit unit:pSharablesApplication.getUnitManager().getUnitsDataModel().getUnitsContentQuerier().queryUnitsByUnitSystem(unitSystemSpinnerSelection)){
+                if(UnitsContentDeterminer.determineHighestPriorityDataModelCategory(unit) == UnitsContentDeterminer.DATA_MODEL_CATEGORY.DYNAMIC)
+                    unformattedFinalUnitCategories.add(unit.getCategory());
+            }
         } else {
             String dimFilterUnitCategoryToken = getSingularUnitCategoryTokenBasedOnQuickDimFilterSelection();
 
@@ -414,11 +416,12 @@ public class UnitBrowserActivity extends Activity {
         String unitSystemSelection = (String) unitSystemSpinner.getSelectedItem();
         String categorySelection = (String) categorySpinner.getSelectedItem();
 
-        if ((pSharablesApplication.getTargetQuantity().getLargestUnit().getName()
-                .equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) && oppositeUnitType.equalsIgnoreCase(TARGET_NAME)
-                || pSharablesApplication.getSourceQuantity().getLargestUnit().getName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME)
-                && oppositeUnitType.equalsIgnoreCase(SOURCE_NAME))
-                && quickDimFilterSelection.equals(quickDimensionFilters.get(OPPOSITE)))
+        boolean oppositeTargetUnitUnknown = pSharablesApplication.getTargetQuantity().getLargestUnit().getName()
+                .equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME) && oppositeUnitType.equalsIgnoreCase(TARGET_NAME);
+        boolean oppositeSourceUnitUnknown = pSharablesApplication.getSourceQuantity().getLargestUnit().getName().equalsIgnoreCase(Unit.UNKNOWN_UNIT_NAME)
+                && oppositeUnitType.equalsIgnoreCase(SOURCE_NAME);
+
+        if ((oppositeTargetUnitUnknown || oppositeSourceUnitUnknown) && quickDimFilterSelection.equals(quickDimensionFilters.get(OPPOSITE)))
         {
             formattedFullNameNAbbreviations.add("No Units Have A Dimension Compatible to the " + oppositeUnitType.toUpperCase() + " Unit.");
 
@@ -464,12 +467,12 @@ public class UnitBrowserActivity extends Activity {
         String unitCategorySelection = (String) categorySpinner.getSelectedItem();
         String unitSelection = ((String) unitSpinner.getSelectedItem()).split(UNIT_ABBREVIATION_DELIMITER)[0].trim();
 
-        if (!unitSelection.contains("no units")
-                && !pSharablesApplication.getUnitManager().getPrefixesDataModel().unitNameHasPrefix(unitSelection, true)
-                && !componentUnitsDimensionParser.getDimensionParserBuilder().getDimensionComponentDefiner().hasComplexDimensions(unitSelection)
-                && !(unitCategorySelection).equalsIgnoreCase(MainActivity.CURRENCY_CATEGORY))
-        {
+        boolean unitSelectionHasPrefix = pSharablesApplication.getUnitManager().getPrefixesDataModel().unitNameHasPrefix(unitSelection, true);
+        boolean unitSelectionIsComplex = componentUnitsDimensionParser.getDimensionParserBuilder().getDimensionComponentDefiner().hasComplexDimensions(unitSelection);
+        boolean unitCategoryIsCurrency = (unitCategorySelection).equalsIgnoreCase(MainActivity.CURRENCY_CATEGORY);
 
+        if (!unitSelection.contains("no units") && !unitSelectionHasPrefix && !unitSelectionIsComplex && !unitCategoryIsCurrency)
+        {
             for (String prefixFullName : pSharablesApplication.getUnitManager().getPrefixesDataModel().getAllPrefixFullNames())
             {
                 prefixesFullNamesWithValues.add(prefixFullName
@@ -481,10 +484,13 @@ public class UnitBrowserActivity extends Activity {
             Collections.sort(prefixesFullNamesWithValues, new Comparator<String>() {
                 @Override
                 public int compare(String lhsPrefixFullNameWithValue, String rhsPrefixFullNameWithValue) {
-                    return Double.compare(pSharablesApplication.getUnitManager().getPrefixesDataModel()
-                                    .getPrefixValue(lhsPrefixFullNameWithValue.split(PREFIX_DELIMITER)[0])
-                            , pSharablesApplication.getUnitManager().getPrefixesDataModel()
-                                    .getPrefixValue(rhsPrefixFullNameWithValue.split(PREFIX_DELIMITER)[0]));
+                    double lhsPrefixValue = pSharablesApplication.getUnitManager().getPrefixesDataModel()
+                            .getPrefixValue(lhsPrefixFullNameWithValue.split(PREFIX_DELIMITER)[0]);
+
+                    double rhsPrefixValue = pSharablesApplication.getUnitManager().getPrefixesDataModel()
+                            .getPrefixValue(rhsPrefixFullNameWithValue.split(PREFIX_DELIMITER)[0]);
+
+                    return Double.compare( lhsPrefixValue, rhsPrefixValue);
                 }
             });
         }

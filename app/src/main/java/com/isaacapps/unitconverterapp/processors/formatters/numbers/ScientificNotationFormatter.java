@@ -8,11 +8,12 @@ public class ScientificNotationFormatter implements IFormatter {
     private Locale locale;
     private int numberOfDecimalPlaces;
 
-    @Override
+
     /**
      * Produces a new formatted text where each instance of a double is transformed into a scientific notation representation.
      * If there are no suitable instances, then the string is returned as is.
      */
+    @Override
     public String format(String textWithDoubles) {
         //TODO: Implement......
         return null;

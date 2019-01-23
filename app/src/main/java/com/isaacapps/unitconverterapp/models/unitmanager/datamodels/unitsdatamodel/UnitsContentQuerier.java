@@ -186,8 +186,8 @@ public class UnitsContentQuerier {
             double preferredLhsSignificanceRatio;
             int lhsDistanceFromStart;
             if(lhsUnitAbbreviationContains && lhsUnitFullNameContains){
-                preferredLhsSignificanceRatio = (lhsUnitAbbreviationSignificanceRatio <= 1) ? lhsUnitAbbreviationSignificanceRatio : lhsUnitFullNameSignificanceRatio;
-                lhsDistanceFromStart = (lhsUnitAbbreviationSignificanceRatio <= 1) ? lhsUnit.getAbbreviation().indexOf(providedName) : lhsUnit.getName().indexOf(providedName);
+                preferredLhsSignificanceRatio = lhsUnitAbbreviationSignificanceRatio;
+                lhsDistanceFromStart = lhsUnit.getAbbreviation().indexOf(providedName);
             }
             else if(lhsUnitAbbreviationContains){
                 preferredLhsSignificanceRatio = lhsUnitAbbreviationSignificanceRatio;
@@ -201,8 +201,8 @@ public class UnitsContentQuerier {
             double preferredRhsSignificanceRatio;
             int rhsDistanceFromStart;
             if(rhsUnitAbbreviationContains && rhsUnitFullNameContains){
-                preferredRhsSignificanceRatio = (rhsUnitAbbreviationSignificanceRatio <= 1) ? rhsUnitAbbreviationSignificanceRatio : rhsUnitFullNameSignificanceRatio;
-                rhsDistanceFromStart = (rhsUnitAbbreviationSignificanceRatio <= 1) ? rhsUnit.getAbbreviation().indexOf(providedName) : rhsUnit.getName().indexOf(providedName);
+                preferredRhsSignificanceRatio = rhsUnitAbbreviationSignificanceRatio;
+                rhsDistanceFromStart = rhsUnit.getAbbreviation().indexOf(providedName);
             }
             else if(rhsUnitAbbreviationContains){
                 preferredRhsSignificanceRatio = rhsUnitAbbreviationSignificanceRatio;
@@ -215,7 +215,7 @@ public class UnitsContentQuerier {
 
             int prefSigRatioCompareToResult = -1 * Double.compare(preferredLhsSignificanceRatio, preferredRhsSignificanceRatio);
             if(prefSigRatioCompareToResult == 0){
-                return Integer.compare(lhsDistanceFromStart, rhsDistanceFromStart); // Ratio are the same, then subsequence closer to the being preferred.
+                return Integer.compare(lhsDistanceFromStart, rhsDistanceFromStart); // Ratio are the same, then subsequence closer to the beginning is preferred.
             }else{
                 return prefSigRatioCompareToResult;
             }

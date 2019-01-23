@@ -86,7 +86,7 @@ public class ConversionFavoritesActivity extends FragmentActivity{
             groupFormatter = new AllUpperCaseFormatter(locale);
             conversionFormatter = new StartCaseFormatter(locale);
 
-            componentUnitsDimensionParser = new ComponentUnitsDimensionParser();
+            componentUnitsDimensionParser = new ComponentUnitsDimensionParser(locale);
         } catch (ParsingException e1) {
             e1.printStackTrace();
         }
@@ -173,7 +173,7 @@ public class ConversionFavoritesActivity extends FragmentActivity{
     
     private void showSelectButtonIfAppropriate() {
         if (selectedConversion != null
-                || !pSharablesApplication.getUnitManager().getConversionFavoritesDataModel().getAllFormattedConversions().isEmpty()) {
+                && !pSharablesApplication.getUnitManager().getConversionFavoritesDataModel().getAllFormattedConversions().isEmpty()) {
             selectButton.setVisibility(View.VISIBLE);
             selectButton.setAnimation(AnimationUtils.loadAnimation(ConversionFavoritesActivity.this, android.R.anim.slide_in_left));
         } else {
@@ -183,7 +183,7 @@ public class ConversionFavoritesActivity extends FragmentActivity{
     }
     private void showRemoveButtonIfAppropriate() {
         if (selectedConversion != null
-                || !pSharablesApplication.getUnitManager().getConversionFavoritesDataModel().getAllFormattedConversions().isEmpty()) {
+                && !pSharablesApplication.getUnitManager().getConversionFavoritesDataModel().getAllFormattedConversions().isEmpty()) {
             removeButton.setVisibility(View.VISIBLE);
             removeButton.setAnimation(AnimationUtils.loadAnimation(ConversionFavoritesActivity.this, android.R.anim.fade_in));
         } else {
@@ -262,7 +262,7 @@ public class ConversionFavoritesActivity extends FragmentActivity{
             public boolean onChildClick(ExpandableListView expandableListView, View childView, int categoryIndex, int childIndex
                     , long arg3) {
 
-                alterExpandableListSelection(((ViewGroup)childView).getChildAt(childIndex));
+                alterExpandableListSelection(((ViewGroup)childView).getChildAt(0));
 
                 showSelectButtonIfAppropriate();
                 showRemoveButtonIfAppropriate();
@@ -314,6 +314,17 @@ public class ConversionFavoritesActivity extends FragmentActivity{
     }
 
     ///
+    private boolean canCurrentListBeUpdated(){
+        switch (listMode){
+            case BY_CATEGORY:
+                return conversionsExpandableListAdapter.getGroupCount() != 0;
+            case BY_RANK:
+            case BY_ALPHABETICAL:
+                return conversionsRegularListAdapter.getCount() != 0;
+            default:
+                return false;
+        }
+    }
     private void repopulateCurrentList() {
         if(canCurrentListBeUpdated()) {
             switch (listMode) {
@@ -327,6 +338,7 @@ public class ConversionFavoritesActivity extends FragmentActivity{
             }
         }
     }
+
     private void setListMode(int listMode){
         this.listMode = listMode;
         switch (listMode){
@@ -342,6 +354,11 @@ public class ConversionFavoritesActivity extends FragmentActivity{
                 switchToRegularList();
                 break;
         }
+
+        //Disappear the Select and Remove buttons while switching to different list modes, which will happen since "selectConversion" is null.
+        selectedConversion = null;
+        showSelectButtonIfAppropriate();
+        showRemoveButtonIfAppropriate();
     }
     private void switchToRegularList(){
         conversionsRegularListView.setVisibility(View.VISIBLE);
@@ -356,16 +373,5 @@ public class ConversionFavoritesActivity extends FragmentActivity{
 
         conversionsRegularListView.setVisibility(View.GONE);
         pastSelectedConversionPosition = -1;
-    }
-    private boolean canCurrentListBeUpdated(){
-        switch (listMode){
-            case BY_CATEGORY:
-                return conversionsExpandableListAdapter.getGroupCount() != 0;
-            case BY_RANK:
-            case BY_ALPHABETICAL:
-                return conversionsRegularListAdapter.getCount() != 0;
-            default:
-                return false;
-        }
     }
 }

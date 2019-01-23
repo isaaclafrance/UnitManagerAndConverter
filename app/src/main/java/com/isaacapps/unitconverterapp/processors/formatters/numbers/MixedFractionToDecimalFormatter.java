@@ -7,7 +7,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class MixedFractionToDecimalFormatter implements IFormatter {
-    private Locale locale;
     private static final Pattern INTEGER_PATTERN = Pattern.compile("(-)?\\d+");
     public static final Pattern DENOMINATOR_PATTERN = Pattern.compile(String.format("(?<=\\/)s*%s", INTEGER_PATTERN.pattern()));
     public static final Pattern NUMERATOR_PATTERN = Pattern.compile(String.format("%s\\s*(?=\\/)", INTEGER_PATTERN.pattern()));
@@ -15,7 +14,7 @@ public class MixedFractionToDecimalFormatter implements IFormatter {
     public static final Pattern MIXED_PATTERN = Pattern.compile(String.format("%1$s\\s+%2$s|%2$s", INTEGER_PATTERN.pattern(), FRACTION_PATTERN.pattern()));
     private static final Pattern WHOLE_NUMBER_PART_PATTERN = Pattern.compile(String.format("%s(?=\\s*%s\\s*)", INTEGER_PATTERN.pattern(), FRACTION_PATTERN.pattern()));
 
-    private IFormatter resultantDecimalFormatter;
+    private Locale locale;
 
     ///
     public MixedFractionToDecimalFormatter(Locale locale) {
@@ -23,11 +22,11 @@ public class MixedFractionToDecimalFormatter implements IFormatter {
     }
 
     ///
-    @Override
     /**
      * Produces a new formatted text where each instance of mixed fraction (i.e. "2 1/3", "5/6", etc ) is transformed into double with decimal places.
      * If there are no suitable instances, then the string is returned as is.
      */
+    @Override
     public String format(String textWithMixedFraction) {
         String formattedMixedInput = textWithMixedFraction;
 

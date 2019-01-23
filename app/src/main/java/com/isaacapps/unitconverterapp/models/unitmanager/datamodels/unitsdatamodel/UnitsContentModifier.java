@@ -36,7 +36,7 @@ public class UnitsContentModifier {
         if (addUnitToDataStructures(unit, true, true)) {
             //Make the unit be a base unit if it is a fundamental unit and unique based on dimension;
             if (!unit.isBaseUnit()) {
-                boolean isUnique = unitsDataModel.getUnitsContentDeterminer().determineIfUnitIsUniqueByDimension(unit);
+                boolean isUnique = unitsDataModel.getUnitsContentDeterminer().determineIfUnitIsUnique(unit);
                 boolean isAFundamentalUnit = unitsDataModel.getUnitManagerContext().getFundamentalUnitsDataModel().containsUnitName(unit.getName());
 
                 if (isUnique || isAFundamentalUnit) {
@@ -62,7 +62,7 @@ public class UnitsContentModifier {
             if(unitsDataModel.getRepositoryWithDualKeyNCategory().areKeysValid(unit.getName().toLowerCase(), unit.getAbbreviation()) && unitInDataStructureWithSameName.isCoreUnit() == unit.isCoreUnit()){
                 try {
                     if(!unitBeingAddedIsSameInstanceAsPreexisting) {
-                        unitsDataModel.getUnitsContentModifier().removeUnit(unitInDataStructureWithSameName.getName(), true, unit, false);
+                        removeUnit(unitInDataStructureWithSameName.getName(), true, unit, false);
                     }
                     else{
                         unitsDataModel.getRepositoryWithDualKeyNCategory().removeItem(unitInDataStructureWithSameName);
@@ -139,7 +139,7 @@ public class UnitsContentModifier {
     private boolean removeUnit(String unitName, boolean allowRemovalOfCoreUnits, Unit replacementBaseUnit, boolean resetBaseConversionPolyCoeffsOfDescendents) throws UnitException {
         Unit removedUnitCandidate = unitsDataModel.getRepositoryWithDualKeyNCategory().getFirstItemByAnyKey(unitName.toLowerCase().trim());
         if (removedUnitCandidate != null &&  (allowRemovalOfCoreUnits || determineHighestPriorityDataModelCategory(removedUnitCandidate) != DATA_MODEL_CATEGORY.CORE) ) {
-            unitsDataModel.getRepositoryWithDualKeyNCategory().removeItemByKey(unitName);
+            unitsDataModel.getRepositoryWithDualKeyNCategory().removeItem(removedUnitCandidate);
 
             unitsDataModel.getUnitManagerContext().getUnitsClassifierDataModel().removeFromHierarchy(removedUnitCandidate);
 
@@ -193,10 +193,10 @@ public class UnitsContentModifier {
 
     ///Update Existing Data Model Content
     public void updateAssociationsOfUnknownUnits() throws UnitException {
-        Collection<Unit> knownUnits = updateAssociationsOfUnknownUnits(new ArrayList<>(), new ArrayList<>(unitsDataModel.getUnitsContentMainRetriever().getUnknownUnits()));
-        for(Unit knownUnit:knownUnits) {
-            if(knownUnit.isBaseUnit())
-                incorporateAsBaseUnit(knownUnit);
+        Collection<Unit> noLongerUnknownUnits = updateAssociationsOfUnknownUnits(new ArrayList<>(), new ArrayList<>(unitsDataModel.getUnitsContentMainRetriever().getUnknownUnits()));
+        for(Unit noLongerUnknownUnit:noLongerUnknownUnits) {
+            if(noLongerUnknownUnit.isBaseUnit())
+                incorporateAsBaseUnit(noLongerUnknownUnit);
         }
     }
     private Collection<Unit> updateAssociationsOfUnknownUnits(Collection<Unit> unitsNoLongerUnknown, Collection<Unit> currentUnknownUnits) throws UnitException {
@@ -276,7 +276,7 @@ public class UnitsContentModifier {
                 continue;
 
             unit.setAutomaticUnitSystem();
-            unit.setAutomaticUnitTypeNFundamentalTypesDimension();
+            unit.setAutomaticTypesNFundamentalDimension();
             unit.setAutomaticCategory();
 
             DATA_MODEL_CATEGORY currentDataModelCategory = determineHighestPriorityDataModelCategory(unit);

@@ -19,11 +19,12 @@ public class SignificantFiguresFormatter implements IFormatter {
         this.numberOfSignificantFigures = numberOfSignificantFigures;
     }
 
-    @Override
+
     /**
      * Produces a new formatted text where each instance of a double is transformed into another number satisfying specified significant figures.
      * If there are no suitable instances, then the string is returned as is.
      */
+    @Override
     public String format(String textWithDoubles) {
         String formattedText = textWithDoubles;
 

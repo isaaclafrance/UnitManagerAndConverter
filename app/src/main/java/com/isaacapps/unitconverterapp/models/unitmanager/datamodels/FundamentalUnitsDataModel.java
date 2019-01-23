@@ -5,6 +5,7 @@ import com.isaacapps.unitconverterapp.models.measurables.unit.UnitException;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.repositories.IDualKeyNCategoryRepository;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamodel.UnitsDataModel;
 import com.isaacapps.unitconverterapp.processors.operators.dimensions.DimensionOperators;
+import static com.isaacapps.unitconverterapp.utilities.RegExUtility.SIGNED_DOUBLE_VALUE_REGEX_PATTERN;
 
 import java.util.Collection;
 import java.util.EnumMap;
@@ -54,6 +55,9 @@ public class FundamentalUnitsDataModel extends BaseDataModel<String, Fundamental
 
     ///
     public UNIT_TYPE getUnitTypeByUnitSystemNUnitName(String unitSystem, String unitName) {
+        if(Character.isDigit(unitName.charAt(0)) && SIGNED_DOUBLE_VALUE_REGEX_PATTERN.matcher(unitName).matches()){
+            return UNIT_TYPE.NUMBER;
+        }
         return repositoryWithDualKeyNCategory.getItem(unitSystem.toLowerCase(), unitName.toLowerCase());
     }
     /**
@@ -80,11 +84,9 @@ public class FundamentalUnitsDataModel extends BaseDataModel<String, Fundamental
     public boolean containsUnitSystem(String unitSystem) {
         return repositoryWithDualKeyNCategory.containsCategory(unitSystem.toLowerCase());
     }
-
     public boolean containsUnitNameInUnitSystem(String unitSystem, String unitName) {
         return repositoryWithDualKeyNCategory.containsKeyInCategory(unitSystem.toLowerCase(), unitName.toLowerCase());
     }
-
     public boolean containsUnitName(String unitName) {
         return repositoryWithDualKeyNCategory.containsKey(unitName.toLowerCase());
     }
@@ -127,7 +129,15 @@ public class FundamentalUnitsDataModel extends BaseDataModel<String, Fundamental
                     DimensionOperators.alterExponentOfDimensionItem(fundamentalUnitMap, unitType, componentUnitExponent * recursedFundUnitMap.get(unitType));
 
             } else {
-                DimensionOperators.alterExponentOfDimensionItem(fundamentalUnitMap, componentUnit.getBaseUnit().getUnitType(), componentUnitExponent);
+                if(componentUnit.getBaseUnit().getUnitType() == UNIT_TYPE.NUMBER){
+                    // A number raised to whatever power is still just a number, there no need ot increase the unit type exponent...
+                    if(!fundamentalUnitMap.containsKey(UNIT_TYPE.NUMBER)) {
+                        DimensionOperators.alterExponentOfDimensionItem(fundamentalUnitMap, componentUnit.getBaseUnit().getUnitType(), 1.0);
+                    }
+                }
+                else {
+                    DimensionOperators.alterExponentOfDimensionItem(fundamentalUnitMap, componentUnit.getBaseUnit().getUnitType(), componentUnitExponent);
+                }
             }
         }
 
@@ -142,6 +152,40 @@ public class FundamentalUnitsDataModel extends BaseDataModel<String, Fundamental
             componentUnitsDimension.put(getUnitNameByUnitSystemNUnitType(unitSystem, entry.getKey()), entry.getValue());
 
         return componentUnitsDimension;
+    }
+
+    ///
+
+    /**
+     * Returns the appropriate derived type when there are multiple component units or the fundamental unit type when
+     * there is only one component unit. Even if the unit is determined to be derived that does not necessarily mean that it is entirely 'known'
+     * within the context of the units data model since its base unit may be unknown or any one of its component units may also be unknown.
+     */
+    public FundamentalUnitsDataModel.UNIT_TYPE determineUnitType(Unit unit) {
+        DimensionOperators.DIMENSION_TYPE unitDimensionType = unit.getDimensionType() != DimensionOperators.DIMENSION_TYPE.UNKNOWN ? unit.getDimensionType(): DimensionOperators.determineDimensionType(unit.getComponentUnitsDimension());
+
+        if (unitDimensionType != DimensionOperators.DIMENSION_TYPE.SIMPLE) {
+            return UNIT_TYPE.COMPLEX;
+        }
+        else if (unit.getBaseUnit() != null && !unit.getComponentUnitsDimension().isEmpty()) //If base unit is available it might provide some insight into some properties.
+        {
+            FundamentalUnitsDataModel.UNIT_TYPE type = getUnitTypeByUnitSystemNUnitName(unit.getBaseUnit().getUnitSystem()
+                    , unit.getBaseUnit().getName());
+
+            if (type == null)
+            {
+                type = unit.getBaseUnit().getUnitType();
+                if (type != FundamentalUnitsDataModel.UNIT_TYPE.UNKNOWN) {
+                    return type;
+                } else { //If still unknown, then try using the singular component unit.
+                    Unit componentUnit = unitsDataModel.getUnitsContentMainRetriever().getUnit(unit.getComponentUnitsDimension().keySet().iterator().next());
+                    if(componentUnit != null)
+                        return componentUnit.getUnitType();
+                }
+            }
+            return type;
+        }
+        return FundamentalUnitsDataModel.UNIT_TYPE.UNKNOWN;
     }
 
     ///

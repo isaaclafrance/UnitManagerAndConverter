@@ -35,11 +35,12 @@ public class DecimalToMixedFractionFormatter implements IFormatter {
     }
 
     ///
-    @Override
+
     /**
      * Produces a new formatted text where each instance of a double is transformed into mixed fraction representation (i.e. "2 1/3", "5/6", etc ).
      * If there are no suitable instances, then the string is returned as is.
      */
+    @Override
     public String format(String textWithDoubles) {
         String formattedDecimal = textWithDoubles;
 
