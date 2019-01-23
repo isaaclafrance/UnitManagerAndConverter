@@ -32,18 +32,15 @@ public class FundamentalUnitTypesDimensionSerializerTest {
         fundamentalUnitDimension.put(UNIT_TYPE.LENGTH, 2.0);
 
         //
-        IFormatter mockFormatter = mock(IFormatter.class);
-        when(mockFormatter.format(anyString())).thenAnswer(returnsFirstArg());
-
         Locale locale = Locale.ENGLISH;
-        FundamentalUnitTypesDimensionItemSerializer componentUnitsDimensionItemSerializer = new FundamentalUnitTypesDimensionItemSerializer(locale, mockFormatter);
-        FundamentalUnitTypesDimensionSerializer fundamentalUnitTyesDimensionSerializer = new FundamentalUnitTypesDimensionSerializer(locale, componentUnitsDimensionItemSerializer);
-        fundamentalUnitTyesDimensionSerializer.setOperatorDisplayConfiguration(DimensionSerializerBuilder.OPERATOR_DISPLAY_CONFIGURATION.NO_DIVISION);
-        fundamentalUnitTyesDimensionSerializer.setIncludeParenthesesInExponentials(true);
+        FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer = new FundamentalUnitTypesDimensionSerializer(locale);
+        fundamentalUnitTypesDimensionSerializer.setOperatorDisplayConfiguration(DimensionSerializerBuilder.OPERATOR_DISPLAY_CONFIGURATION.NO_DIVISION);
+        fundamentalUnitTypesDimensionSerializer.setIncludeParenthesesInExponentials(true);
+        fundamentalUnitTypesDimensionSerializer.setIncludeSpaceAfterOperator(true);
 
         //
         for(Map.Entry<String, Map<UNIT_TYPE, Double>> unitTypesDefinitionEntry:fundamentalUnitDimensionByUnitTypeDefinitionMap.entrySet()){
-            String serializedUnitTypesDefinition = fundamentalUnitTyesDimensionSerializer.serialize(unitTypesDefinitionEntry.getValue());
+            String serializedUnitTypesDefinition = fundamentalUnitTypesDimensionSerializer.serialize(unitTypesDefinitionEntry.getValue());
 
             assertEquals(String.format("Expected parsed unit types definition dimension not correct. Input unit types definition dimension: %s. "
                             + "Expected unit types definition string %s. Constructed unit definition string: %s."
@@ -71,14 +68,11 @@ public class FundamentalUnitTypesDimensionSerializerTest {
         fundamentalUnitTypesDimension.put(UNIT_TYPE.LENGTH, 3.0);
 
         //
-        IFormatter mockFormatter = mock(IFormatter.class);
-        when(mockFormatter.format(anyString())).thenAnswer(returnsFirstArg());
-
         Locale locale = Locale.ENGLISH;
-        FundamentalUnitTypesDimensionItemSerializer fundamentalUnitTypesDimensionItemSerializer = new FundamentalUnitTypesDimensionItemSerializer(locale, mockFormatter);
-        FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer = new FundamentalUnitTypesDimensionSerializer(locale, fundamentalUnitTypesDimensionItemSerializer);
+        FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer = new FundamentalUnitTypesDimensionSerializer(locale);
         fundamentalUnitTypesDimensionSerializer.setOperatorDisplayConfiguration(DimensionSerializerBuilder.OPERATOR_DISPLAY_CONFIGURATION.NO_DIVISION);
         fundamentalUnitTypesDimensionSerializer.setIncludeParenthesesInExponentials(false);
+        fundamentalUnitTypesDimensionSerializer.setIncludeSpaceAfterOperator(true);
 
         //
         for(Map.Entry<String, Map<UNIT_TYPE, Double>> unitTypesDefinitionEntry:fundamentalUnitTypesDimensionByUnitTypeDefinitionMap.entrySet()){
@@ -115,14 +109,11 @@ public class FundamentalUnitTypesDimensionSerializerTest {
         fundamentalUnitTypesDimension.put(UNIT_TYPE.LENGTH, -2.0);
 
         //
-        IFormatter mockFormatter = mock(IFormatter.class);
-        when(mockFormatter.format(anyString())).thenAnswer(returnsFirstArg());
-
         Locale locale = Locale.ENGLISH;
-        FundamentalUnitTypesDimensionItemSerializer fundamentalUnitTypesDimensionItemSerializer = new FundamentalUnitTypesDimensionItemSerializer(locale, mockFormatter);
-        FundamentalUnitTypesDimensionSerializer fundamentalUnitsTypesDimensionSerializer = new FundamentalUnitTypesDimensionSerializer(locale, fundamentalUnitTypesDimensionItemSerializer);
+        FundamentalUnitTypesDimensionSerializer fundamentalUnitsTypesDimensionSerializer = new FundamentalUnitTypesDimensionSerializer(locale);
         fundamentalUnitsTypesDimensionSerializer.setOperatorDisplayConfiguration(DimensionSerializerBuilder.OPERATOR_DISPLAY_CONFIGURATION.NO_DIVISION);
         fundamentalUnitsTypesDimensionSerializer.setOrderDimensionItemsByExponentialValue(true);
+        fundamentalUnitsTypesDimensionSerializer.setIncludeSpaceAfterOperator(true);
 
         //
         for(Map.Entry<String, Map<UNIT_TYPE, Double>> unitTypeDefinitionEntry:fundamentalUnitTypesDimensionByUnitTypesDefinitionMap.entrySet()){
@@ -163,10 +154,10 @@ public class FundamentalUnitTypesDimensionSerializerTest {
         when(mockFormatter.format(anyString())).thenAnswer(returnsFirstArg());
 
         Locale locale = Locale.ENGLISH;
-        FundamentalUnitTypesDimensionItemSerializer fundamentalUnitTypesDimensionItemSerializer = new FundamentalUnitTypesDimensionItemSerializer(locale, mockFormatter);
-        FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer = new FundamentalUnitTypesDimensionSerializer(locale, fundamentalUnitTypesDimensionItemSerializer);
+        FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer = new FundamentalUnitTypesDimensionSerializer(locale);
         fundamentalUnitTypesDimensionSerializer.setOperatorDisplayConfiguration(DimensionSerializerBuilder.OPERATOR_DISPLAY_CONFIGURATION.DIVISION_PER_NEGATIVE_EXPONENT);
         fundamentalUnitTypesDimensionSerializer.setOrderDimensionItemsByExponentialValue(true);
+        fundamentalUnitTypesDimensionSerializer.setIncludeSpaceAfterOperator(true);
 
         //
         for(Map.Entry<String, Map<UNIT_TYPE, Double>> unitTypesDefinitionEntry:fundamentalUnitTypesDimensionByUnitTypesDefinitionMap.entrySet()){
@@ -203,14 +194,11 @@ public class FundamentalUnitTypesDimensionSerializerTest {
         fundamentalUnitTypesDimension.put(UNIT_TYPE.LENGTH, -2.0);
 
         //
-        IFormatter mockFormatter = mock(IFormatter.class);
-        when(mockFormatter.format(anyString())).thenAnswer(returnsFirstArg());
-
         Locale locale = Locale.ENGLISH;
-        FundamentalUnitTypesDimensionItemSerializer componentUnitsDimensionItemSerializer = new FundamentalUnitTypesDimensionItemSerializer(locale, mockFormatter);
-        FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer = new FundamentalUnitTypesDimensionSerializer(locale, componentUnitsDimensionItemSerializer);
+        FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer = new FundamentalUnitTypesDimensionSerializer(locale);
         fundamentalUnitTypesDimensionSerializer.setOperatorDisplayConfiguration(DimensionSerializerBuilder.OPERATOR_DISPLAY_CONFIGURATION.SINGLE_DIVISION);
         fundamentalUnitTypesDimensionSerializer.setOrderDimensionItemsByExponentialValue(true);
+        fundamentalUnitTypesDimensionSerializer.setIncludeSpaceAfterOperator(true);
 
         //
         for(Map.Entry<String, Map<UNIT_TYPE, Double>> unitTypeDefinitionEntry:fundamentalUnitTypesDimensionByUnitTypesDefinitionMap.entrySet()){

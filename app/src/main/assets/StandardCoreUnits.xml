@@ -13,7 +13,7 @@
 	   	<unitDescription>A measurement of a plane angle, defined so that a full rotation is 360 degrees</unitDescription>
 	    <componentUnits>
 	        <component>
-	            <unitName>radian</unitName>
+	            <unitName>degree</unitName>
 	            <exponent>1.0f</exponent>
 	        </component>
 	    </componentUnits>
@@ -31,8 +31,8 @@
 	    <unitDescription>Describes the plane angle subtended by a circular arc as the length of the arc divided by the radius of the arc</unitDescription>   
 	    <componentUnits>
 	        <component>
-	            <unitName>meter</unitName>
-	            <exponent>0.0f</exponent>
+	            <unitName>radian</unitName>
+	            <exponent>1.0f</exponent>
 	        </component>
 	    </componentUnits>
 	    <baseConversionPolyCoeffs>
@@ -775,6 +775,42 @@
 		</componentUnits>
 		<baseConversionPolyCoeffs>
 			<baseUnit>euro</baseUnit>
+			<polynomialCoeffs>1.0 0.0</polynomialCoeffs>
+		</baseConversionPolyCoeffs>
+	</unit>
+
+	<unit>
+		<unitName>mole</unitName>
+		<unitSystem>si</unitSystem>
+		<abbreviation>mol</abbreviation>
+		<unitCategory>amount_of_substance</unitCategory>
+		<unitDescription>The mole is defined as the amount of a chemical substance that contains exactly 6.02214076×10^23 (Avogadro's constant) constitutive particles, e.g., atoms, molecules, ions or electrons.</unitDescription>
+		<componentUnits>
+			<component>
+				<unitName>mole</unitName>
+				<exponent>1.0f</exponent>
+			</component>
+		</componentUnits>
+		<baseConversionPolyCoeffs>
+			<baseUnit>mole</baseUnit>
+			<polynomialCoeffs>1.0 0.0</polynomialCoeffs>
+		</baseConversionPolyCoeffs>
+	</unit>
+
+	<unit>
+		<unitName>1</unitName>
+		<unitSystem>dimless</unitSystem>
+		<abbreviation>1</abbreviation>
+		<unitCategory>number</unitCategory>
+		<unitDescription>One, sometimes referred to as unity, is the first non-zero natural number. It is thus the integer before two and after zero, and the first positive odd number.</unitDescription>
+		<componentUnits>
+			<component>
+				<unitName>1</unitName>
+				<exponent>1.0f</exponent>
+			</component>
+		</componentUnits>
+		<baseConversionPolyCoeffs>
+			<baseUnit>1</baseUnit>
 			<polynomialCoeffs>1.0 0.0</polynomialCoeffs>
 		</baseConversionPolyCoeffs>
 	</unit>

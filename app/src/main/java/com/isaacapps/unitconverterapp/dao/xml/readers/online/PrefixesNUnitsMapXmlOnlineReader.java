@@ -214,7 +214,7 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
                 e.printStackTrace();
             }
             partiallyConstructedUnit.setCoreUnitState(true);
-            TODO:fetchWikiUnitDescription(partiallyConstructedUnit);
+            fetchWikiUnitDescription(partiallyConstructedUnit);
         }
         /*A separate iteration is necessary to clean the raw abbreviation since unit since processing in the previous iteration
          * requires all units have the raw abbreviation in order for them to be referenced correctly.

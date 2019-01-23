@@ -1,6 +1,8 @@
 package com.isaacapps.unitconverterapp.processors.parsers.dimension.fundamentalunits;
 
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.FundamentalUnitsDataModel.UNIT_TYPE;
+import com.isaacapps.unitconverterapp.processors.formatters.numbers.RoundingFormatter;
+import com.isaacapps.unitconverterapp.processors.formatters.text.GeneralTextFormatter;
 import com.isaacapps.unitconverterapp.processors.operators.dimensions.DimensionOperators;
 import com.isaacapps.unitconverterapp.processors.parsers.ParsingException;
 
@@ -8,6 +10,7 @@ import org.junit.Test;
 
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import static junit.framework.Assert.assertTrue;
@@ -79,7 +82,8 @@ public class FundamentalUnitTypesDimensionParserTest {
         fundamentalUnitTypeDimension.put(UNIT_TYPE.TEMPERATURE, 1.0);
 
         //
-        FundamentalUnitTypesDimensionParser fundamentalUnitTypesDimensionParser = new FundamentalUnitTypesDimensionParser();
+        Locale locale = Locale.ENGLISH;
+        FundamentalUnitTypesDimensionParser fundamentalUnitTypesDimensionParser = new FundamentalUnitTypesDimensionParser(locale);
         fundamentalUnitTypesDimensionParser.setStrictParsing(true);
 
         //
@@ -116,7 +120,8 @@ public class FundamentalUnitTypesDimensionParserTest {
         unitComponentDimension.put(UNIT_TYPE.TIME, -2.0);
 
         //
-        FundamentalUnitTypesDimensionParser fundamentalUnitTypesDimensionParser = new FundamentalUnitTypesDimensionParser();
+        Locale locale = Locale.ENGLISH;
+        FundamentalUnitTypesDimensionParser fundamentalUnitTypesDimensionParser = new FundamentalUnitTypesDimensionParser(locale);
         fundamentalUnitTypesDimensionParser.setStrictParsing(false);
 
         //
@@ -127,14 +132,14 @@ public class FundamentalUnitTypesDimensionParserTest {
             assertTrue(String.format("Expected parsed unit definition dimension not correct. Input unit definition string %s. "
                             + "Expected unit definition dimension: %s. Parsed unit definition dimension: %s."
                     , unitDefinitionEntry.getKey() , unitDefinitionEntry.getValue().toString()
-                    , parsedUnitComponentDimensionResult).toString()
+                    , parsedUnitComponentDimensionResult)
                     , DimensionOperators.equalsDimension(parsedUnitComponentDimensionResult, unitDefinitionEntry.getValue()));
         }
     }
 
     @Test(expected = ParsingException.class)
     public void parseToFundamentalUnitTypesDimensionFromString_Should_Throw_ParsingException_When_Strict_Parsing_True() throws ParsingException {
-        FundamentalUnitTypesDimensionParser fundamentalUnitTypesDimensionParser = new FundamentalUnitTypesDimensionParser();
+        FundamentalUnitTypesDimensionParser fundamentalUnitTypesDimensionParser = new FundamentalUnitTypesDimensionParser(Locale.ENGLISH);
 
         fundamentalUnitTypesDimensionParser.setStrictParsing(true);
 

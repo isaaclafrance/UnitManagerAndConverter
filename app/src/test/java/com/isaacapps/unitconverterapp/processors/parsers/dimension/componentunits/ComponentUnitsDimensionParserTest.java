@@ -7,6 +7,7 @@ import com.isaacapps.unitconverterapp.processors.parsers.ParsingException;
 import org.junit.Test;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import static junit.framework.Assert.assertTrue;
@@ -81,7 +82,8 @@ public class ComponentUnitsDimensionParserTest {
         unitComponentDimension.put("someotherthing", 1.0);
 
         //
-        ComponentUnitsDimensionParser componentUnitsDimensionParser = new ComponentUnitsDimensionParser();
+        Locale locale = Locale.ENGLISH;
+        ComponentUnitsDimensionParser componentUnitsDimensionParser = new ComponentUnitsDimensionParser(locale);
         componentUnitsDimensionParser.setStrictParsing(true);
 
         //
@@ -117,7 +119,8 @@ public class ComponentUnitsDimensionParserTest {
         unitComponentDimension.put("second", -2.0);
 
         //
-        ComponentUnitsDimensionParser componentUnitsDimensionParser = new ComponentUnitsDimensionParser();
+        Locale locale = Locale.ENGLISH;
+        ComponentUnitsDimensionParser componentUnitsDimensionParser = new ComponentUnitsDimensionParser(locale);
         componentUnitsDimensionParser.setStrictParsing(false);
 
         //
@@ -137,7 +140,7 @@ public class ComponentUnitsDimensionParserTest {
     public void parseToComponentUnitsDimensionFromString_Should_Throw_ParsingException_When_Strict_Parsing_True()
             throws ParsingException {
 
-        ComponentUnitsDimensionParser componentUnitsDimensionParser = new ComponentUnitsDimensionParser();
+        ComponentUnitsDimensionParser componentUnitsDimensionParser = new ComponentUnitsDimensionParser(Locale.ENGLISH);
 
         componentUnitsDimensionParser.setStrictParsing(true);
 

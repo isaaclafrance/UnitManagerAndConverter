@@ -31,14 +31,11 @@ public class ComponentUnitsDimensionSerializerTest {
         unitComponentDimension.put("meter", 2.0);
 
         //
-        IFormatter mockFormatter = mock(IFormatter.class);
-        when(mockFormatter.format(anyString())).thenAnswer(returnsFirstArg());
-
         Locale locale = Locale.ENGLISH;
-        ComponentUnitsDimensionItemSerializer componentUnitsDimensionItemSerializer = new ComponentUnitsDimensionItemSerializer(locale, mockFormatter);
-        ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer = new ComponentUnitsDimensionSerializer(locale, componentUnitsDimensionItemSerializer);
+        ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer = new ComponentUnitsDimensionSerializer(locale);
         componentUnitsDimensionSerializer.setOperatorDisplayConfiguration(DimensionSerializerBuilder.OPERATOR_DISPLAY_CONFIGURATION.NO_DIVISION);
         componentUnitsDimensionSerializer.setIncludeParenthesesInExponentials(true);
+        componentUnitsDimensionSerializer.setIncludeSpaceAfterOperator(true);
 
         //
         for(Map.Entry<String, Map<String, Double>> unitDefinitionEntry:unitComponentDimensionByUnitDefinitionMap.entrySet()){
@@ -71,14 +68,11 @@ public class ComponentUnitsDimensionSerializerTest {
         unitComponentDimension.put("meter", 3.0);
 
         //
-        IFormatter mockFormatter = mock(IFormatter.class);
-        when(mockFormatter.format(anyString())).thenAnswer(returnsFirstArg());
-
         Locale locale = Locale.ENGLISH;
-        ComponentUnitsDimensionItemSerializer componentUnitsDimensionItemSerializer = new ComponentUnitsDimensionItemSerializer(locale, mockFormatter);
-        ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer = new ComponentUnitsDimensionSerializer(locale, componentUnitsDimensionItemSerializer);
+        ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer = new ComponentUnitsDimensionSerializer(locale);
         componentUnitsDimensionSerializer.setOperatorDisplayConfiguration(DimensionSerializerBuilder.OPERATOR_DISPLAY_CONFIGURATION.NO_DIVISION);
         componentUnitsDimensionSerializer.setIncludeParenthesesInExponentials(false);
+        componentUnitsDimensionSerializer.setIncludeSpaceAfterOperator(true);
 
         //
         for(Map.Entry<String, Map<String, Double>> unitDefinitionEntry:unitComponentDimensionByUnitDefinitionMap.entrySet()){
@@ -115,14 +109,11 @@ public class ComponentUnitsDimensionSerializerTest {
         unitComponentDimension.put("meter", -2.0);
 
         //
-        IFormatter mockFormatter = mock(IFormatter.class);
-        when(mockFormatter.format(anyString())).thenAnswer(returnsFirstArg());
-
         Locale locale = Locale.ENGLISH;
-        ComponentUnitsDimensionItemSerializer componentUnitsDimensionItemSerializer = new ComponentUnitsDimensionItemSerializer(locale, mockFormatter);
-        ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer = new ComponentUnitsDimensionSerializer(locale, componentUnitsDimensionItemSerializer);
+        ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer = new ComponentUnitsDimensionSerializer(locale);
         componentUnitsDimensionSerializer.setOperatorDisplayConfiguration(DimensionSerializerBuilder.OPERATOR_DISPLAY_CONFIGURATION.NO_DIVISION);
         componentUnitsDimensionSerializer.setOrderDimensionItemsByExponentialValue(true);
+        componentUnitsDimensionSerializer.setIncludeSpaceAfterOperator(true);
 
         //
         for(Map.Entry<String, Map<String, Double>> unitDefinitionEntry:unitComponentDimensionByUnitDefinitionMap.entrySet()){
@@ -159,14 +150,11 @@ public class ComponentUnitsDimensionSerializerTest {
         unitComponentDimension.put("meter", -2.0);
 
         //
-        IFormatter mockFormatter = mock(IFormatter.class);
-        when(mockFormatter.format(anyString())).thenAnswer(returnsFirstArg());
-
         Locale locale = Locale.ENGLISH;
-        ComponentUnitsDimensionItemSerializer componentUnitsDimensionItemSerializer = new ComponentUnitsDimensionItemSerializer(locale, mockFormatter);
-        ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer = new ComponentUnitsDimensionSerializer(locale, componentUnitsDimensionItemSerializer);
+        ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer = new ComponentUnitsDimensionSerializer(locale);
         componentUnitsDimensionSerializer.setOperatorDisplayConfiguration(DimensionSerializerBuilder.OPERATOR_DISPLAY_CONFIGURATION.DIVISION_PER_NEGATIVE_EXPONENT);
         componentUnitsDimensionSerializer.setOrderDimensionItemsByExponentialValue(true);
+        componentUnitsDimensionSerializer.setIncludeSpaceAfterOperator(true);
 
         //
         for(Map.Entry<String, Map<String, Double>> unitDefinitionEntry:unitComponentDimensionByUnitDefinitionMap.entrySet()){
@@ -203,14 +191,11 @@ public class ComponentUnitsDimensionSerializerTest {
         unitComponentDimension.put("meter", -2.0);
 
         //
-        IFormatter mockFormatter = mock(IFormatter.class);
-        when(mockFormatter.format(anyString())).thenAnswer(returnsFirstArg());
-
         Locale locale = Locale.ENGLISH;
-        ComponentUnitsDimensionItemSerializer componentUnitsDimensionItemSerializer = new ComponentUnitsDimensionItemSerializer(locale, mockFormatter);
-        ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer = new ComponentUnitsDimensionSerializer(locale, componentUnitsDimensionItemSerializer);
+        ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer = new ComponentUnitsDimensionSerializer(locale);
         componentUnitsDimensionSerializer.setOperatorDisplayConfiguration(DimensionSerializerBuilder.OPERATOR_DISPLAY_CONFIGURATION.SINGLE_DIVISION);
         componentUnitsDimensionSerializer.setOrderDimensionItemsByExponentialValue(true);
+        componentUnitsDimensionSerializer.setIncludeSpaceAfterOperator(true);
 
         //
         for(Map.Entry<String, Map<String, Double>> unitDefinitionEntry:unitComponentDimensionByUnitDefinitionMap.entrySet()){

@@ -72,7 +72,7 @@ public class DimensionOperatorsTest {
             assertTrue(String.format("Dimension maps incorrectly not equal. Map1:%s, Map2:%s."
                     , firstDimensionMap.toString()
                     , secondDimensionMap.toString())
-                    , equalsDimension(firstDimensionMap, dimensionMap, 0.00001));
+                    , equalsDimension(firstDimensionMap, dimensionMap));
         }
     }
 
@@ -121,7 +121,7 @@ public class DimensionOperatorsTest {
                     , firstDimensionMap.toString()
                     , secondDimensionMap.toString())
                     , equalsDimension(firstDimensionMap
-                            , dimensionMap, 0.00001));
+                            , dimensionMap));
         }
     }
 
