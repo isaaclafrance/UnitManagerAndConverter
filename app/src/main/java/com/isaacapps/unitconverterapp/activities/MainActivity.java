@@ -117,8 +117,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     private UnitNamesGroupingFormatter unitNamesGroupingFormatter;
     private ValuesGroupingFormatter valuesGroupingFormatter;
     private IFormatter overallValuesGroupingFormatter;
-    private IFormatter conversionRoundingFormatter;
-    private IFormatter conversionCurrencyFormatter;
+    private RoundingFormatter conversionRoundingFormatter;
+    private CurrencyFormatter conversionCurrencyFormatter;
     private IFormatter sourceValueFormatter;
 
     private Button sourceUnitBrowseButton;
@@ -496,6 +496,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         sourceUnitViewInfoButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
+                checkUnits();
                 setSourceUnitsIntoQuantity();
 
                 unitInfoDialog.setTitle(SOURCE_NAME + " Unit(s) Details");
@@ -507,6 +508,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         targetUnitViewInfoButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
+                checkUnits();
                 setTargetUnitIntoQuantity();
 
                 unitInfoDialog.setTitle(TARGET_NAME + " Unit(s) Details");
@@ -583,7 +585,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 
         detailsBuilder.append("-------------").append("\n");
         if(!fundamentalTypesDimension.isEmpty())
-            detailsBuilder.append("FUNDAMENTAL TYPES DIMENSION: ").append(fundamentalTypesDimension).append("\n");
+            detailsBuilder.append("FUNDAMENTAL TYPES DIMENSION: ").append(fundamentalTypesDimension).append("\n\n");
         if(!groupRepresentativeUnit.getCategory().equalsIgnoreCase(fundamentalTypesDimension)) //Prevent display of duplicate data in case of complex units
             detailsBuilder.append("CATEGORY: ").append(groupRepresentativeUnit.getCategory()).append("\n");
     }
@@ -857,13 +859,15 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
             Locale guessedLocale = CurrencyFormatter.guessCurrencyLocaleBasedOnCode(targetQuantity.getLargestUnit().getAbbreviation());
             if(guessedLocale != null) {
                 conversionCurrencyFormatter.setLocale(guessedLocale);
-                return conversionCurrencyFormatter.format(rawConversionValue);
             }
-            else{
-                return conversionRoundingFormatter.format(rawConversionValue);
-            }
+            return conversionCurrencyFormatter.format(rawConversionValue);
         }
         else{
+            double rawConversionValueNumber = Double.parseDouble(quantityGroupingDefiner.removeGroupingSymbol(rawConversionValue));
+            double decimalPlaces = Math.log10(rawConversionValueNumber);
+            decimalPlaces = (decimalPlaces < 0 ? Math.abs(decimalPlaces):0) + 4;
+
+            conversionRoundingFormatter.setNumOfDecimalPlaces((int)decimalPlaces);
             return conversionRoundingFormatter.format(rawConversionValue);
         }
     }
@@ -873,7 +877,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     public Loader<UnitManagerBuilder> onCreateLoader(int id, Bundle arg1) {
         switch (id) {
             case STANDARD_CORE_LOCAL_UNITS_LOADER:
-                Toast.makeText(this, "Loading Standard Core Local Units...", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Loading Fast Standard Core Local Units...", Toast.LENGTH_SHORT).show();
                 return new StandardCoreUnitsMapXmlLocalReader(this, this.locale, this.componentUnitsDimensionSerializer, this.fundamentalUnitTypesDimensionSerializer, this.componentUnitsDimensionParser.getDimensionParserBuilder().getDimensionComponentDefiner());
             case NON_STANDARD_LOCAL_UNITS_LOADER:
                 Toast.makeText(this, "Loading Regular Local Units...", Toast.LENGTH_LONG).show();

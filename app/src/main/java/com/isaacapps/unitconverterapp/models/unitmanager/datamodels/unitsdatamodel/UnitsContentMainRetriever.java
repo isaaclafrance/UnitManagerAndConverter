@@ -3,6 +3,7 @@ package com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamo
 import com.isaacapps.unitconverterapp.models.measurables.unit.PrefixedUnit;
 import com.isaacapps.unitconverterapp.models.measurables.unit.Unit;
 import com.isaacapps.unitconverterapp.models.measurables.unit.UnitException;
+import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.PrefixesDataModel;
 import com.isaacapps.unitconverterapp.processors.formatters.IFormatter;
 import com.isaacapps.unitconverterapp.processors.parsers.dimension.componentunits.ComponentUnitsDimensionParser;
 import com.isaacapps.unitconverterapp.processors.parsers.generaltext.PluralTextParser;
@@ -86,9 +87,9 @@ public class UnitsContentMainRetriever {
 
         //Determine if the name has any prefix and a valid unit name part.
         if (!hasComplexDimension) {
-            Collection<String[]> prefixMatches = unitsDataModel.getUnitManagerContext().getPrefixesDataModel().findPrefixPairMatches(unformattedUnitName, true);
-            if(!prefixMatches.isEmpty())
-                return createNewPrefixedUnit(prefixMatches.iterator().next());
+            String[] prefixMatches = unitsDataModel.getUnitManagerContext().getPrefixesDataModel().findFirstPrefixPairMatches(unformattedUnitName, true);
+            if(prefixMatches != PrefixesDataModel.NO_PREFIX_MATCH_ARRAY)
+                return createNewPrefixedUnit(prefixMatches);
             else
                 return getUnknownUnit();
         }

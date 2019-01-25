@@ -335,7 +335,7 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
     private Unit createMissingPrefixedUnitFromCandidateName(String candidatePrefixedAbbreviatedName) throws ParsingException, SerializingException, UnitException {
         Unit createdPrefixedUnit = null;
 
-        Collection<String[]> prefixMatches = prefixesDataModel.findPrefixPairMatches(candidatePrefixedAbbreviatedName, false);
+        Collection<String[]> prefixMatches = prefixesDataModel.findAllPrefixPairMatches(candidatePrefixedAbbreviatedName, false);
         for(String[] prefixMatch:prefixMatches){
             Unit prefixlessUnit = getUnitFromAbbreviatedName(prefixMatch[2], false);
 
@@ -395,9 +395,9 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
             if (bestPageExtract.hasContent()){
                 String extractText = bestPageExtract.getExtractText();
                 String reference = bestPageExtract.getWikipediaReferenceUrl();
-                String unitDescription = String.format("%s \n[[Source of Extract: %s]]", extractText, reference);
+                String unitDescription = String.format("%s\n\n[[Source of Extract: %s]]", extractText, reference);
 
-                partiallyConstructedUnit.setDescription(String.format("%s \n(%s)", unitDescription, partiallyConstructedUnit.getDescription()));
+                partiallyConstructedUnit.setDescription(String.format("%s \n\n(%s)", unitDescription, partiallyConstructedUnit.getDescription()));
             }
         }
         catch(Exception e){
