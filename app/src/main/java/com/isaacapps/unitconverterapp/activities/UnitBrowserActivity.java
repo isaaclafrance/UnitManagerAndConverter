@@ -109,6 +109,11 @@ public class UnitBrowserActivity extends Activity {
     private void populateUnitCategoryFilteringTokens(){
         unitCategoryFilteringTokens = new ArrayList<>();
         unitCategoryFilteringTokens.add(Unit.UNKNOWN_UNIT_CATEGORY);
+        unitCategoryFilteringTokens.add("biologic");
+        unitCategoryFilteringTokens.add("(unclassified)");
+        unitCategoryFilteringTokens.add("procedure defined");
+        unitCategoryFilteringTokens.add("amount of");
+
     }
     private void populateQuickDimFilters(){
         quickDimensionFilters = new TreeMap<>();
@@ -381,11 +386,11 @@ public class UnitBrowserActivity extends Activity {
         } else {
             String dimFilterUnitCategoryToken = getSingularUnitCategoryTokenBasedOnQuickDimFilterSelection();
 
-            Collection<String> unformattedInitialUnitCategories;
+            Collection<String> unformattedInitialUnitCategories = new ArrayList<>();
             if(unitSystemSpinnerSelection.equalsIgnoreCase(ANY_UNIT_SYSTEM)) {
-                unformattedInitialUnitCategories = pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().getAllUnitCategories();
+                unformattedInitialUnitCategories.addAll(pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().getAllUnitCategories());
             } else {
-                unformattedInitialUnitCategories = pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().getUnitCategoriesInUnitSystem(unitSystemSpinnerSelection);
+                unformattedInitialUnitCategories.addAll(pSharablesApplication.getUnitManager().getUnitsClassifierDataModel().getUnitCategoriesInUnitSystem(unitSystemSpinnerSelection));
             }
 
             for (String unitCategory : unformattedInitialUnitCategories) {
@@ -590,8 +595,10 @@ public class UnitBrowserActivity extends Activity {
             String filterCandidate = filterableItemsIterator.next();
 
             for(String filterToken:filterTokens) {
-                if (filterCandidate.contains(filterToken))
+                if (filterCandidate.contains(filterToken)) {
                     filterableItemsIterator.remove();
+                    break;
+                }
             }
         }
     }
