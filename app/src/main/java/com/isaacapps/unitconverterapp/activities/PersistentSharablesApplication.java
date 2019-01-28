@@ -48,15 +48,7 @@ public class PersistentSharablesApplication extends Application {
                     .getUnitsContentMainRetriever().getDynamicUnits());
 
             return true;
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        } catch (IllegalStateException e) {
-            e.printStackTrace();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (XmlPullParserException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (Exception e){
             e.printStackTrace();
         }
         return false;
@@ -64,15 +56,7 @@ public class PersistentSharablesApplication extends Application {
     public void saveConversionFavorites() {
         try {
             new ConversionFavoritesLocalXmlWriter(getApplicationContext()).saveToXML(unitManager.getConversionFavoritesDataModel());
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        } catch (IllegalStateException e) {
-            e.printStackTrace();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (XmlPullParserException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (Exception e){
             e.printStackTrace();
         }
     }
@@ -95,8 +79,7 @@ public class PersistentSharablesApplication extends Application {
     }
     public boolean updateUnitManager(){
         try {
-            unitManagerBuilder.updateContent(unitManager);
-            return true;
+            return unitManagerBuilder.updateContent(unitManager);
         }
         catch (Exception e){
             e.printStackTrace();

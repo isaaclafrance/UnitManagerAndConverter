@@ -2,6 +2,8 @@ package com.isaacapps.unitconverterapp.models.unitmanager.datamodels.unitsdatamo
 
 import com.isaacapps.unitconverterapp.models.measurables.unit.Unit;
 import com.isaacapps.unitconverterapp.models.unitmanager.datamodels.FundamentalUnitsDataModel;
+import com.isaacapps.unitconverterapp.processors.formatters.ChainedFormatter;
+import com.isaacapps.unitconverterapp.processors.formatters.IFormatter;
 import com.isaacapps.unitconverterapp.processors.operators.dimensions.DimensionOperators;
 import com.isaacapps.unitconverterapp.processors.operators.measurables.units.UnitOperators;
 
@@ -177,7 +179,6 @@ public class UnitsContentQuerier {
             boolean rhsUnitFullNameContains = rhsUnit.getName().contains(providedName);
             boolean rhsUnitAbbreviationContains = rhsUnit.getAbbreviation().contains(providedName);
 
-
             /*Only select the abbreviation significance ratio if the length of provided name is less than the length of the abbreviation,
              *otherwise the Full Name significance is utilized.This is to ensure that abbreviation significance take precedence
              *when the length of the provided name is closer to the length of the available abbreviations.
@@ -215,11 +216,10 @@ public class UnitsContentQuerier {
 
             int prefSigRatioCompareToResult = -1 * Double.compare(preferredLhsSignificanceRatio, preferredRhsSignificanceRatio);
             if(prefSigRatioCompareToResult == 0){
-                return Integer.compare(lhsDistanceFromStart, rhsDistanceFromStart); // Ratio are the same, then subsequence closer to the beginning is preferred.
+                return Integer.compare(lhsDistanceFromStart, rhsDistanceFromStart); //If significance ratios are the same, then subsequence closer to the beginning is preferred.
             }else{
                 return prefSigRatioCompareToResult;
             }
-
         }
     }
     /**
@@ -227,6 +227,7 @@ public class UnitsContentQuerier {
      */
     public SortedSet<Unit> queryUnitsOrderedBySimilarNames(final String providedName) {
         //TODO: Incorporate the levenshtein distance algorithm, soundex, metaphone ????
+        //TODO: A Trie data structure may actually make more sense.
 
         //Non duplicate data structure since there are instances where full name may be the same as abbreviations.
         SortedSet<Unit> unitCandidates = new TreeSet<>(new UnitsWithSimilarNameComparator(providedName));
@@ -242,14 +243,25 @@ public class UnitsContentQuerier {
     ///Query for Existence of Content
 
     /**
-     * Name can match to a unit full name or an abbreviation. Must be a full text match.
+     * Name can match to a unit full name or an abbreviation. Must be a full text match and not partial.
+     * If looking for partial matches then use {@link #queryUnitsOrderedBySimilarNames(String)}
      */
     public boolean containsUnit(String unitName) {
-        //Name can match to a unit full name or an abbreviation. Must be a full match.
         return unitsDataModel.getRepositoryWithDualKeyNCategory().containsKey(unitName.toLowerCase().trim());
     }
     public boolean containsUnit(Unit unit) {
         return unitsDataModel.getRepositoryWithDualKeyNCategory().containsItem(unit);
+    }
+
+    public boolean containsAsFullName(String unitName){
+        return unitsDataModel.getRepositoryWithDualKeyNCategory().isKey1(unitName.toLowerCase().trim());
+    }
+    public boolean containsAsAbbreviation(String unitName){
+        String formattedUnitName = unitName.toLowerCase().trim();
+        return unitsDataModel.getRepositoryWithDualKeyNCategory().isKey2(formattedUnitName) && !containsAsAlias(formattedUnitName);
+    }
+    public boolean containsAsAlias(String unitName){
+        return unitsDataModel.getRepositoryWithDualKeyNCategory().isAliasKey(unitName.toLowerCase().trim());
     }
 
     ///

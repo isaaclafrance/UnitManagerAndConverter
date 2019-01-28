@@ -50,11 +50,20 @@ public class SerialGroupingQuantityTokenizer {
     public List<Double> parseSerialGroupingToValuesList(String groupings) {
         List<Double> valueGroupingList = new ArrayList<>();
 
+        for(String valueString:parseSerialGroupingToValuesStringList(groupings)){
+            valueGroupingList.add(Double.parseDouble(valueString));
+        }
+
+        return valueGroupingList;
+    }
+    public List<String> parseSerialGroupingToValuesStringList(String groupings) {
+        List<String> valueGroupingList = new ArrayList<>();
+
         Matcher valueGroupingMatcher = quantityGroupingDefiner.getSingleValueGroupingPattern()
                 .matcher(extractSerialValuesGroupingString(groupings));
 
         while (valueGroupingMatcher.find()) {
-            valueGroupingList.add(Double.parseDouble(quantityGroupingDefiner.removeGroupingSymbol(valueGroupingMatcher.group())));
+            valueGroupingList.add(quantityGroupingDefiner.removeGroupingSymbol(valueGroupingMatcher.group()));
         }
 
         return valueGroupingList;

@@ -13,7 +13,7 @@ import static com.isaacapps.unitconverterapp.utilities.RegExUtility.escapeRegexR
  */
 public class DimensionComponentDefiner {
     public static final String[] DEFAULT_EXPONENT_SYMBOL_GROUPS = new String[]{"^", "**", " raised to "};
-    public static final String[] DEFAULT_DIVISION_SYMBOL_GROUPS = new String[]{"/", " per ", " divided by "};
+    public static final String[] DEFAULT_DIVISION_SYMBOL_GROUPS = new String[]{"/", " per ", " divided by ", "÷"};
     public static final String[] DEFAULT_MULTIPLICATION_SYMBOL_GROUPS = new String[]{"*", " x ", " times ", " multiplied by "};
 
     private static final Pattern BALANCED_PARENTHESES_REGEX_PATTERN =  Pattern.compile("(\\((?:[^()]|(?1))*\\))");

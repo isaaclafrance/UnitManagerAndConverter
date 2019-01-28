@@ -8,11 +8,12 @@ import com.isaacapps.unitconverterapp.processors.formatters.text.GeneralTextForm
 import com.isaacapps.unitconverterapp.processors.parsers.ParsingException;
 import com.isaacapps.unitconverterapp.processors.parsers.dimension.BaseDimensionParser;
 import com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefiner;
+import static com.isaacapps.unitconverterapp.utilities.RegExUtility.SIGNED_DOUBLE_VALUE_REGEX_PATTERN;
 
 import java.util.Locale;
 
 public class ComponentUnitsDimensionParser extends BaseDimensionParser<String> {
-    public static final String COMPONENT_NAME_REGEX = "(?:([a-zA-Z]+)?[_]?\\w+)"; //ex. h20, meter, 10, newton_meter
+    public static final String COMPONENT_NAME_REGEX =  String.format("(?:%s|%s)", SIGNED_DOUBLE_VALUE_REGEX_PATTERN,"(?:([a-zA-Z]+)?[_]?\\w+)"); //ex. h20, meter, 10, newton_meter, 2.0
 
     public ComponentUnitsDimensionParser(Locale locale, IFormatter atomicTypeFormatter, IFormatter exponentialValueFormatter) throws ParsingException {
         super(locale, new DimensionComponentDefiner(COMPONENT_NAME_REGEX));

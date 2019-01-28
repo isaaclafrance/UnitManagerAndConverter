@@ -298,7 +298,7 @@ public class PrefixesDataModel extends BaseDataModel<String, Double, DATA_MODEL_
      * @param constrainBasedOnValidUnitNames Indicates whether to constrain based on valid unit name and whether  unit and prefix are of same kind.
      */
     public boolean unitNameHasPrefix(String unitNameWithPrefix, boolean constrainBasedOnValidUnitNames){
-        return findFirstPrefixPairMatches(unitNameWithPrefix, constrainBasedOnValidUnitNames) == NO_PREFIX_MATCH_ARRAY;
+        return findFirstPrefixPairMatches(unitNameWithPrefix, constrainBasedOnValidUnitNames) != NO_PREFIX_MATCH_ARRAY;
     }
 
     ///

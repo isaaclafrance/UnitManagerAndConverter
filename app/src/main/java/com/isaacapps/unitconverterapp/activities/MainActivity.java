@@ -10,7 +10,12 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
+import android.text.Html;
 import android.text.InputType;
+import android.text.Spanned;
+import android.text.method.LinkMovementMethod;
+import android.text.method.ScrollingMovementMethod;
+import android.util.AttributeSet;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -36,7 +41,6 @@ import com.isaacapps.unitconverterapp.dao.xml.readers.local.units.StandardCoreUn
 import com.isaacapps.unitconverterapp.dao.xml.readers.online.EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader;
 import com.isaacapps.unitconverterapp.dao.xml.readers.online.PrefixesNUnitsMapXmlOnlineReader;
 import com.isaacapps.unitconverterapp.models.measurables.quantity.Quantity;
-import com.isaacapps.unitconverterapp.models.measurables.quantity.QuantityException;
 import com.isaacapps.unitconverterapp.models.measurables.unit.Unit;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManager;
 import com.isaacapps.unitconverterapp.models.unitmanager.UnitManagerBuilder;
@@ -56,8 +60,10 @@ import com.isaacapps.unitconverterapp.processors.formatters.grouping.GroupingFor
 import com.isaacapps.unitconverterapp.processors.formatters.grouping.UnitNamesGroupingFormatter;
 import com.isaacapps.unitconverterapp.processors.formatters.grouping.ValuesGroupingFormatter;
 import com.isaacapps.unitconverterapp.processors.formatters.numbers.CurrencyFormatter;
+import com.isaacapps.unitconverterapp.processors.formatters.numbers.DecimalToMixedFractionFormatter;
 import com.isaacapps.unitconverterapp.processors.formatters.numbers.MixedFractionToDecimalFormatter;
 import com.isaacapps.unitconverterapp.processors.formatters.numbers.RoundingFormatter;
+import com.isaacapps.unitconverterapp.processors.formatters.numbers.ScientificNotationFormatter;
 import com.isaacapps.unitconverterapp.processors.formatters.text.GeneralTextFormatter;
 import com.isaacapps.unitconverterapp.processors.formatters.text.SnakeCaseFormatter;
 import com.isaacapps.unitconverterapp.processors.operators.dimensions.DimensionOperators.DIMENSION_TYPE;
@@ -90,7 +96,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 
     private static final String DUMMY_UNIT = "<unit>";
     private static final String DUMMY_VALUE = "1.0";
-    private static final int INITIAL_GROUP_NUM_IN_MULTI_UNIT_MODE = 3;
+    private static final int DEMONSTRATION_GROUP_NUM_IN_MULTI_UNIT_MODE = 3;
 
     private boolean currencyUnitsLoaded;
     private boolean standardLocalCoreUnitsLoaded;
@@ -119,6 +125,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     private IFormatter overallValuesGroupingFormatter;
     private RoundingFormatter conversionRoundingFormatter;
     private CurrencyFormatter conversionCurrencyFormatter;
+    private DecimalToMixedFractionFormatter decimalToMixedFractionFormatter;
+    private ScientificNotationFormatter scientificNotationFormatter;
     private IFormatter sourceValueFormatter;
 
     private Button sourceUnitBrowseButton;
@@ -138,6 +146,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     private Button convertButton;
 
     private AlertDialog unitInfoDialog;
+    private TextView dialogTextView;
     private MenuItem multiModeMenuItem;
     private ProgressBar unitManagerLoaderProgressBar;
     private TextView progressBarTextView;
@@ -171,8 +180,10 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
             sourceValueFormatter = new MixedFractionToDecimalFormatter(locale);
             overallValuesGroupingFormatter = new ChainedFormatter(locale).AddFormatter(valuesGroupingFormatter).AddFormatter(sourceValueFormatter);
 
-            conversionRoundingFormatter = new RoundingFormatter(locale, 5);
+            conversionRoundingFormatter = new RoundingFormatter(locale, 4);
             conversionCurrencyFormatter = new CurrencyFormatter(locale);
+            decimalToMixedFractionFormatter = new DecimalToMixedFractionFormatter(locale);
+            scientificNotationFormatter = new ScientificNotationFormatter(locale, 3);
 
             fundamentalUnitTypesDimensionSerializer = new FundamentalUnitTypesDimensionSerializer(locale, new GeneralTextFormatter(locale), new RoundingFormatter(locale, 2));
             componentUnitsDimensionSerializer  = new ComponentUnitsDimensionSerializer(locale, new GeneralTextFormatter(locale), new RoundingFormatter(locale, 2));
@@ -319,7 +330,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 
         if (multiModeMenuItem.isChecked()) {
             if(multiUnitStateChanged) { //If not enough groupings exist, then add some extra dummy ones for demonstration purposes, but only after the multi-unit state changes.
-                adjustAllTextViewsUnitGroupings(INITIAL_GROUP_NUM_IN_MULTI_UNIT_MODE, INITIAL_GROUP_NUM_IN_MULTI_UNIT_MODE);
+                adjustAllTextViewsUnitGroupings(DEMONSTRATION_GROUP_NUM_IN_MULTI_UNIT_MODE, DEMONSTRATION_GROUP_NUM_IN_MULTI_UNIT_MODE);
             }
 
             sourceValueExpressionToggleButton.setChecked(false); //Bracketed groupings are not recognized by the expression evaluator
@@ -396,8 +407,14 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         sourceValueTextView.setText("1");
 
         conversionValueTextView = (TextView) findViewById(R.id.conversionOutputTextView);
+        conversionValueTextView.setMovementMethod(ScrollingMovementMethod.getInstance());
+        conversionValueTextView.setTextIsSelectable(true);
     }
     private void setupDialogs(){
+        dialogTextView = new TextView(MainActivity.this);
+        dialogTextView.setLinksClickable(true);
+        dialogTextView.setMovementMethod(LinkMovementMethod.getInstance());
+
         unitInfoDialog = new AlertDialog.Builder(MainActivity.this).create();
         unitInfoDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK", new DialogInterface.OnClickListener() {
             @Override
@@ -410,6 +427,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         try {
             sourceUnitsTextView.setText(sourceQuantity.getUnitNames());
             targetUnitsTextView.setText(targetQuantity.getUnitNames());
+
+            sourceValueTextView.setText(sourceQuantity.getValuesString());
         }
         catch(Exception e){
             e.printStackTrace();
@@ -458,7 +477,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         sourceUnitsTextViewArrayAdapter = new MultiAutoCompleteUnitsDefinitionArrayAdapter(this, android.R.layout.simple_list_item_1
                 , unitManager.getUnitsDataModel().getUnitsContentQuerier()
                 , dimensionComponentDefiner
-                , unitManager.getConversionFavoritesDataModel());
+                , unitManager.getConversionFavoritesDataModel()
+                , unitManager.getPrefixesDataModel());
         sourceUnitsTextView.setAdapter(sourceUnitsTextViewArrayAdapter);
         sourceUnitsTextView.setThreshold(1);
         sourceUnitsTextView.setTokenizer(new MultiAutoCompleteUnitDefinitionTokenizer(dimensionComponentDefiner));
@@ -466,7 +486,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         targetUnitsTextViewArrayAdapter = new MultiAutoCompleteUnitsDefinitionArrayAdapter(this, android.R.layout.simple_list_item_1
                 , unitManager.getUnitsDataModel().getUnitsContentQuerier()
                 , dimensionComponentDefiner
-                , unitManager.getConversionFavoritesDataModel());
+                , unitManager.getConversionFavoritesDataModel()
+                , unitManager.getPrefixesDataModel());
         targetUnitsTextView.setAdapter(targetUnitsTextViewArrayAdapter);
         sourceUnitsTextView.setThreshold(1);
         targetUnitsTextView.setTokenizer(new MultiAutoCompleteUnitDefinitionTokenizer(dimensionComponentDefiner));
@@ -500,7 +521,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
                 setSourceUnitsIntoQuantity();
 
                 unitInfoDialog.setTitle(SOURCE_NAME + " Unit(s) Details");
-                unitInfoDialog.setMessage(composeUnitsDetailsMessage(sourceQuantity.getUnits()));
+                dialogTextView.setText(composeUnitsDetailsMessage(sourceQuantity.getUnits()));
+                unitInfoDialog.setView(dialogTextView, 50, 50, 50, 50);
                 unitInfoDialog.show();
             }
         });
@@ -512,7 +534,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
                 setTargetUnitIntoQuantity();
 
                 unitInfoDialog.setTitle(TARGET_NAME + " Unit(s) Details");
-                unitInfoDialog.setMessage(composeUnitsDetailsMessage(targetQuantity.getUnits()));
+                dialogTextView.setText(composeUnitsDetailsMessage(targetQuantity.getUnits()));
+                unitInfoDialog.setView(dialogTextView, 50, 50, 50, 50);
                 unitInfoDialog.show();
             }
         });
@@ -542,7 +565,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         });
     }
 
-    private String composeUnitsDetailsMessage(Collection<Unit> unitsGroup) {
+    private Spanned composeUnitsDetailsMessage(Collection<Unit> unitsGroup) {
         StringBuilder detailsBuilder = new StringBuilder();
 
         appendPerUnitInfo(detailsBuilder, unitsGroup);
@@ -550,16 +573,18 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         //Assumption is that all units in collection are of the same kind, therefore certain "type" info of the first unit also applies to the others.
         appendInvariantInfo(detailsBuilder, unitsGroup.iterator().next());
 
-        return detailsBuilder.toString();
+        return Html.fromHtml(detailsBuilder.toString());
     }
     private void appendPerUnitInfo(StringBuilder detailsBuilder, Collection<Unit> unitsGroup){
         for(Unit unit:unitsGroup){
-            detailsBuilder.append("NAME: ").append(unit.getName()).append("(").append(unit.getAbbreviation()).append(")").append("\n");
+            detailsBuilder.append("----------------");
+
+            detailsBuilder.append("<p>").append("<b>NAME:</b> ").append(unit.getName()).append("(").append(unit.getAbbreviation()).append(")").append("</p>");
             if(!unit.getAliases().isEmpty())
-                detailsBuilder.append("ALIASES: ").append(Arrays.toString(unit.getAliases().toArray())).append("\n\n");
+                detailsBuilder.append("<p>").append("<b>ALIASES:</b> ").append(Arrays.toString(unit.getAliases().toArray())).append("</p>");
             if(!unit.getDescription().isEmpty())
-                detailsBuilder.append("DESCRIPTION: ").append(unit.getDescription()).append("\n\n");
-            detailsBuilder.append("UNIT SYSTEM: ").append(unit.getUnitSystem()).append("\n\n");
+                detailsBuilder.append("<p>").append("<b>DESCRIPTION:</b> ").append(unit.getDescription()).append("</p>");
+            detailsBuilder.append("<p>").append("<b>UNIT SYSTEM:</b> ").append(unit.getUnitSystem()).append("</p>");
 
             String componentUnitsDimension = "";
             try {
@@ -571,9 +596,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
             } catch (SerializingException e) { }
 
             if(!componentUnitsDimension.isEmpty())
-                detailsBuilder.append("COMPONENT UNITS DIMENSION: ").append(componentUnitsDimension).append("\n\n");
-
-            detailsBuilder.append("-------------");
+                detailsBuilder.append("<p>").append("<b>COMPONENT UNITS DIMENSION:</b> ").append(componentUnitsDimension).append("</p>");
         }
     }
     private void appendInvariantInfo(StringBuilder detailsBuilder, Unit groupRepresentativeUnit){
@@ -583,11 +606,11 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
                 fundamentalTypesDimension =fundamentalUnitTypesDimensionSerializer.serialize(groupRepresentativeUnit.getFundamentalUnitTypesDimension());
         } catch (SerializingException e) { }
 
-        detailsBuilder.append("-------------").append("\n");
+        detailsBuilder.append("<p>-----------------------------------------</p>");
         if(!fundamentalTypesDimension.isEmpty())
-            detailsBuilder.append("FUNDAMENTAL TYPES DIMENSION: ").append(fundamentalTypesDimension).append("\n\n");
+            detailsBuilder.append("<p>").append("<b>FUNDAMENTAL TYPES DIMENSION:</b> ").append(fundamentalTypesDimension).append("</p>");
         if(!groupRepresentativeUnit.getCategory().equalsIgnoreCase(fundamentalTypesDimension)) //Prevent display of duplicate data in case of complex units
-            detailsBuilder.append("CATEGORY: ").append(groupRepresentativeUnit.getCategory()).append("\n");
+            detailsBuilder.append("<p>").append("<b>CATEGORY:</b> ").append(groupRepresentativeUnit.getCategory()).append("</p>");
     }
 
     private void setListenersOnTextViews() {
@@ -603,15 +626,17 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
             @Override
             public void onFocusChange(View view, boolean hasFocus) {
                 if (!hasFocus) {
-                    if (multiModeMenuItem.isChecked()) {
-                        String sourceUnitsText = unitNamesGroupingFormatter.format((((TextView) view).getText().toString()));
-                        ((TextView) view).setText(sourceUnitsText);
-
-                        adjustSourceValueTextViewGroupingsCountBaseOnSourceUnits();
-                    }
                     try {
                         setSourceUnitsIntoQuantity();
                         checkUnits();
+
+                        if (multiModeMenuItem.isChecked()) {
+                            String sourceUnitsText = unitNamesGroupingFormatter.format((((TextView) view).getText().toString()));
+                            ((TextView) view).setText(sourceUnitsText);
+
+                            adjustSourceValueTextViewGroupingsCountBaseOnSourceUnits();
+                        }
+
                         checkNSetSourceValuesIntoQuantity();
                     }
                     catch(Exception e){
@@ -690,7 +715,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         return false;
     }
     private boolean adjustSourceValueTextViewGroupingsCountBaseOnSourceUnits() {
-        int sourceUnitGroupingCount = unitNamesGroupingFormatter.calculateGroupingCount(sourceUnitsTextView.getText().toString());
+        //int sourceUnitGroupingCount = unitNamesGroupingFormatter.calculateGroupingCount(sourceUnitsTextView.getText().toString());
+        int sourceUnitGroupingCount = sourceQuantity.getUnits().size();
         return adjustTextViewGroupingsCount(sourceValueTextView, sourceUnitGroupingCount == 0 ? 1 : sourceUnitGroupingCount, DUMMY_VALUE);
     }
     private boolean adjustSourceUnitTextViewGroupingsCountBasedOnSourceValue() {
@@ -726,10 +752,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
             for (Unit unit : (isTargetQuantity ? targetQuantity.getUnits() : sourceQuantity.getUnits())) {
                 unitManager.getConversionFavoritesDataModel().modifySignificanceRankOfMultipleConversions(unit, true);
             }
-        } catch (QuantityException qException){
-            Toast.makeText(this, String.format("Problem Setting Values: %s", qException.getScenario()), Toast.LENGTH_SHORT).show();
-        } catch (SerializingException sException) {
-            Toast.makeText(this, String.format("Problem Setting Values: %s", sException.getScenario()), Toast.LENGTH_SHORT).show();
+        } catch (Exception exception){
+            exception.printStackTrace();
         }
 
         if(valueSettingFailed){
@@ -737,8 +761,12 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
                 Unit unknownUnit = pSharablesApplication.getUnitManager().getUnitsDataModel().getUnitsContentMainRetriever().getUnknownUnit();
                 if (isTargetQuantity) {
                     pSharablesApplication.getTargetQuantity().setUnit(unknownUnit, true);
+                    targetUnitsTextView.setTextColor(Color.rgb(180, 0, 0));
+                    createUnknownUnitsInformationToast("Please fix following target units: ", sourceUnitsTextView.getText().toString());
                 } else {
                     pSharablesApplication.getSourceQuantity().setUnit(unknownUnit, true);
+                    sourceUnitsTextView.setTextColor(Color.rgb(180, 0, 0));
+                    createUnknownUnitsInformationToast("Please fix following target units: ", targetUnitsTextView.getText().toString());
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -824,7 +852,13 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     ///Conversion Methods
     private void processConversion() {
         try {
+            setSourceUnitsIntoQuantity();
+            setTargetUnitIntoQuantity();
+
+            checkUnits();
             checkNSetSourceValuesIntoQuantity();
+
+            populateTextViews();
 
             List<Unit> targetUnits = Collections.list(Collections.enumeration(targetQuantity.getUnits()));
             List<Double> values = new ArrayList<>(QuantityConverter.determineConversionQuantityToTargetUnitsGroup(sourceQuantity, targetUnits, true).getValues());
@@ -852,24 +886,54 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         }
     }
 
-    private String formatConversionValue(String rawConversionValue){
+    private String formatConversionValue(String rawConversionValueGroupText){
         //TODO: Conditionally format value as a fraction or as scientific notation based on which takes less space.
 
         if(targetQuantity.getLargestUnit().getCategory().equalsIgnoreCase(CURRENCY_CATEGORY)) {
-            Locale guessedLocale = CurrencyFormatter.guessCurrencyLocaleBasedOnCode(targetQuantity.getLargestUnit().getAbbreviation());
-            if(guessedLocale != null) {
-                conversionCurrencyFormatter.setLocale(guessedLocale);
-            }
-            return conversionCurrencyFormatter.format(rawConversionValue);
-        }
-        else{
-            double rawConversionValueNumber = Double.parseDouble(quantityGroupingDefiner.removeGroupingSymbol(rawConversionValue));
-            double decimalPlaces = Math.log10(rawConversionValueNumber);
-            decimalPlaces = (decimalPlaces < 0 ? Math.abs(decimalPlaces):0) + 4;
+            return formatConversionValueAsCurrency(rawConversionValueGroupText);
+        } else{
+            StringBuilder formattedConversionValueTextBuilder = new StringBuilder();
 
-            conversionRoundingFormatter.setNumOfDecimalPlaces((int)decimalPlaces);
-            return conversionRoundingFormatter.format(rawConversionValue);
+            Collection<String> rawConversionValueTextCollection = serialGroupingQuantityTokenizer.parseSerialGroupingToValuesStringList(rawConversionValueGroupText);
+
+            for(String rawIndividualConversionValueText:rawConversionValueTextCollection){
+                double rawConversionValueNumber = Double.parseDouble(rawIndividualConversionValueText);
+                int logarithmicSize =  rawConversionValueNumber != 0 ? (int)Math.log10(rawConversionValueNumber) : 0;
+                int logarthmicSizeUpperThreshold = 6;
+
+                if(Math.abs(logarithmicSize) < logarthmicSizeUpperThreshold) {
+                    String conversionValueTextAsFraction = decimalToMixedFractionFormatter.format(rawIndividualConversionValueText);
+                    String fractionPart = MixedFractionToDecimalFormatter.extractFractionPart(conversionValueTextAsFraction);
+                    String numeratorPart = MixedFractionToDecimalFormatter.extractNumeratorOfFractionPart(fractionPart);
+                    String denominatorPart = MixedFractionToDecimalFormatter.extractDenominatorOfFractionPart(fractionPart);
+
+                    int denominatorUpperThreshold = 20;
+                    if(Double.parseDouble(denominatorPart) < denominatorUpperThreshold && Double.parseDouble(numeratorPart) != 0){
+                        formattedConversionValueTextBuilder.append(valuesGroupingFormatter.format(conversionValueTextAsFraction));
+                    }else {
+                        String conversionValueTextAsRoundedDecimal = formatConversionValueAsRoundedDecimal(rawIndividualConversionValueText, logarithmicSize);
+                        formattedConversionValueTextBuilder.append(valuesGroupingFormatter.format(conversionValueTextAsRoundedDecimal));
+                    }
+                }else{
+                    String formattedConversionValueAsScientificNotation = scientificNotationFormatter.format(rawIndividualConversionValueText);
+                    formattedConversionValueTextBuilder.append(valuesGroupingFormatter.format(formattedConversionValueAsScientificNotation));
+                }
+            }
+
+            return formattedConversionValueTextBuilder.toString();
         }
+    }
+    private String formatConversionValueAsCurrency(String rawIndividualConversionValueText){
+        Locale guessedLocale = CurrencyFormatter.guessCurrencyLocaleBasedOnCode(targetQuantity.getLargestUnit().getAbbreviation());
+        if(guessedLocale != null) {
+            conversionCurrencyFormatter.setLocale(guessedLocale);
+        }
+        return conversionCurrencyFormatter.format(rawIndividualConversionValueText);
+    }
+    private String formatConversionValueAsRoundedDecimal(String rawIndividualConversionValueText, int logarithmicSize){
+        int adjustedDecimalPlaces = (logarithmicSize < 0 ? Math.abs(logarithmicSize):0) + 4;
+        conversionRoundingFormatter.setNumOfDecimalPlaces(adjustedDecimalPlaces);
+        return conversionRoundingFormatter.format(rawIndividualConversionValueText);
     }
 
     ///Loader Manager Methods

@@ -123,7 +123,8 @@ public class UnitsContentDeterminer {
     ///
 
     /**
-     *  Uses heuristic when trying to find a corresponding base unit in the data model. @see {@link #determineBaseUnit(Unit, boolean)}
+     *  Uses heuristic when trying to find a corresponding base unit in the data model.
+     *  @see #determineBaseUnit(Unit, boolean)
      */
     public Unit determineBaseUnit(Unit unit) {
         return determineBaseUnit(unit, true);
@@ -156,7 +157,6 @@ public class UnitsContentDeterminer {
 
     /**
      * TODO: Create unit tests testing both the heuristic and non-heuristic code paths.
-     *
      * Tries to find a matching unit with a specific unit system that has a smaller component units dimension.
      * @param initiallyUseQuickerHeuristic Indicates whether to initially use a less computationally intensive method first.
      *                                     The trade-off is that return unit may not have the absolute smallest dimension out of all possible compatible units.

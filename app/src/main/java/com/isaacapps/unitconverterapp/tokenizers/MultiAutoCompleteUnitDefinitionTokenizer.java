@@ -2,7 +2,7 @@ package com.isaacapps.unitconverterapp.tokenizers;
 
 import android.widget.MultiAutoCompleteTextView;
 
-import static com.isaacapps.unitconverterapp.adapters.MultiAutoCompleteUnitsDefinitionArrayAdapter.MULTI_AUTO_COMPLETE_UNIT_DISPLAY_DELIMITER;
+import static com.isaacapps.unitconverterapp.adapters.MultiAutoCompleteUnitsDefinitionArrayAdapter.DEFAULT_MULTI_AUTO_COMPLETE_UNIT_DISPLAY_DELIMITER;
 import com.isaacapps.unitconverterapp.processors.parsers.dimension.DimensionComponentDefiner;
 
 import com.florianingerl.util.regex.Matcher ;
@@ -22,7 +22,7 @@ public class MultiAutoCompleteUnitDefinitionTokenizer implements MultiAutoComple
 
     @Override
     public int findTokenStart(CharSequence unitDefinitionText, int cursorPosition) {
-        //TODO: Improve token recognition
+        //TODO: Improve token recognition to account for when multiple unit groups are involved
 
         CharSequence unitDefinitionSubSequence = unitDefinitionText.subSequence(0, cursorPosition);
         int tokenPosition = -1;
@@ -46,7 +46,7 @@ public class MultiAutoCompleteUnitDefinitionTokenizer implements MultiAutoComple
     }
     @Override
     public int findTokenEnd(CharSequence unitDefinitionText, int cursorPosition) {
-        //TODO: Improve token recognition
+        //TODO: Improve token recognition to account for when multiple unit groups are involved
 
         CharSequence unitDefinitionSubSequence = unitDefinitionText.subSequence(cursorPosition, unitDefinitionText.length() - 1);
         int tokenPosition = -1;
@@ -71,7 +71,7 @@ public class MultiAutoCompleteUnitDefinitionTokenizer implements MultiAutoComple
 
     @Override
     public CharSequence terminateToken(CharSequence unitDefinitionText) {
-        int delimiterPosition = unitDefinitionText.toString().indexOf(MULTI_AUTO_COMPLETE_UNIT_DISPLAY_DELIMITER);
+        int delimiterPosition = unitDefinitionText.toString().indexOf(DEFAULT_MULTI_AUTO_COMPLETE_UNIT_DISPLAY_DELIMITER);
         CharSequence fullNameToken = delimiterPosition == -1 ? unitDefinitionText : unitDefinitionText.toString().substring(0, delimiterPosition);
         return String.format("%s%s", fullNameToken, tokenTerminator);
     }
