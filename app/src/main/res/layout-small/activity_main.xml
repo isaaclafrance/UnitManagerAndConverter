@@ -289,6 +289,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="0dp"
                 android:layout_weight="1"
+                android:scrollbars="horizontal"
                 android:gravity="center_horizontal"
                 android:paddingBottom="@dimen/conversion_value_bottom_padding"
                 android:text="@string/preConversionValue_text"
