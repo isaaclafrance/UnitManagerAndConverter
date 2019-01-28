@@ -62,7 +62,7 @@ public class EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader extends AsyncXml
         List<List<Unit>> unitLists = new ArrayList<>(2);
 
         try {
-            String unitSystem = "si", unitCategory = "currency_unit", tagName;
+            String unitSystem = "si", unitCategory = "currency", tagName;
 
             //Create Euro unit that is the basis of all the calculations
             String baseUnitName = "euro";
@@ -149,7 +149,6 @@ public class EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader extends AsyncXml
     private String readAbbreviation(XmlPullParser parser) {
         return readAttribute(parser, "currency");
     }
-
     private String readUnitName(XmlPullParser parser) {
         String abrv = readAbbreviation(parser);
         String name = currencyAbbreviationNameMap.get(abrv.toLowerCase());

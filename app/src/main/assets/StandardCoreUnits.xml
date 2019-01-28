@@ -765,7 +765,7 @@
 		<unitNameAliases>
 			<alias>€</alias>
 		</unitNameAliases>
-		<unitCategory>currency_unit</unitCategory>
+		<unitCategory>currency</unitCategory>
 		<unitDescription>The official currency of the European Union and its territories. Currently, 19 of 28 member states use the euro; this group of states is known as the eurozone or euro area. It is the second largest and second most traded currency in the foreign exchange market after the United States dollar.</unitDescription>
 		<componentUnits>
 			<component>

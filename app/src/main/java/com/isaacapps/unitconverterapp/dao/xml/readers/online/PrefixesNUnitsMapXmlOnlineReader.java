@@ -49,6 +49,7 @@ import java.util.regex.Pattern;
 //Completely ignores XML namespaces.
 ///According to official Google Android documentation, the XmlPullParser that reads one tag at a time is the most efficient way of parsing especially in situations where there are a large number of tags.
 public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManagerBuilder, UnitManagerBuilder> {
+    private final static String UCUM_XML_URL = "http://unitsofmeasure.org/ucum-essence.xml";
 
     private final static Matcher numericalComponentUnitNameMatcher = Pattern.compile("[./]\\d+").matcher("");
     private final static Matcher nameWithOperatorMatcher = Pattern.compile("(\\w+[/.])+\\w+").matcher("");
@@ -128,6 +129,9 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
         populateExcludedUnits();
     }
 
+    /**
+     * Excludes units that are defined in an unsatisfactory.
+     */
     private void populateExcludedUnits(){
         excludedUnits = new ArrayList<>();
         excludedUnits.add("mole");
@@ -159,7 +163,6 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
         String tagName = parser.getName();
         if (tagName.equalsIgnoreCase("root")) {
             parser.require(XmlPullParser.START_TAG, null, "root");
-            String rootDescription = String.format("Source of Conversion Factors: %s.xml", readAttribute(parser, "xmlns"));
             while (parser.next() != XmlPullParser.END_TAG) {
                 if (parser.getEventType() != XmlPullParser.START_TAG) {
                     continue;
@@ -170,7 +173,7 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
                     readPrefix(parser);
                 } else if (tagName.equalsIgnoreCase("base-unit") || tagName.equalsIgnoreCase("unit")) {
                     try {
-                        partiallyConstructedUnit = readUnit(parser, rootDescription, tagName.equalsIgnoreCase("base-unit"));
+                        partiallyConstructedUnit = readUnit(parser, tagName.equalsIgnoreCase("base-unit"));
                     } catch (Exception e) {
                         partiallyConstructedUnit = null;
                         e.printStackTrace();
@@ -395,9 +398,9 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
             if (bestPageExtract.hasContent()){
                 String extractText = bestPageExtract.getExtractText();
                 String reference = bestPageExtract.getWikipediaReferenceUrl();
-                String unitDescription = String.format("%s\n\n[[Source of Extract: %s]]", extractText, reference);
+                String unitDescription = String.format("<p>%s</p>[%s]", extractText, reference);
 
-                partiallyConstructedUnit.setDescription(String.format("%s \n\n(%s)", unitDescription, partiallyConstructedUnit.getDescription()));
+                partiallyConstructedUnit.setDescription(String.format("<p>%s</p><p>%s</p>", unitDescription, partiallyConstructedUnit.getDescription()));
             }
         }
         catch(Exception e){
@@ -431,7 +434,7 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
         prefixesDataModel.addCorePrefix(fullPrefixName, abbreviatedPrefixName, prefixValue);
     }
 
-    private Unit readUnit(XmlPullParser parser, String rootDescription, boolean isBaseUnit) throws XmlPullParserException, IOException, UnitException {
+    private Unit readUnit(XmlPullParser parser, boolean isBaseUnit) throws XmlPullParserException, IOException, UnitException {
         parser.require(XmlPullParser.START_TAG, null, (isBaseUnit) ? "base-unit" : "unit");
 
         Map<String, double[]> baseUnitNameNConversionPolyCoeffs = new HashMap<>();
@@ -485,7 +488,7 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
 
             unitNames.remove(mainUnitName);
 
-            Unit createdUnit = new Unit(mainUnitName, unitNames, unitCategory, rootDescription, unitSystem, rawUnitAbbreviation, abbreviatedComponentUnitsDimension
+            Unit createdUnit = new Unit(mainUnitName, unitNames, unitCategory, "", unitSystem, rawUnitAbbreviation, abbreviatedComponentUnitsDimension
                     , standInNamedBaseUnit
                     , isBaseUnit ? new double[]{1.0, 0.0} : baseUnitNameNConversionPolyCoeffs.values().iterator().next(), locale, componentUnitsDimensionSerializer, fundamentalUnitTypesDimensionSerializer, dimensionComponentDefiner);
 
@@ -540,7 +543,7 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
     public UnitManagerBuilder loadInBackground() {
         UnitManagerBuilder unitManagerBuilder = new UnitManagerBuilder();
         try {
-            unitManagerBuilder = parseXML(openXmlFile("http://unitsofmeasure.org/ucum-essence.xml", true));
+            unitManagerBuilder = parseXML(openXmlFile(UCUM_XML_URL, true));
         } catch (Exception e) {
             e.printStackTrace();
         }
