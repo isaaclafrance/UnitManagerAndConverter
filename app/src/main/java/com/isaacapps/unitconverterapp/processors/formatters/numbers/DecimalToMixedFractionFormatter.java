@@ -120,7 +120,7 @@ public class DecimalToMixedFractionFormatter implements IFormatter {
         if(this.nearestDenominator == HIGH_DIVISIBLE_DENOMINATOR)
             finalFraction = calculateReducedFractions(finalFraction[0], finalFraction[1]);
 
-        return String.format(locale, "%.0f / %.0f", finalFraction[0], finalFraction[1]);
+        return String.format(locale, "%.0f/%.0f", finalFraction[0], finalFraction[1]);
     }
     private double[] calculateReducedFractions(double numerator, double denominator){
         double gcd = determineGreatestCommonFactor(numerator, denominator);

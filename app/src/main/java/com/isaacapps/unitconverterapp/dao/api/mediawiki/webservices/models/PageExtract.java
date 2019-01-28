@@ -42,7 +42,8 @@ public class PageExtract extends JSONObject {
     }
 
     public String getWikipediaReferenceUrl() {
-        return "https://en.wikipedia.org/wiki/" + getTitle();
+        String wikipediaUrl = "https://en.wikipedia.org/wiki/" + getTitle();
+        return String.format("<a href=\"%s\">Extract Source: Wikipedia</a>", wikipediaUrl);
     }
 
     public boolean hasContent() {
