@@ -149,7 +149,7 @@ public class MultiAutoCompleteUnitsDefinitionArrayAdapter extends ArrayAdapter {
     private Collection<String> transformCandidateUnitsToFormattedUnitNameAbbreviationDisplay(Collection<Unit> unitCandidates){
         Collection<String> formattedUnitNameAbbreviationDisplays = new ArrayList<>();
         for(Unit unit:unitCandidates) {
-            formattedUnitNameAbbreviationDisplays.add(constructFormattedUnitNameDisplay(unit, unit.getAbbreviation(), 4));
+            formattedUnitNameAbbreviationDisplays.add(constructFormattedUnitNameDisplay(unit, unit.getAbbreviation(), unit.getAbbreviation(), 4));
         }
         return formattedUnitNameAbbreviationDisplays;
     }
@@ -174,7 +174,7 @@ public class MultiAutoCompleteUnitsDefinitionArrayAdapter extends ArrayAdapter {
     private Collection<String> transformCandidateUnitsToFormattedUnitNameCategoryDisplay(Collection<Unit> unitCandidates){
         Collection<String> formattedUnitNameCategoryDisplays = new ArrayList<>();
         for(Unit unit:unitCandidates) {
-            formattedUnitNameCategoryDisplays.add(constructFormattedUnitNameDisplay(unit, unit.getCategory(), 5));
+            formattedUnitNameCategoryDisplays.add(constructFormattedUnitNameDisplay(unit, unit.getCategory(), unit.getAbbreviation(), 3));
         }
         return formattedUnitNameCategoryDisplays;
     }
@@ -185,15 +185,15 @@ public class MultiAutoCompleteUnitsDefinitionArrayAdapter extends ArrayAdapter {
     private Collection<String> transformCandidateUnitsToFormattedUnitNameUnitSystemDisplay(Collection<Unit> unitCandidates){
         Collection<String> formattedUnitNameUnitSystemDisplays = new ArrayList<>();
         for(Unit unit:unitCandidates) {
-            formattedUnitNameUnitSystemDisplays.add(constructFormattedUnitNameDisplay(unit, unit.getUnitSystem(), 5));
+            formattedUnitNameUnitSystemDisplays.add(constructFormattedUnitNameDisplay(unit, unit.getUnitSystem(), unit.getAbbreviation(), 3));
         }
         return formattedUnitNameUnitSystemDisplays;
     }
-    private String constructFormattedUnitNameDisplay(Unit unit, String secondaryUnitProperty, int dimensionLimit){
+    private String constructFormattedUnitNameDisplay(Unit unit, String secondaryUnitProperty, String replacementProperty, int dimensionLimit){
         if(!dimensionComponentDefiner.hasComplexDimensions(unit.getName()) || unit.getComponentUnitsDimension().size() < dimensionLimit) {
             return String.format("%s%s%s", unit.getName(), DEFAULT_MULTI_AUTO_COMPLETE_UNIT_DISPLAY_DELIMITER, secondaryUnitProperty);
         }else {
-            return secondaryUnitProperty;
+            return replacementProperty;
         }
     }
 

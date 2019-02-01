@@ -214,12 +214,16 @@ public class UnitsContentQuerier {
                 rhsDistanceFromStart = rhsUnit.getName().indexOf(providedName);
             }
 
-            int prefSigRatioCompareToResult = -1 * Double.compare(preferredLhsSignificanceRatio, preferredRhsSignificanceRatio);
-            if(prefSigRatioCompareToResult == 0){
-                return Integer.compare(lhsDistanceFromStart, rhsDistanceFromStart); //If significance ratios are the same, then subsequence closer to the beginning is preferred.
-            }else{
-                return prefSigRatioCompareToResult;
-            }
+            double rhsDistanceFromStartDifferenceRatio = (providedName.length() - rhsDistanceFromStart)/providedName.length();
+            double lhsDistanceFromStartDifferenceRatio = (providedName.length() - lhsDistanceFromStart)/providedName.length();
+
+            double distanceFromStartWeight = .30;
+            double significanceRatioWeight = .70;
+
+            double lhsOverallSignificance = distanceFromStartWeight * lhsDistanceFromStartDifferenceRatio + ( preferredLhsSignificanceRatio < .80 ? significanceRatioWeight : 1) * preferredLhsSignificanceRatio;
+            double rhsOverallSignificance = distanceFromStartWeight * rhsDistanceFromStartDifferenceRatio + ( preferredRhsSignificanceRatio < .80 ? significanceRatioWeight : 1) * preferredRhsSignificanceRatio;
+
+            return -1 * Double.compare(lhsOverallSignificance, rhsOverallSignificance);
         }
     }
     /**
