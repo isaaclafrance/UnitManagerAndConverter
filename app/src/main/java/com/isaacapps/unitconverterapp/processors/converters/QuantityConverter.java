@@ -68,18 +68,19 @@ public class QuantityConverter {
         List<Double> targetValues = new ArrayList(Collections.nCopies(sortedTargetUnits.size(), 0.0));
 
         double conversionValue = valueOfBasisUnit * conversionCoeffs[0] + conversionCoeffs[1];
-        if( !ensureValueOfLargestUnitIsLargerThanOne || (conversionValue > 1 || sortedTargetUnits.size() == 1) )
-            targetValues.set(0, conversionValue);
+        if( !ensureValueOfLargestUnitIsLargerThanOne || (conversionValue > 1 || sortedTargetUnits.size() == 1) ){
+            targetValues.set(0, sortedTargetUnits.size() == 1 ? conversionValue : Math.floor(conversionValue));
+        }
 
-        double previousFullConversionValue = 0.0;
+        double previousFullConversionValue = conversionValue;
         for (int i = 1; i < sortedTargetUnits.size(); i++) {
-            boolean previousSkipped = previousFullConversionValue == 0.0 && ensureValueOfLargestUnitIsLargerThanOne;
+            boolean previousSkipped = targetValues.get(i-1) == 0.0 && ensureValueOfLargestUnitIsLargerThanOne;
             double cascadedRemainder = previousSkipped ? valueOfBasisUnit : (previousFullConversionValue - (previousFullConversionValue > 1 ? Math.floor(previousFullConversionValue) : previousFullConversionValue) );
             conversionCoeffs = UnitConverter.calculateConversionCoeffsToTargetUnit(cascadedRemainder, previousSkipped ? basisUnit : sortedTargetUnits.get(i - 1), sortedTargetUnits.get(i));
 
             conversionValue = cascadedRemainder * conversionCoeffs[0] + conversionCoeffs[1];
             if(!ensureValueOfLargestUnitIsLargerThanOne || (conversionValue > 1 || i == sortedTargetUnits.size()-1) )
-                targetValues.set(i, Math.floor(conversionValue));
+                targetValues.set(i, i == sortedTargetUnits.size()-1 ? conversionValue : Math.floor(conversionValue));
             previousFullConversionValue = conversionValue;
         }
 

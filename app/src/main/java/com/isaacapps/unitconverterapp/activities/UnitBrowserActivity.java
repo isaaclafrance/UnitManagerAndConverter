@@ -379,7 +379,14 @@ public class UnitBrowserActivity extends Activity {
         String unitSystemSpinnerSelection = (String) unitSystemSpinner.getSelectedItem();
 
         if (quickDimSpinnerSelection.equals(quickDimensionFilters.get(DYNAMIC))) {
-            for(Unit unit:pSharablesApplication.getUnitManager().getUnitsDataModel().getUnitsContentQuerier().queryUnitsByUnitSystem(unitSystemSpinnerSelection)){
+            Collection<Unit> releavantDynamicUnits;
+            if(unitSystemSpinnerSelection.equalsIgnoreCase(ANY_UNIT_SYSTEM)){
+                releavantDynamicUnits = pSharablesApplication.getUnitManager().getUnitsDataModel().getUnitsContentMainRetriever().getDynamicUnits();
+            }else{
+                releavantDynamicUnits = pSharablesApplication.getUnitManager().getUnitsDataModel().getUnitsContentQuerier().queryUnitsByUnitSystem(unitSystemSpinnerSelection);
+            }
+
+            for(Unit unit:releavantDynamicUnits){
                 if(UnitsContentDeterminer.determineHighestPriorityDataModelCategory(unit) == UnitsContentDeterminer.DATA_MODEL_CATEGORY.DYNAMIC)
                     unformattedFinalUnitCategories.add(unit.getCategory());
             }
@@ -445,6 +452,13 @@ public class UnitBrowserActivity extends Activity {
 
             for (String unitName : allRelevantUnitNames) {
                 Unit unit = pSharablesApplication.getUnitManager().getUnitsDataModel().getUnitsContentMainRetriever().getUnit(unitName);
+
+                if( quickDimFilterSelection.equals(quickDimensionFilters.get(DYNAMIC))
+                        && UnitsContentDeterminer.determineHighestPriorityDataModelCategory(unit) != UnitsContentDeterminer.DATA_MODEL_CATEGORY.DYNAMIC)
+                {
+                    continue;
+                }
+
                 boolean unitNameIsComplex = !componentUnitsDimensionParser.getDimensionParserBuilder().getDimensionComponentDefiner().hasComplexDimensions(unitName);
 
                 String abbreviation = unit.getAbbreviation();

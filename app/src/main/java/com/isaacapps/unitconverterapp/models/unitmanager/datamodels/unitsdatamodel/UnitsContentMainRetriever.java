@@ -40,7 +40,8 @@ public class UnitsContentMainRetriever {
      * Retrieves a unit instance having provided unit name / unit definition.
      * @param unformattedUnitName The name can be a a abbreviation or a full name, either of which can have prefixes.
      *        The name can also be a complex dimension consisting of a combination of units joined by the multiplication and/or division operator.
-     * @param createMissingComplexValidUnits Indicates whether to created a new unit from the unit combination definition, but only if none of the units in the combination are unknown.
+     * @param createMissingComplexValidUnits Indicates whether to create new units if the unit definition has more that one prefixed or non-prefixed units
+     *                                       , but only if none of the units in the combination are unknown.
      */
     public Unit getUnit(String unformattedUnitName, boolean createMissingComplexValidUnits) {
         Unit unit;

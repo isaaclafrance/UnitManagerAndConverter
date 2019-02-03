@@ -229,9 +229,11 @@ public class UnitsContentQuerier {
     /**
      * Finds a set of units sorted by the degree of similarity of their names to the provided name.
      */
-    public SortedSet<Unit> queryUnitsOrderedBySimilarNames(final String providedName) {
+    public SortedSet<Unit> queryUnitsOrderedBySimilarNames(String providedName) {
         //TODO: Incorporate the levenshtein distance algorithm, soundex, metaphone ????
         //TODO: A Trie data structure may actually make more sense.
+
+        providedName = providedName.toLowerCase();
 
         //Non duplicate data structure since there are instances where full name may be the same as abbreviations.
         SortedSet<Unit> unitCandidates = new TreeSet<>(new UnitsWithSimilarNameComparator(providedName));

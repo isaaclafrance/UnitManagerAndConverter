@@ -93,7 +93,7 @@ public class SerialGroupingQuantityTokenizer {
                 .matcher(extractSerialUnitGroupingsString(serialGrouping));
 
         while (unitGroupingMatcher.find())
-            unitGroupingList.add(unitGroupingMatcher.group());
+            unitGroupingList.add(quantityGroupingDefiner.removeGroupingSymbol(unitGroupingMatcher.group()));
 
 
         return unitGroupingList;
@@ -104,7 +104,7 @@ public class SerialGroupingQuantityTokenizer {
 
         for (String unitName : unitsNames) {
             try {
-                unitsList.add(unitParser.parse(quantityGroupingDefiner.removeGroupingSymbol(unitName)));
+                unitsList.add(unitParser.parse(unitName));
             } catch (ParsingException e) {
                 return Collections.emptyList();
             }
