@@ -15,7 +15,6 @@ import android.text.InputType;
 import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
 import android.text.method.ScrollingMovementMethod;
-import android.util.AttributeSet;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -97,6 +96,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     private static final String DUMMY_UNIT = "<unit>";
     private static final String DUMMY_VALUE = "1.0";
     private static final int DEMONSTRATION_GROUP_NUM_IN_MULTI_UNIT_MODE = 3;
+    private static final int LOGARTHMIC_SIZE_UPPERTHRESHOLD = 6;
+    private static final int DENOMINATOR_UPPER_THRESHOLD = 50;
 
     private boolean currencyUnitsLoaded;
     private boolean standardLocalCoreUnitsLoaded;
@@ -203,7 +204,11 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         setListenersOnMainButtons();
         setListenersOnTextViews();
 
-        initiateLoadUnitManagerComponent();
+        if(pSharablesApplication.getUnitManager() == null) {
+            initiateLoadUnitManagerComponent();
+        }else{
+            postLoadUnitManagerComponentSetup();
+        }
     }
     @Override
     protected void onResume(){
@@ -328,7 +333,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     private void adjustAllTextViewUnitGroupingBasedOnMultiUnitState(boolean multiUnitStateChanged){
         formatAllTextViewUnitGroupings();
 
-        if (multiModeMenuItem.isChecked()) {
+        if (multiModeMenuItem != null && multiModeMenuItem.isChecked()) {
             if(multiUnitStateChanged) { //If not enough groupings exist, then add some extra dummy ones for demonstration purposes, but only after the multi-unit state changes.
                 adjustAllTextViewsUnitGroupings(DEMONSTRATION_GROUP_NUM_IN_MULTI_UNIT_MODE, DEMONSTRATION_GROUP_NUM_IN_MULTI_UNIT_MODE);
             }
@@ -379,6 +384,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     }
 
     private void updateCurrency(MenuItem item){
+        pSharablesApplication.getUnitManagerBuilder().initializeAllStructuralDefaults();
+        pSharablesApplication.getUnitManagerBuilder().clearAllUnits();
         getSupportLoaderManager().initLoader(ONLINE_CURRENCY_UNITS_LOADER, null, this).forceLoad();
     }
 
@@ -461,15 +468,17 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         }
     }
     private void postLoadUnitManagerComponentSetup() {
-        findViewById(R.id.progressBarLinearLayout).setVisibility(View.GONE);
-        findViewById(R.id.sourceLinearLayout).setVisibility(View.VISIBLE);
-        findViewById(R.id.convertLinearLayout).setVisibility(View.VISIBLE);
-        findViewById(R.id.targetLinearLayout).setVisibility(View.VISIBLE);
-
         unitManager = pSharablesApplication.getUnitManager();
         unitParser.setUnitManager(unitManager);
 
         setupTextViewAutoCompleteBasedOnUnitManagerComponents();
+        setupPostLoadLayoutSetup();
+    }
+    private void setupPostLoadLayoutSetup(){
+        findViewById(R.id.progressBarLinearLayout).setVisibility(View.GONE);
+        findViewById(R.id.sourceLinearLayout).setVisibility(View.VISIBLE);
+        findViewById(R.id.convertLinearLayout).setVisibility(View.VISIBLE);
+        findViewById(R.id.targetLinearLayout).setVisibility(View.VISIBLE);
     }
     private void setupTextViewAutoCompleteBasedOnUnitManagerComponents(){
         DimensionComponentDefiner dimensionComponentDefiner = componentUnitsDimensionParser.getDimensionParserBuilder().getDimensionComponentDefiner();
@@ -481,7 +490,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
                 , unitManager.getPrefixesDataModel());
         sourceUnitsTextView.setAdapter(sourceUnitsTextViewArrayAdapter);
         sourceUnitsTextView.setThreshold(1);
-        sourceUnitsTextView.setTokenizer(new MultiAutoCompleteUnitDefinitionTokenizer(dimensionComponentDefiner));
+        sourceUnitsTextView.setTokenizer(new MultiAutoCompleteUnitDefinitionTokenizer(dimensionComponentDefiner, quantityGroupingDefiner.getGroupOpeningSymbol()));
 
         targetUnitsTextViewArrayAdapter = new MultiAutoCompleteUnitsDefinitionArrayAdapter(this, android.R.layout.simple_list_item_1
                 , unitManager.getUnitsDataModel().getUnitsContentQuerier()
@@ -489,8 +498,12 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
                 , unitManager.getConversionFavoritesDataModel()
                 , unitManager.getPrefixesDataModel());
         targetUnitsTextView.setAdapter(targetUnitsTextViewArrayAdapter);
-        sourceUnitsTextView.setThreshold(1);
-        targetUnitsTextView.setTokenizer(new MultiAutoCompleteUnitDefinitionTokenizer(dimensionComponentDefiner));
+        targetUnitsTextView.setThreshold(1);
+        targetUnitsTextView.setTokenizer(new MultiAutoCompleteUnitDefinitionTokenizer(dimensionComponentDefiner, quantityGroupingDefiner.getGroupOpeningSymbol()));
+
+        //Hack to prevent dropdown from obscuring the target units textview when the keyboard is raised
+        targetUnitsTextView.setDropDownVerticalOffset(300);
+        targetUnitsTextView.setDropDownAnchor(R.id.sourceValueTextView);
     }
 
     ///Listeners Methods
@@ -499,6 +512,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         sourceUnitBrowseButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
+                setTargetUnitIntoQuantity(); // In case user would want to search based on opposite unit
+
                 Intent i = new Intent(MainActivity.this, UnitBrowserActivity.class);
                 i.putExtra("buttonName", SOURCE_NAME);
                 startActivity(i);
@@ -508,6 +523,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         targetUnitBrowseButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
+                setSourceUnitsIntoQuantity(); // In case user would want to search based on opposite unit
+
                 Intent i = new Intent(MainActivity.this, UnitBrowserActivity.class);
                 i.putExtra("buttonName", TARGET_NAME);
                 startActivity(i);
@@ -517,8 +534,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         sourceUnitViewInfoButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                checkUnits();
                 setSourceUnitsIntoQuantity();
+                checkUnits();
 
                 unitInfoDialog.setTitle(SOURCE_NAME + " Unit(s) Details");
                 dialogTextView.setText(composeUnitsDetailsMessage(sourceQuantity.getUnits()));
@@ -530,8 +547,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         targetUnitViewInfoButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                checkUnits();
                 setTargetUnitIntoQuantity();
+                checkUnits();
 
                 unitInfoDialog.setTitle(TARGET_NAME + " Unit(s) Details");
                 dialogTextView.setText(composeUnitsDetailsMessage(targetQuantity.getUnits()));
@@ -559,6 +576,9 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         convertButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
+                setSourceUnitsIntoQuantity();
+                setTargetUnitIntoQuantity();
+
                 if (checkUnits() && checkNSetSourceValuesIntoQuantity())
                     processConversion();
             }
@@ -579,7 +599,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         for(Unit unit:unitsGroup){
             detailsBuilder.append("----------------");
 
-            detailsBuilder.append("<p>").append("<b>NAME:</b> ").append(unit.getName()).append("(").append(unit.getAbbreviation()).append(")").append("</p>");
+            detailsBuilder.append("<p>").append("<b>NAME:</b> ").append(unit.getName()).append(" (").append(unit.getAbbreviation()).append(")").append("</p>");
             if(!unit.getAliases().isEmpty())
                 detailsBuilder.append("<p>").append("<b>ALIASES:</b> ").append(Arrays.toString(unit.getAliases().toArray())).append("</p>");
             if(!unit.getDescription().isEmpty())
@@ -754,6 +774,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
             }
         } catch (Exception exception){
             exception.printStackTrace();
+            valueSettingFailed = true;
         }
 
         if(valueSettingFailed){
@@ -761,12 +782,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
                 Unit unknownUnit = pSharablesApplication.getUnitManager().getUnitsDataModel().getUnitsContentMainRetriever().getUnknownUnit();
                 if (isTargetQuantity) {
                     pSharablesApplication.getTargetQuantity().setUnit(unknownUnit, true);
-                    targetUnitsTextView.setTextColor(Color.rgb(180, 0, 0));
-                    createUnknownUnitsInformationToast("Please fix following target units: ", sourceUnitsTextView.getText().toString());
                 } else {
                     pSharablesApplication.getSourceQuantity().setUnit(unknownUnit, true);
-                    sourceUnitsTextView.setTextColor(Color.rgb(180, 0, 0));
-                    createUnknownUnitsInformationToast("Please fix following target units: ", targetUnitsTextView.getText().toString());
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -812,52 +829,52 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         } else if (!(sourceUnitIsUnknown || targetUnitIsUnknown) && !UnitsMatch) {
             conversionValueTextView.setText("XX:Units Don't Match");
         } else {
-            String unknownName = (sourceUnitIsUnknown ? "'" + SOURCE_NAME + "', " : "") + (targetUnitIsUnknown ? "'" + TARGET_NAME + "', " : "");
+            String unknownName = (sourceUnitIsUnknown ? "'" + SOURCE_NAME + "', " : "") + (targetUnitIsUnknown ? "'" + TARGET_NAME + "'" : "");
             String unknownSymbol = (sourceUnitIsUnknown ? "?" : "#") + (targetUnitIsUnknown ? "?" : "#");
 
             conversionValueTextView.setText(String.format("%s: Unit In %s Group(s) is Unkn. or Has Wrong Dim.", unknownSymbol, unknownName));
 
-            if(sourceUnitIsUnknown)
-                createUnknownUnitsInformationToast("Please fix following source units: ", sourceUnitsTextView.getText().toString());
+            String unknownUnitsInformation;
+            StringBuilder unknownUnitsInformationBuilder = new StringBuilder();
 
-            if(targetUnitIsUnknown)
-                createUnknownUnitsInformationToast("Please fix following target units: ", targetUnitsTextView.getText().toString());
+            if(sourceUnitIsUnknown) {
+                unknownUnitsInformation = createUnknownUnitsInformation("Unknown source units: ", sourceUnitsTextView);
+                unknownUnitsInformationBuilder.append(unknownUnitsInformation).append(".  ");
+            }
+
+            if(targetUnitIsUnknown){
+                unknownUnitsInformation = createUnknownUnitsInformation("Unknown target units: ", targetUnitsTextView);
+                unknownUnitsInformationBuilder.append(unknownUnitsInformation);
+            }
+
+            if(unknownUnitsInformationBuilder.length() > 0)
+                Toast.makeText(this, unknownUnitsInformationBuilder.toString(), Toast.LENGTH_LONG).show();
         }
 
         return UnitsAreOK;
     }
-    private void createUnknownUnitsInformationToast(String contextualPrefixText, String unitsGroupText){
-        StringBuilder unknownSourceUnitsInformationBuilder = new StringBuilder(contextualPrefixText);
+    private String createUnknownUnitsInformation(String contextualPrefixText, TextView unitsGroupTextView){
+        StringBuilder unknownUnitsInformationBuilder = new StringBuilder();
 
-        List<String> unknownSourceUnitNames = determineUnknownUnitsInGroup(unitsGroupText);
+        List<String> unknownSourceUnitNames = serialGroupingQuantityTokenizer.parseSerialGroupingToUnitsNamesList(unitsGroupTextView.getText().toString());
         for(String unknownUnitName:unknownSourceUnitNames){
-            String formattedUnknownUnitName = String.format("%s%s%s", quantityGroupingDefiner.getGroupOpeningSymbol(), unknownUnitName, quantityGroupingDefiner.getGroupClosingSymbol());
-            unknownSourceUnitsInformationBuilder.append(",").append(formattedUnknownUnitName);
+            if(unitManager.getUnitsDataModel().getUnitsContentQuerier().containsUnit(unknownUnitName))
+                continue;
+
+            String formattedUnknownUnitName = unitNamesGroupingFormatter.format(unknownUnitName);
+            unknownUnitsInformationBuilder.append(",").append(formattedUnknownUnitName);
         }
 
-        Toast.makeText(this, unknownSourceUnitsInformationBuilder.toString(), Toast.LENGTH_SHORT);
-    }
-    private List<String> determineUnknownUnitsInGroup(String unitsGroupText){
-        List<Unit> sourceUnits = retrieveUnitsList(unitsGroupText);
-
-        List<String> unknownUnitNames = new ArrayList<>();
-        for(Unit unit:sourceUnits){
-            if(UnitsContentDeterminer.determineHighestPriorityDataModelCategory(unit) == DATA_MODEL_CATEGORY.UNKNOWN)
-                unknownUnitNames.add(unit.getName());
+        if(!unknownSourceUnitNames.isEmpty()){
+            unknownUnitsInformationBuilder.insert(0, contextualPrefixText).append(".");
         }
 
-        return unknownUnitNames;
+        return unknownUnitsInformationBuilder.toString();
     }
 
     ///Conversion Methods
     private void processConversion() {
         try {
-            setSourceUnitsIntoQuantity();
-            setTargetUnitIntoQuantity();
-
-            checkUnits();
-            checkNSetSourceValuesIntoQuantity();
-
             populateTextViews();
 
             List<Unit> targetUnits = Collections.list(Collections.enumeration(targetQuantity.getUnits()));
@@ -886,6 +903,9 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         }
     }
 
+    /**
+     * Conditionally format value as a currency based on guessed, fraction or scientific notation based on which takes less space.
+     */
     private String formatConversionValue(String rawConversionValueGroupText){
         //TODO: Conditionally format value as a fraction or as scientific notation based on which takes less space.
 
@@ -898,17 +918,15 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 
             for(String rawIndividualConversionValueText:rawConversionValueTextCollection){
                 double rawConversionValueNumber = Double.parseDouble(rawIndividualConversionValueText);
-                int logarithmicSize =  rawConversionValueNumber != 0 ? (int)Math.log10(rawConversionValueNumber) : 0;
-                int logarthmicSizeUpperThreshold = 6;
+                int logarithmicSize =  rawConversionValueNumber > 0 ? (int)Math.log10(rawConversionValueNumber) : 0;
 
-                if(Math.abs(logarithmicSize) < logarthmicSizeUpperThreshold) {
+                if(Math.abs(logarithmicSize) < LOGARTHMIC_SIZE_UPPERTHRESHOLD) {
                     String conversionValueTextAsFraction = decimalToMixedFractionFormatter.format(rawIndividualConversionValueText);
                     String fractionPart = MixedFractionToDecimalFormatter.extractFractionPart(conversionValueTextAsFraction);
                     String numeratorPart = MixedFractionToDecimalFormatter.extractNumeratorOfFractionPart(fractionPart);
                     String denominatorPart = MixedFractionToDecimalFormatter.extractDenominatorOfFractionPart(fractionPart);
 
-                    int denominatorUpperThreshold = 20;
-                    if(Double.parseDouble(denominatorPart) < denominatorUpperThreshold && Double.parseDouble(numeratorPart) != 0){
+                    if(Double.parseDouble(denominatorPart) < DENOMINATOR_UPPER_THRESHOLD && Double.parseDouble(numeratorPart) != 0){
                         formattedConversionValueTextBuilder.append(valuesGroupingFormatter.format(conversionValueTextAsFraction));
                     }else {
                         String conversionValueTextAsRoundedDecimal = formatConversionValueAsRoundedDecimal(rawIndividualConversionValueText, logarithmicSize);
@@ -989,12 +1007,13 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
                 };
             case UPDATE_LOADER:
                 Toast.makeText(this, "Updating Units...", Toast.LENGTH_SHORT).show();
-                pSharablesApplication.getUnitManagerBuilder().initializeAllStructuralDefaults();
-                pSharablesApplication.getUnitManagerBuilder().clearAllUnits();
                 return new AsyncTaskLoader<UnitManagerBuilder>(this) {
                     @Override
                     public UnitManagerBuilder loadInBackground() {
                         ((PersistentSharablesApplication) getContext().getApplicationContext()).updateUnitManager();
+
+                        ((PersistentSharablesApplication) getContext().getApplicationContext()).getUnitManagerBuilder().initializeAllStructuralDefaults();
+                        ((PersistentSharablesApplication) getContext().getApplicationContext()).getUnitManagerBuilder().clearAllUnits();
                         return null;
                     }
                 };
@@ -1051,13 +1070,17 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         //
         if (pSharablesApplication.isUnitManagerPreReqLoadingComplete() && pSharablesApplication.isUnitManagerAlreadyCreated() && loader.getId() == POST_LOADER) {
             postLoadUnitManagerComponentSetup();
+
+            pSharablesApplication.getUnitManagerBuilder().initializeAllStructuralDefaults();
+            pSharablesApplication.getUnitManagerBuilder().clearAllUnits();
+
             getSupportLoaderManager().initLoader(FAVORITES_LOADER, null, this).forceLoad();
             if(!onlineUnitsPreviouslySaved){
                 getSupportLoaderManager().initLoader(ONLINE_PREFIXES_N_UNITS_LOADER, null, this).forceLoad();
             }
             else{
                 //If the online units had been previously loaded AND saved, then they will be in this local loaded units set.
-                //Depending pending on how many online units and dynamic units were saved, this may take a while to fully load
+                //Depending on how many online units and dynamic units were saved, this may take a while to fully load
                 getSupportLoaderManager().initLoader(NON_STANDARD_LOCAL_UNITS_LOADER, null, this).forceLoad();
             }
         }

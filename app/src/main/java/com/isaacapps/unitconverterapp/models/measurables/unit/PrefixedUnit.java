@@ -16,7 +16,7 @@ public class PrefixedUnit extends Unit {
     ///
     public PrefixedUnit(String prefixFullName, String prefixAbbreviation, Double prefixValue, Unit unit, boolean useAbbreviation
             , Locale locale, ComponentUnitsDimensionSerializer componentUnitsDimensionSerializer, FundamentalUnitTypesDimensionSerializer fundamentalUnitTypesDimensionSerializer, DimensionComponentDefiner dimensionComponentDefiner) throws UnitException {
-        super(prefixFullName + unit.getName(), new HashSet<String>(), unit.getCategory(), unit.getDescription(), unit.getUnitSystem(), prefixAbbreviation + unit.getAbbreviation()
+        super(prefixFullName + unit.getName(), new HashSet<String>(), unit.getCategory(), String.format("%s times the size of %s", prefixValue, unit.getName()), unit.getUnitSystem(), prefixAbbreviation + unit.getAbbreviation()
                 , new HashMap<String, Double>(), unit, new double[]{prefixValue, 0.0}, locale, componentUnitsDimensionSerializer, fundamentalUnitTypesDimensionSerializer, dimensionComponentDefiner);
 
         addComponentUnit(useAbbreviation ? unit.getAbbreviation() : unit.getName(), 1.0, false);

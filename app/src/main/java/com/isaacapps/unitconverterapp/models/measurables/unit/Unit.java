@@ -318,7 +318,7 @@ public class Unit {
 
     /**
      * The primary unit and its specified base are decomposed to their component units.
-     * The overall conversion factor to a hypothetical fundamental base unit is calculated from these individual components and is used to determine the base conversion factor of the primary unit.
+     * Then, the overall conversion factor to a hypothetical fundamental base unit is calculated from these individual components and is used to recalculate the base conversion factor of the primary unit.
      */
     private void adjustBaseConversionUsingOverallComponentConversionFactorToFundamentalBase() {
         double baseUnitOverallComponentFactor = baseUnit.calculateOverallComponentConversionFactorToFundamentalBase();

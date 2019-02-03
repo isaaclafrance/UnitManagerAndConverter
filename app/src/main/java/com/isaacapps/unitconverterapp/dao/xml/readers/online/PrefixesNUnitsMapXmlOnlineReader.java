@@ -258,8 +258,9 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
     private void assignCorrectedAbbreviatedComponentUnitsDimension(Unit partiallyConstructedUnit) throws UnitException {
         boolean hasManyComponents = partiallyConstructedUnit.getComponentUnitsDimension().size() > 1;
         boolean hasAnExponentialIdentity = partiallyConstructedUnit.getComponentUnitsDimension().containsValue(1.0);
+        boolean isDirectConversion = partiallyConstructedUnit.getBaseConversionPolyCoeffs()[0] == 1 && partiallyConstructedUnit.getBaseConversionPolyCoeffs()[1] == 0;
 
-        if (!hasManyComponents && hasAnExponentialIdentity) {
+        if (!hasManyComponents && hasAnExponentialIdentity || (hasManyComponents || !hasAnExponentialIdentity) && !isDirectConversion) {
             partiallyConstructedUnit.clearComponentUnitsDimension(false);
             partiallyConstructedUnit.addComponentUnit(partiallyConstructedUnit.getAbbreviation(), 1.0, false);
         }
@@ -362,7 +363,7 @@ public class PrefixesNUnitsMapXmlOnlineReader extends AsyncXmlReader<UnitManager
 		Therefore, they have to be removed after being used to updateContent the base conversion coefficient. */
         ArrayList<Double> conversionFactors = convertComponentUnitsDimensionToConversionFactorsList(partiallyConstructedUnit.getComponentUnitsDimension());
         for (Double conversionFactor : conversionFactors) {
-            partiallyConstructedUnit.getBaseConversionPolyCoeffs()[0] *= Math.abs((conversionFactor < 1.0 ? 1 / conversionFactor : conversionFactor));
+            partiallyConstructedUnit.getBaseConversionPolyCoeffs()[0] *= conversionFactor;
         }
     }
     private ArrayList<Double> convertComponentUnitsDimensionToConversionFactorsList(Map<String, Double> componentUnitsDimension) {

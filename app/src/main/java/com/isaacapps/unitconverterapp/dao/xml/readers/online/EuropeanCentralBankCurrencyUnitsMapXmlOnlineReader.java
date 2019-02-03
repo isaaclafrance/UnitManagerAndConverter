@@ -46,7 +46,6 @@ public class EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader extends AsyncXml
         setCurrencyAbbreviationNameMap();
         this.locale = locale;
 
-        this.currentDateTime = new Date();
         this.dateTimeFormat = DateFormat.getDateTimeInstance(DateFormat.FULL, DateFormat.FULL, locale);
         this.unitNameFormatter = unitNameFormatter;
 
@@ -202,6 +201,7 @@ public class EuropeanCentralBankCurrencyUnitsMapXmlOnlineReader extends AsyncXml
     public UnitManagerBuilder loadInBackground() {
         List<List<Unit>> currencyUnitsGroup = new ArrayList<>();
         try {
+            this.currentDateTime = new Date();
             currencyUnitsGroup = parseXML(openXmlFile("https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml", true));
         } catch (Exception e) {
             e.printStackTrace();

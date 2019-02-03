@@ -67,12 +67,16 @@ public class MultiAutoCompleteUnitsDefinitionArrayAdapter extends ArrayAdapter {
         };
 
         this.maxResults = 0;
-        this.prefixTriggerLength = 3;
+        this.prefixTriggerLength = 2;
     }
 
     public int getMaxResults(){
         return maxResults;
     }
+
+    /**
+     * Max number of query results to return. If set to the value of zero or less than zero, then all results will return.
+     */
     public void setMaxResults(int maxResults){
         this.maxResults = maxResults < 0 ? 0 : maxResults;
     }
@@ -205,8 +209,9 @@ public class MultiAutoCompleteUnitsDefinitionArrayAdapter extends ArrayAdapter {
 
             if(constraintSequence != null) {
                 List<String> results = retrieveFormattedUnitNameDisplaysForSimilarUnits(constraintSequence.toString());
-                filterResults.values = maxResults < 1 ? results : results.subList(0, maxResults);
-                filterResults.count = results.size();
+                List<String> subresult = maxResults < 1 ? results : results.subList(0, maxResults);
+                filterResults.values = subresult;
+                filterResults.count = subresult.size();
             }
 
             return filterResults;
